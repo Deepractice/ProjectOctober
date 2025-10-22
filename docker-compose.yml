@@ -1,0 +1,39 @@
+version: '3.8'
+
+# Claude Code UI - 生产环境部署配置
+# 使用上游开源主线代码，支持多项目模式
+
+services:
+  claude-code-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude-code-ui
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CLAUDE_CLI_PATH=claude
+      # 认证配置（可选）
+      - USE_EXTERNAL_AUTH=false
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-change-in-production}
+      - API_KEY=${API_KEY:-}
+    volumes:
+      # Claude 配置和 sessions 持久化
+      - claude-data:/opt/claude-config
+      # SSH 密钥（用于 Git 操作）
+      - ~/.ssh:/home/claudeuser/.ssh:ro
+      # Git 配置
+      - ~/.gitconfig:/home/claudeuser/.gitconfig:ro
+    restart: unless-stopped
+    networks:
+      - claude-network
+
+volumes:
+  claude-data:
+    driver: local
+
+networks:
+  claude-network:
+    driver: bridge
