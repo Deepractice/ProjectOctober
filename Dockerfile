@@ -88,23 +88,7 @@ RUN apt-get update && \
     ln -sf /opt/claude-config/.claude /home/claudeuser/.claude && \
     ln -sf /opt/claude-config/.claude.json /home/claudeuser/.claude.json
 
-# 设置环境变量
-ENV NODE_ENV=production \
-    PORT=3001 \
-    CLAUDE_CLI_PATH=claude \
-    HOME=/home/claudeuser
-
-# 切换到 claudeuser
-USER claudeuser
-
-# 暴露端口
-EXPOSE 3001
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3001/ || exit 1
-
-# 创建启动脚本（以 claudeuser 运行，需要权限时使用 sudo）
+# 创建启动脚本（需要在切换用户前创建）
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -123,6 +107,22 @@ mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
 echo "✅ 启动 Claude Code UI (用户: claudeuser, sudo 可用)..."\n\
 exec node server/index.js\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# 设置环境变量
+ENV NODE_ENV=production \
+    PORT=3001 \
+    CLAUDE_CLI_PATH=claude \
+    HOME=/home/claudeuser
+
+# 切换到 claudeuser
+USER claudeuser
+
+# 暴露端口
+EXPOSE 3001
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3001/ || exit 1
 
 # 启动应用
 ENTRYPOINT ["/app/entrypoint.sh"]
