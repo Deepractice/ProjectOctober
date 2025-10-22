@@ -77,17 +77,25 @@ RUN apt-get update && \
     apt-get purge -y --auto-remove make g++ && \
     rm -rf /var/lib/apt/lists/*
 
-# 创建配置目录并设置符号链接
-RUN mkdir -p /opt/claude-config && \
+# 安装 sudo 并创建 claudeuser 用户
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends sudo && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd -m -s /bin/bash claudeuser && \
+    echo "claudeuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    mkdir -p /opt/claude-config && \
     chmod -R 777 /opt/claude-config && \
-    ln -sf /opt/claude-config/.claude /root/.claude && \
-    ln -sf /opt/claude-config/.claude.json /root/.claude.json
+    ln -sf /opt/claude-config/.claude /home/claudeuser/.claude && \
+    ln -sf /opt/claude-config/.claude.json /home/claudeuser/.claude.json
 
 # 设置环境变量
 ENV NODE_ENV=production \
     PORT=3001 \
     CLAUDE_CLI_PATH=claude \
-    HOME=/root
+    HOME=/home/claudeuser
+
+# 切换到 claudeuser
+USER claudeuser
 
 # 暴露端口
 EXPOSE 3001
@@ -96,25 +104,25 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3001/ || exit 1
 
-# 创建启动脚本（以 root 身份运行，无需切换用户）
+# 创建启动脚本（以 claudeuser 运行，需要权限时使用 sudo）
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "🔧 设置运行时权限..."\n\
-chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
+sudo chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
 \n\
 # 设置项目目录权限（如果存在）\n\
 if [ -d "/project" ]; then\n\
   echo "📂 设置 /project 目录权限..."\n\
-  chmod -R 777 /project 2>/dev/null || true\n\
+  sudo chmod -R 777 /project 2>/dev/null || true\n\
 fi\n\
 \n\
 echo "📁 创建必要的目录结构..."\n\
 mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
 \n\
-echo "✅ 启动 Claude Code UI (root 用户)..."\n\
+echo "✅ 启动 Claude Code UI (用户: claudeuser, sudo 可用)..."\n\
 exec node server/index.js\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# 启动应用（以 root 身份运行，解决所有权限问题）
+# 启动应用
 ENTRYPOINT ["/app/entrypoint.sh"]
