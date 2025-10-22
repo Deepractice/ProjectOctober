@@ -91,9 +91,6 @@ ENV NODE_ENV=production \
     CLAUDE_CLI_PATH=claude \
     HOME=/home/claudeuser
 
-# 切换到非 root 用户
-USER claudeuser
-
 # 暴露端口
 EXPOSE 3001
 
@@ -101,5 +98,28 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3001/ || exit 1
 
+# 安装 gosu 工具（用于切换用户）
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/*
+
+# 创建启动脚本（以 root 身份运行以设置权限，然后切换到 claudeuser）
+RUN printf '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "🔧 设置运行时权限..."\n\
+chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
+chown -R claudeuser:claudeuser /opt/claude-config 2>/dev/null || true\n\
+\n\
+echo "📁 创建必要的目录结构..."\n\
+mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
+\n\
+echo "✅ 启动 Claude Code UI (用户: claudeuser)..."\n\
+exec gosu claudeuser node server/index.js\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# 注意：不在这里切换用户，而是在 entrypoint 中切换
+# 这样可以在容器启动时以 root 身份设置权限
+
 # 启动应用
-CMD ["node", "server/index.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]
