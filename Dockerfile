@@ -111,6 +111,12 @@ echo "🔧 设置运行时权限..."\n\
 chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
 chown -R claudeuser:claudeuser /opt/claude-config 2>/dev/null || true\n\
 \n\
+# 设置项目目录权限（如果存在）\n\
+if [ -d "/project" ]; then\n\
+  echo "📂 设置 /project 目录权限..."\n\
+  chmod -R 777 /project 2>/dev/null || true\n\
+fi\n\
+\n\
 echo "📁 创建必要的目录结构..."\n\
 mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
 \n\
