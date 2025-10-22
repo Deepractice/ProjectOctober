@@ -94,6 +94,7 @@ set -e\n\
 \n\
 echo "🔧 设置运行时权限..."\n\
 sudo chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
+sudo chown -R claudeuser:claudeuser /app 2>/dev/null || true\n\
 \n\
 # 设置项目目录权限（如果存在）\n\
 if [ -d "/project" ]; then\n\
