@@ -77,19 +77,17 @@ RUN apt-get update && \
     apt-get purge -y --auto-remove make g++ && \
     rm -rf /var/lib/apt/lists/*
 
-# 创建非 root 用户
-RUN useradd -m -s /bin/bash claudeuser && \
-    mkdir -p /opt/claude-config && \
-    chown -R claudeuser:claudeuser /app /home/claudeuser /opt/claude-config && \
+# 创建配置目录并设置符号链接
+RUN mkdir -p /opt/claude-config && \
     chmod -R 777 /opt/claude-config && \
-    ln -sf /opt/claude-config/.claude /home/claudeuser/.claude && \
-    ln -sf /opt/claude-config/.claude.json /home/claudeuser/.claude.json
+    ln -sf /opt/claude-config/.claude /root/.claude && \
+    ln -sf /opt/claude-config/.claude.json /root/.claude.json
 
 # 设置环境变量
 ENV NODE_ENV=production \
     PORT=3001 \
     CLAUDE_CLI_PATH=claude \
-    HOME=/home/claudeuser
+    HOME=/root
 
 # 暴露端口
 EXPOSE 3001
@@ -98,18 +96,12 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3001/ || exit 1
 
-# 安装 gosu 工具（用于切换用户）
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gosu && \
-    rm -rf /var/lib/apt/lists/*
-
-# 创建启动脚本（以 root 身份运行以设置权限，然后切换到 claudeuser）
+# 创建启动脚本（以 root 身份运行，无需切换用户）
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "🔧 设置运行时权限..."\n\
 chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
-chown -R claudeuser:claudeuser /opt/claude-config 2>/dev/null || true\n\
 \n\
 # 设置项目目录权限（如果存在）\n\
 if [ -d "/project" ]; then\n\
@@ -120,12 +112,9 @@ fi\n\
 echo "📁 创建必要的目录结构..."\n\
 mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
 \n\
-echo "✅ 启动 Claude Code UI (用户: claudeuser)..."\n\
-exec gosu claudeuser node server/index.js\n\
+echo "✅ 启动 Claude Code UI (root 用户)..."\n\
+exec node server/index.js\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# 注意：不在这里切换用户，而是在 entrypoint 中切换
-# 这样可以在容器启动时以 root 身份设置权限
-
-# 启动应用
+# 启动应用（以 root 身份运行，解决所有权限问题）
 ENTRYPOINT ["/app/entrypoint.sh"]
