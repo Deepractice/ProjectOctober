@@ -211,60 +211,44 @@ function AppContent() {
   const fetchProjects = async () => {
     try {
       setIsLoadingProjects(true);
-      const response = await api.projects();
-      const data = await response.json();
-      
-      // Always fetch Cursor sessions for each project so we can combine views
-      for (let project of data) {
-        try {
-          const url = `/api/cursor/sessions?projectPath=${encodeURIComponent(project.fullPath || project.path)}`;
-          const cursorResponse = await authenticatedFetch(url);
-          if (cursorResponse.ok) {
-            const cursorData = await cursorResponse.json();
-            if (cursorData.success && cursorData.sessions) {
-              project.cursorSessions = cursorData.sessions;
-            } else {
-              project.cursorSessions = [];
-            }
-          } else {
-            project.cursorSessions = [];
-          }
-        } catch (error) {
-          console.error(`Error fetching Cursor sessions for project ${project.name}:`, error);
-          project.cursorSessions = [];
-        }
+      // Fixed project mode: only load -project
+      const projectName = '-project';
+      const response = await authenticatedFetch(`/api/projects/${projectName}/sessions?limit=50&offset=0`);
+      const sessionsData = await response.json();
+
+      // Create a fixed project object
+      const fixedProject = {
+        name: projectName,
+        displayName: 'Project',
+        fullPath: '/project',
+        path: '/project',
+        sessions: sessionsData.sessions || [],
+        sessionMeta: sessionsData.meta || { total: 0, hasMore: false },
+        cursorSessions: []
+      };
+
+      setProjects([fixedProject]);
+
+      // Auto-select the fixed project
+      if (!selectedProject) {
+        setSelectedProject(fixedProject);
       }
-      
-      // Optimize to preserve object references when data hasn't changed
-      setProjects(prevProjects => {
-        // If no previous projects, just set the new data
-        if (prevProjects.length === 0) {
-          return data;
-        }
-        
-        // Check if the projects data has actually changed
-        const hasChanges = data.some((newProject, index) => {
-          const prevProject = prevProjects[index];
-          if (!prevProject) return true;
-          
-          // Compare key properties that would affect UI
-          return (
-            newProject.name !== prevProject.name ||
-            newProject.displayName !== prevProject.displayName ||
-            newProject.fullPath !== prevProject.fullPath ||
-            JSON.stringify(newProject.sessionMeta) !== JSON.stringify(prevProject.sessionMeta) ||
-            JSON.stringify(newProject.sessions) !== JSON.stringify(prevProject.sessions) ||
-            JSON.stringify(newProject.cursorSessions) !== JSON.stringify(prevProject.cursorSessions)
-          );
-        }) || data.length !== prevProjects.length;
-        
-        // Only update if there are actual changes
-        return hasChanges ? data : prevProjects;
-      });
-      
-      // Don't auto-select any project - user should choose manually
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('Error fetching sessions:', error);
+      // Create empty project on error
+      const emptyProject = {
+        name: '-project',
+        displayName: 'Project',
+        fullPath: '/project',
+        path: '/project',
+        sessions: [],
+        sessionMeta: { total: 0, hasMore: false },
+        cursorSessions: []
+      };
+      setProjects([emptyProject]);
+      if (!selectedProject) {
+        setSelectedProject(emptyProject);
+      }
     } finally {
       setIsLoadingProjects(false);
     }

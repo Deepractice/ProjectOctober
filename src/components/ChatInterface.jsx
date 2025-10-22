@@ -1192,7 +1192,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const [totalMessages, setTotalMessages] = useState(0);
   const MESSAGES_PER_PAGE = 20;
   const [isSystemSessionChange, setIsSystemSessionChange] = useState(false);
-  const [permissionMode, setPermissionMode] = useState('default');
+  const [permissionMode, setPermissionMode] = useState('bypassPermissions');
   const [attachedImages, setAttachedImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(new Map());
   const [imageErrors, setImageErrors] = useState(new Map());
