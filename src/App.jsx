@@ -20,7 +20,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MobileNav from './components/MobileNav';
 import Settings from './components/Settings';
@@ -50,7 +49,6 @@ function AppContent() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'files'
   const [isMobile, setIsMobile] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -296,9 +294,6 @@ function AppContent() {
     setSelectedProject(project);
     setSelectedSession(null);
     navigate('/');
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
   };
 
   const handleSessionSelect = (session) => {
@@ -308,7 +303,7 @@ function AppContent() {
     if (activeTab !== 'git' && activeTab !== 'preview') {
       setActiveTab('chat');
     }
-    
+
     // For Cursor sessions, we need to set the session ID differently
     // since they're persistent and not created by Claude
     const provider = localStorage.getItem('selected-provider') || 'claude';
@@ -316,10 +311,7 @@ function AppContent() {
       // Cursor sessions have persistent IDs
       sessionStorage.setItem('cursorSessionId', session.id);
     }
-    
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
+
     navigate(`/session/${session.id}`);
   };
 
@@ -328,9 +320,6 @@ function AppContent() {
     setSelectedSession(null);
     setActiveTab('chat');
     navigate('/');
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
   };
 
   const handleSessionDelete = (sessionId) => {
@@ -546,83 +535,7 @@ function AppContent() {
 
   return (
     <div className="fixed inset-0 flex bg-background">
-      {/* Fixed Desktop Sidebar */}
-      {!isMobile && (
-        <div className="w-80 flex-shrink-0 border-r border-border bg-card">
-          <div className="h-full overflow-hidden">
-            <Sidebar
-              projects={projects}
-              selectedProject={selectedProject}
-              selectedSession={selectedSession}
-              onProjectSelect={handleProjectSelect}
-              onSessionSelect={handleSessionSelect}
-              onNewSession={handleNewSession}
-              onSessionDelete={handleSessionDelete}
-              onProjectDelete={handleProjectDelete}
-              isLoading={isLoadingProjects}
-              onRefresh={handleSidebarRefresh}
-              onShowSettings={() => setShowSettings(true)}
-              updateAvailable={updateAvailable}
-              latestVersion={latestVersion}
-              currentVersion={currentVersion}
-              onShowVersionModal={() => setShowVersionModal(true)}
-              isPWA={isPWA}
-              isMobile={isMobile}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Sidebar Overlay */}
-      {isMobile && (
-        <div className={`fixed inset-0 z-50 flex transition-all duration-150 ease-out ${
-          sidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        }`}>
-          <button
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-150 ease-out"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSidebarOpen(false);
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setSidebarOpen(false);
-            }}
-            aria-label="Close sidebar"
-          />
-          <div 
-            className={`relative w-[85vw] max-w-sm sm:w-80 bg-card border-r border-border transform transition-transform duration-150 ease-out ${
-              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-            style={{ height: 'calc(100vh - 80px)' }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-          >
-            <Sidebar
-              projects={projects}
-              selectedProject={selectedProject}
-              selectedSession={selectedSession}
-              onProjectSelect={handleProjectSelect}
-              onSessionSelect={handleSessionSelect}
-              onNewSession={handleNewSession}
-              onSessionDelete={handleSessionDelete}
-              onProjectDelete={handleProjectDelete}
-              isLoading={isLoadingProjects}
-              onRefresh={handleSidebarRefresh}
-              onShowSettings={() => setShowSettings(true)}
-              updateAvailable={updateAvailable}
-              latestVersion={latestVersion}
-              currentVersion={currentVersion}
-              onShowVersionModal={() => setShowVersionModal(true)}
-              isPWA={isPWA}
-              isMobile={isMobile}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area - Flexible */}
+      {/* Main Content Area - Full Width */}
       <div className={`flex-1 flex flex-col min-w-0 ${isMobile && !isInputFocused ? 'pb-16' : ''}`}>
         <MainContent
           selectedProject={selectedProject}
@@ -634,7 +547,7 @@ function AppContent() {
           messages={messages}
           isMobile={isMobile}
           isPWA={isPWA}
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={() => {}} // Menu button no longer needed without sidebar
           isLoading={isLoadingProjects}
           onInputFocusChange={setIsInputFocused}
           onSessionActive={markSessionAsActive}
@@ -646,6 +559,10 @@ function AppContent() {
           showRawParameters={showRawParameters}
           autoScrollToBottom={autoScrollToBottom}
           sendByCtrlEnter={sendByCtrlEnter}
+          onSessionSelect={handleSessionSelect}
+          onNewSession={handleNewSession}
+          onSessionDelete={handleSessionDelete}
+          projects={projects}
         />
       </div>
 

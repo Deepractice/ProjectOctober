@@ -2956,7 +2956,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   };
 
   const handleModeSwitch = () => {
-    const modes = ['default', 'acceptEdits', 'bypassPermissions', 'plan'];
+    const modes = ['default', 'acceptEdits', 'plan'];
     const currentIndex = modes.indexOf(permissionMode);
     const nextIndex = (currentIndex + 1) % modes.length;
     setPermissionMode(modes[nextIndex]);
@@ -2997,138 +2997,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           </div>
         ) : chatMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            {!selectedSession && !currentSessionId && (
-              <div className="text-center px-6 sm:px-4 py-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Choose Your AI Assistant</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-8">
-                  Select a provider to start a new conversation
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-                  {/* Claude Button */}
-                  <button
-                    onClick={() => {
-                      setProvider('claude');
-                      localStorage.setItem('selected-provider', 'claude');
-                      // Focus input after selection
-                      setTimeout(() => textareaRef.current?.focus(), 100);
-                    }}
-                    className={`group relative w-64 h-32 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-                      provider === 'claude' 
-                        ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/20' 
-                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <ClaudeLogo className="w-10 h-10" />
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">Claude</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">by Anthropic</p>
-                      </div>
-                    </div>
-                    {provider === 'claude' && (
-                      <div className="absolute top-2 right-2">
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                  
-                  {/* Cursor Button */}
-                  <button
-                    onClick={() => {
-                      setProvider('cursor');
-                      localStorage.setItem('selected-provider', 'cursor');
-                      // Focus input after selection
-                      setTimeout(() => textareaRef.current?.focus(), 100);
-                    }}
-                    className={`group relative w-64 h-32 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-                      provider === 'cursor' 
-                        ? 'border-purple-500 shadow-lg ring-2 ring-purple-500/20' 
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-400'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <CursorLogo className="w-10 h-10" />
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">Cursor</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">AI Code Editor</p>
-                      </div>
-                    </div>
-                    {provider === 'cursor' && (
-                      <div className="absolute top-2 right-2">
-                        <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                </div>
-                
-                {/* Model Selection for Cursor - Always reserve space to prevent jumping */}
-                <div className={`mb-6 transition-opacity duration-200 ${provider === 'cursor' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {provider === 'cursor' ? 'Select Model' : '\u00A0'}
-                  </label>
-                  <select
-                    value={cursorModel}
-                    onChange={(e) => {
-                      const newModel = e.target.value;
-                      setCursorModel(newModel);
-                      localStorage.setItem('cursor-model', newModel);
-                    }}
-                    className="pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-w-[140px]"
-                    disabled={provider !== 'cursor'}
-                  >
-                    <option value="gpt-5">GPT-5</option>
-                    <option value="sonnet-4">Sonnet-4</option>
-                    <option value="opus-4.1">Opus 4.1</option>
-                  </select>
-                </div>
-                
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {provider === 'claude' 
-                    ? 'Ready to use Claude AI. Start typing your message below.'
-                    : provider === 'cursor'
-                    ? `Ready to use Cursor with ${cursorModel}. Start typing your message below.`
-                    : 'Select a provider above to begin'
-                  }
-                </p>
-                
-                {/* Show NextTaskBanner when provider is selected and ready */}
-                {provider && tasksEnabled && (
-                  <div className="mt-4 px-4 sm:px-0">
-                    <NextTaskBanner 
-                      onStartTask={() => setInput('Start the next task')}
-                      onShowAllTasks={onShowAllTasks}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            {selectedSession && (
-              <div className="text-center text-gray-500 dark:text-gray-400 px-6 sm:px-4">
-                <p className="font-bold text-lg sm:text-xl mb-3">Continue your conversation</p>
-                <p className="text-sm sm:text-base leading-relaxed">
-                  Ask questions about your code, request changes, or get help with development tasks
-                </p>
-                
-                {/* Show NextTaskBanner for existing sessions too */}
-                {tasksEnabled && (
-                  <div className="mt-4 px-4 sm:px-0">
-                    <NextTaskBanner 
-                      onStartTask={() => setInput('Start the next task')}
-                      onShowAllTasks={onShowAllTasks}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Empty state - ready for conversation */}
           </div>
         ) : (
           <>
@@ -3230,37 +3099,26 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                 provider={provider}
               />
               </div>
-        {/* Permission Mode Selector with scroll to bottom button - Above input, clickable for mobile */}
+        {/* Permission Mode Selector - Hidden, always use bypassPermissions */}
         <div className="max-w-4xl mx-auto mb-3">
           <div className="flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={handleModeSwitch}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
-                permissionMode === 'default' 
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  : permissionMode === 'acceptEdits'
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-900/30'
-                  : permissionMode === 'bypassPermissions'
-                  ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30'
-                  : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-              }`}
+              className="hidden"
               title="Click to change permission mode (or press Tab in input)"
             >
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  permissionMode === 'default' 
+                  permissionMode === 'default'
                     ? 'bg-gray-500'
                     : permissionMode === 'acceptEdits'
                     ? 'bg-green-500'
-                    : permissionMode === 'bypassPermissions'
-                    ? 'bg-orange-500'
                     : 'bg-blue-500'
                 }`} />
                 <span>
                   {permissionMode === 'default' && 'Default Mode'}
                   {permissionMode === 'acceptEdits' && 'Accept Edits'}
-                  {permissionMode === 'bypassPermissions' && 'Bypass Permissions'}
                   {permissionMode === 'plan' && 'Plan Mode'}
                 </span>
               </div>

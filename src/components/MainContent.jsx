@@ -28,13 +28,13 @@ import { useTaskMaster } from '../contexts/TaskMasterContext';
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
 import { api } from '../utils/api';
 
-function MainContent({ 
-  selectedProject, 
-  selectedSession, 
-  activeTab, 
-  setActiveTab, 
-  ws, 
-  sendMessage, 
+function MainContent({
+  selectedProject,
+  selectedSession,
+  activeTab,
+  setActiveTab,
+  ws,
+  sendMessage,
   messages,
   isMobile,
   isPWA,
@@ -44,18 +44,23 @@ function MainContent({
   // Session Protection Props: Functions passed down from App.jsx to manage active session state
   // These functions control when project updates are paused during active conversations
   onSessionActive,        // Mark session as active when user sends message
-  onSessionInactive,      // Mark session as inactive when conversation completes/aborts  
+  onSessionInactive,      // Mark session as inactive when conversation completes/aborts
   onReplaceTemporarySession, // Replace temporary session ID with real session ID from WebSocket
   onNavigateToSession,    // Navigate to a specific session (for Claude CLI session duplication workaround)
   onShowSettings,         // Show tools settings panel
   autoExpandTools,        // Auto-expand tool accordions
   showRawParameters,      // Show raw parameters in tool accordions
   autoScrollToBottom,     // Auto-scroll to bottom when new messages arrive
-  sendByCtrlEnter         // Send by Ctrl+Enter mode for East Asian language input
+  sendByCtrlEnter,        // Send by Ctrl+Enter mode for East Asian language input
+  onSessionSelect,        // Session selection handler
+  onNewSession,           // New session handler
+  onSessionDelete,        // Session delete handler
+  projects                // All projects with sessions
 }) {
   const [editingFile, setEditingFile] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showSessionDropdown, setShowSessionDropdown] = useState(false);
   
   // PRD Editor state
   const [showPRDEditor, setShowPRDEditor] = useState(false);
@@ -248,49 +253,150 @@ function MainContent({
                 </svg>
               </button>
             )}
-            <div className="min-w-0 flex items-center gap-2">
-              {activeTab === 'chat' && selectedSession && (
-                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
-                  {selectedSession.__provider === 'cursor' ? (
-                    <CursorLogo className="w-5 h-5" />
-                  ) : (
-                    <ClaudeLogo className="w-5 h-5" />
+            <div className="min-w-0 flex items-center gap-2 relative flex-1">
+              {activeTab === 'chat' ? (
+                <>
+                  <button
+                    onClick={() => setShowSessionDropdown(!showSessionDropdown)}
+                    className="flex items-center gap-2 min-w-0 flex-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-2 py-1 transition-colors"
+                  >
+                    {selectedSession && (
+                      <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                        {selectedSession.__provider === 'cursor' ? (
+                          <CursorLogo className="w-5 h-5" />
+                        ) : (
+                          <ClaudeLogo className="w-5 h-5" />
+                        )}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 text-left">
+                      {selectedSession ? (
+                        <div>
+                          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
+                            {selectedSession.__provider === 'cursor' ? (selectedSession.name || 'Untitled Session') : (selectedSession.summary || 'New Session')}
+                          </h2>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {selectedProject.displayName} <span className="hidden sm:inline">• {selectedSession.id}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                            New Session
+                          </h2>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {selectedProject.displayName}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <svg
+                      className={`w-4 h-4 flex-shrink-0 text-gray-500 transition-transform ${showSessionDropdown ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Session Dropdown */}
+                  {showSessionDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowSessionDropdown(false)}
+                      />
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+                        {/* New Session Button */}
+                        <button
+                          onClick={() => {
+                            onNewSession();
+                            setShowSessionDropdown(false);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+                        >
+                          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span className="font-medium text-gray-900 dark:text-white">New Session</span>
+                        </button>
+
+                        {/* Sessions List */}
+                        {selectedProject?.sessions && selectedProject.sessions.length > 0 ? (
+                          selectedProject.sessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className="relative group"
+                            >
+                              <button
+                                onClick={() => {
+                                  onSessionSelect(session);
+                                  setShowSessionDropdown(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
+                                  selectedSession?.id === session.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 flex-shrink-0">
+                                    {session.__provider === 'cursor' ? (
+                                      <CursorLogo className="w-4 h-4" />
+                                    ) : (
+                                      <ClaudeLogo className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-gray-900 dark:text-white truncate">
+                                      {session.__provider === 'cursor' ? (session.name || 'Untitled Session') : (session.summary || 'New Session')}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                      {new Date(session.createdAt).toLocaleDateString()} • {session.id}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                              {/* Delete button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm('Delete this session?')) {
+                                    onSessionDelete(session.id);
+                                  }
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded transition-opacity"
+                                title="Delete session"
+                              >
+                                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            No sessions yet. Start a new conversation!
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                {activeTab === 'chat' && selectedSession ? (
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
-                      {selectedSession.__provider === 'cursor' ? (selectedSession.name || 'Untitled Session') : (selectedSession.summary || 'New Session')}
-                    </h2>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {selectedProject.displayName} <span className="hidden sm:inline">• {selectedSession.id}</span>
-                    </div>
-                  </div>
-                ) : activeTab === 'chat' && !selectedSession ? (
+                </>
+              ) : (
+                <div className="flex-1 min-w-0">
                   <div>
                     <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                      New Session
-                    </h2>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {selectedProject.displayName}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                      {activeTab === 'files' ? 'Project Files' : 
-                       activeTab === 'git' ? 'Source Control' : 
-                       (activeTab === 'tasks' && shouldShowTasksTab) ? 'TaskMaster' : 
+                      {activeTab === 'files' ? 'Project Files' :
+                       activeTab === 'git' ? 'Source Control' :
+                       (activeTab === 'tasks' && shouldShowTasksTab) ? 'TaskMaster' :
                        'Project'}
                     </h2>
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {selectedProject.displayName}
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
           
