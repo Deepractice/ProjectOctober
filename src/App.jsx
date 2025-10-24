@@ -30,7 +30,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { TaskMasterProvider } from './contexts/TaskMasterContext';
 import { TasksSettingsProvider } from './contexts/TasksSettingsContext';
 import { WebSocketProvider, useWebSocketContext } from './contexts/WebSocketContext';
-import ProtectedRoute from './components/ProtectedRoute';
+// import ProtectedRoute from './components/ProtectedRoute'; // Removed - no auth required
 import { useVersionCheck } from './hooks/useVersionCheck';
 import useLocalStorage from './hooks/useLocalStorage';
 import { api, authenticatedFetch } from './utils/api';
@@ -111,6 +111,24 @@ function AppContent() {
     // Fetch projects on component mount
     fetchProjects();
   }, []);
+
+  // Persist the last selected session so the app can restore it on next load
+  useEffect(() => {
+    if (!selectedSession?.id) {
+      return;
+    }
+    try {
+      localStorage.setItem(
+        'lastSelectedSession',
+        JSON.stringify({
+          id: selectedSession.id,
+          provider: selectedSession.__provider || 'claude'
+        })
+      );
+    } catch (error) {
+      console.warn('Failed to persist last session selection:', error);
+    }
+  }, [selectedSession]);
 
   // Helper function to determine if an update is purely additive (new sessions/projects)
   // vs modifying existing selected items that would interfere with active conversations
@@ -328,6 +346,20 @@ function AppContent() {
       setSelectedSession(null);
       navigate('/');
     }
+
+    // Clear persisted last session if it matches the deleted one
+    try {
+      const stored = localStorage.getItem('lastSelectedSession');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.id === sessionId) {
+          localStorage.removeItem('lastSelectedSession');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to clear last session after deletion:', error);
+      localStorage.removeItem('lastSelectedSession');
+    }
     
     // Update projects state locally instead of full refresh
     setProjects(prevProjects => 
@@ -341,6 +373,61 @@ function AppContent() {
       }))
     );
   };
+
+  // Restore the most recent session when entering the app
+  useEffect(() => {
+    if (sessionId) {
+      return; // Respect explicit session deep links
+    }
+    if (selectedSession || projects.length === 0 || isLoadingProjects) {
+      return;
+    }
+
+    const selectSession = (project, session, provider) => {
+      setSelectedProject(project);
+      setSelectedSession({ ...session, __provider: provider });
+      if (provider === 'cursor') {
+        sessionStorage.setItem('cursorSessionId', session.id);
+      }
+      if (activeTab !== 'git' && activeTab !== 'preview') {
+        setActiveTab('chat');
+      }
+      navigate(`/session/${session.id}`);
+    };
+
+    let storedSelection;
+    try {
+      const stored = localStorage.getItem('lastSelectedSession');
+      storedSelection = stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.warn('Failed to parse last session selection:', error);
+    }
+
+    if (storedSelection?.id) {
+      for (const project of projects) {
+        const provider = storedSelection.provider || 'claude';
+        const candidate = provider === 'cursor'
+          ? project.cursorSessions?.find(s => s.id === storedSelection.id)
+          : project.sessions?.find(s => s.id === storedSelection.id);
+        if (candidate) {
+          selectSession(project, candidate, provider);
+          return;
+        }
+      }
+    }
+
+    // Fallback: choose the most recent session if available
+    for (const project of projects) {
+      if (project.sessions?.length > 0) {
+        selectSession(project, project.sessions[0], 'claude');
+        return;
+      }
+      if (project.cursorSessions?.length > 0) {
+        selectSession(project, project.cursorSessions[0], 'cursor');
+        return;
+      }
+    }
+  }, [sessionId, projects, selectedSession, isLoadingProjects, activeTab, navigate]);
 
 
 
@@ -612,14 +699,12 @@ function App() {
         <WebSocketProvider>
           <TasksSettingsProvider>
             <TaskMasterProvider>
-              <ProtectedRoute>
-                <Router>
-                  <Routes>
-                    <Route path="/" element={<AppContent />} />
-                    <Route path="/session/:sessionId" element={<AppContent />} />
-                  </Routes>
-                </Router>
-              </ProtectedRoute>
+              <Router>
+                <Routes>
+                  <Route path="/" element={<AppContent />} />
+                  <Route path="/session/:sessionId" element={<AppContent />} />
+                </Routes>
+              </Router>
             </TaskMasterProvider>
           </TasksSettingsProvider>
         </WebSocketProvider>

@@ -1,15 +1,11 @@
-// Utility function for authenticated API calls
+// Utility function for API calls (no authentication required)
 export const authenticatedFetch = (url, options = {}) => {
-  const token = localStorage.getItem('auth-token');
-  
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
-  
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`;
-  }
-  
+
+  // No authentication required anymore
+
   return fetch(url, {
     ...options,
     headers: {
