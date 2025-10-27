@@ -33,7 +33,7 @@ import { WebSocketProvider, useWebSocketContext } from './contexts/WebSocketCont
 // import ProtectedRoute from './components/ProtectedRoute'; // Removed - no auth required
 import { useVersionCheck } from './hooks/useVersionCheck';
 import useLocalStorage from './hooks/useLocalStorage';
-import { api, authenticatedFetch } from './utils/api';
+import { authenticatedFetch } from './utils/api';
 
 
 // Main App component with routing
@@ -308,12 +308,6 @@ function AppContent() {
     }
   }, [sessionId, projects, navigate]);
 
-  const handleProjectSelect = (project) => {
-    setSelectedProject(project);
-    setSelectedSession(null);
-    navigate('/');
-  };
-
   const handleSessionSelect = (session) => {
     setSelectedSession(session);
     // Only switch to chat tab when user explicitly selects a session
@@ -334,7 +328,14 @@ function AppContent() {
   };
 
   const handleNewSession = (project) => {
-    setSelectedProject(project);
+    const targetProject = project
+      || selectedProject
+      || (projects.length === 1 ? projects[0] : null);
+
+    if (targetProject && targetProject !== selectedProject) {
+      setSelectedProject(targetProject);
+    }
+
     setSelectedSession(null);
     setActiveTab('chat');
     navigate('/');
@@ -429,69 +430,6 @@ function AppContent() {
     }
   }, [sessionId, projects, selectedSession, isLoadingProjects, activeTab, navigate]);
 
-
-
-  const handleSidebarRefresh = async () => {
-    // Refresh only the sessions for all projects, don't change selected state
-    try {
-      const response = await api.projects();
-      const freshProjects = await response.json();
-      
-      // Optimize to preserve object references and minimize re-renders
-      setProjects(prevProjects => {
-        // Check if projects data has actually changed
-        const hasChanges = freshProjects.some((newProject, index) => {
-          const prevProject = prevProjects[index];
-          if (!prevProject) return true;
-          
-          return (
-            newProject.name !== prevProject.name ||
-            newProject.displayName !== prevProject.displayName ||
-            newProject.fullPath !== prevProject.fullPath ||
-            JSON.stringify(newProject.sessionMeta) !== JSON.stringify(prevProject.sessionMeta) ||
-            JSON.stringify(newProject.sessions) !== JSON.stringify(prevProject.sessions)
-          );
-        }) || freshProjects.length !== prevProjects.length;
-        
-        return hasChanges ? freshProjects : prevProjects;
-      });
-      
-      // If we have a selected project, make sure it's still selected after refresh
-      if (selectedProject) {
-        const refreshedProject = freshProjects.find(p => p.name === selectedProject.name);
-        if (refreshedProject) {
-          // Only update selected project if it actually changed
-          if (JSON.stringify(refreshedProject) !== JSON.stringify(selectedProject)) {
-            setSelectedProject(refreshedProject);
-          }
-          
-          // If we have a selected session, try to find it in the refreshed project
-          if (selectedSession) {
-            const refreshedSession = refreshedProject.sessions?.find(s => s.id === selectedSession.id);
-            if (refreshedSession && JSON.stringify(refreshedSession) !== JSON.stringify(selectedSession)) {
-              setSelectedSession(refreshedSession);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error refreshing sidebar:', error);
-    }
-  };
-
-  const handleProjectDelete = (projectName) => {
-    // If the deleted project was currently selected, clear it
-    if (selectedProject?.name === projectName) {
-      setSelectedProject(null);
-      setSelectedSession(null);
-      navigate('/');
-    }
-    
-    // Update projects state locally instead of full refresh
-    setProjects(prevProjects => 
-      prevProjects.filter(project => project.name !== projectName)
-    );
-  };
 
   // Session Protection Functions: Manage the lifecycle of active sessions
   
