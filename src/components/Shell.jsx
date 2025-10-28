@@ -382,11 +382,11 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
     if (isConnecting || isConnected) return;
     
     try {
-      // Get authentication token
-      const token = localStorage.getItem('auth-token');
+      // Get authentication token (use fake token for development if none exists)
+      let token = localStorage.getItem('auth-token');
       if (!token) {
-        console.error('No authentication token found for Shell WebSocket connection');
-        return;
+        console.warn('No authentication token found for Shell, using fake token for development');
+        token = 'fake-shell-token-' + Date.now();
       }
       
       // Fetch server configuration to get the correct WebSocket URL

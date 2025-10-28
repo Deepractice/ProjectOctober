@@ -145,9 +145,26 @@ const wss = new WebSocketServer({
     server,
     verifyClient: (info) => {
         console.log('WebSocket connection attempt to:', info.req.url);
-        // No authentication required - allow all connections
-        console.log('✅ WebSocket connection allowed (no auth required)');
-        return true;
+        
+        try {
+            // Parse URL to get query parameters
+            const url = new URL(info.req.url, 'http://localhost');
+            const token = url.searchParams.get('token');
+            
+            if (!token) {
+                console.log('❌ WebSocket connection rejected: No token provided');
+                return false;
+            }
+            
+            // 假实现：任意token都能通过验证
+            console.log('✅ WebSocket connection allowed (fake auth) with token:', token.substring(0, 10) + '...');
+            // Store fake user info in the request for later use
+            info.req.user = { username: 'dev-user', id: 1 };
+            return true;
+        } catch (error) {
+            console.error('❌ WebSocket authentication error:', error);
+            return false;
+        }
     }
 });
 
@@ -654,50 +671,43 @@ function handleShellConnection(ws) {
                 }));
 
                 try {
+                    // Verify project path exists and is accessible
+                    let workingDirectory = projectPath;
+                    try {
+                        await fsPromises.access(projectPath, fs.constants.F_OK);
+                        console.log('✅ Project path verified:', projectPath);
+                    } catch (error) {
+                        console.warn('⚠️ Project path not accessible, using home directory:', error.message);
+                        workingDirectory = process.env.HOME || (os.platform() === 'win32' ? process.env.USERPROFILE : '/');
+                    }
+
                     // Prepare the shell command adapted to the platform and provider
                     let shellCommand;
                     if (isPlainShell) {
-                        // Plain shell mode - just run the initial command in the project directory
-                        if (os.platform() === 'win32') {
-                            shellCommand = `Set-Location -Path "${projectPath}"; ${initialCommand}`;
-                        } else {
-                            shellCommand = `cd "${projectPath}" && ${initialCommand}`;
-                        }
+                        // Plain shell mode - just run the initial command
+                        shellCommand = initialCommand;
                     } else if (provider === 'cursor') {
                         // Use cursor-agent command
-                        if (os.platform() === 'win32') {
-                            if (hasSession && sessionId) {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent --resume="${sessionId}"`;
-                            } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent`;
-                            }
+                        if (hasSession && sessionId) {
+                            shellCommand = `cursor-agent --resume="${sessionId}"`;
                         } else {
-                            if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && cursor-agent --resume="${sessionId}"`;
-                            } else {
-                                shellCommand = `cd "${projectPath}" && cursor-agent`;
-                            }
+                            shellCommand = 'cursor-agent';
                         }
                     } else {
                         // Use claude command (default) or initialCommand if provided
                         const command = initialCommand || 'claude';
-                        if (os.platform() === 'win32') {
-                            if (hasSession && sessionId) {
-                                // Try to resume session, but with fallback to new session if it fails
-                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`;
-                            } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; ${command}`;
-                            }
+                        if (hasSession && sessionId) {
+                            // Try to resume session, but with fallback to new session if it fails
+                            shellCommand = os.platform() === 'win32' 
+                                ? `claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`
+                                : `claude --resume ${sessionId} || claude`;
                         } else {
-                            if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
-                            } else {
-                                shellCommand = `cd "${projectPath}" && ${command}`;
-                            }
+                            shellCommand = command;
                         }
                     }
 
                     console.log('🔧 Executing shell command:', shellCommand);
+                    console.log('📁 Working directory:', workingDirectory);
 
                     // Use appropriate shell based on platform
                     const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
@@ -707,7 +717,7 @@ function handleShellConnection(ws) {
                         name: 'xterm-256color',
                         cols: 80,
                         rows: 24,
-                        cwd: process.env.HOME || (os.platform() === 'win32' ? process.env.USERPROFILE : '/'),
+                        cwd: workingDirectory,
                         env: {
                             ...process.env,
                             TERM: 'xterm-256color',
