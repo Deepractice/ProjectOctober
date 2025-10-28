@@ -255,9 +255,9 @@ d
 
 ## License
 
-GNU General Public License v3.0 - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-This project is open source and free to use, modify, and distribute under the GPL v3 license.
+This project is open source and free to use, modify, and distribute under the MIT license.
 
 ## Acknowledgments
 
