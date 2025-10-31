@@ -13,10 +13,11 @@ services:
       - .env
     ports:
       - "3001:3001"
+      - "5173:5173"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - CLAUDE_CLI_PATH=claude
+      - CLAUDE_CLI_PATH=/usr/local/bin/claude
       # 认证配置（可选）
       - USE_EXTERNAL_AUTH=false
       - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-change-in-production}
@@ -28,6 +29,9 @@ services:
       - ~/.ssh:/home/claudeuser/.ssh:ro
       # Git 配置
       - ~/.gitconfig:/home/claudeuser/.gitconfig:ro
+      # Project directory (configured via PROJECT_PATH in .env)
+      # If not set, the container will start without a project
+      - ${PROJECT_PATH:-.}:/project
     restart: unless-stopped
     networks:
       - claude-network
