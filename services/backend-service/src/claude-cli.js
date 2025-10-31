@@ -1,11 +1,42 @@
-import { spawn } from 'child_process';
 import crossSpawn from 'cross-spawn';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Use cross-spawn on Windows for better command execution
-const spawnFunction = process.platform === 'win32' ? crossSpawn : spawn;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Get the claude CLI path
+const getClaudePath = () => {
+  // Priority:
+  // 1. Environment variable (for custom paths)
+  if (process.env.CLAUDE_CLI_PATH) {
+    return process.env.CLAUDE_CLI_PATH;
+  }
+
+  // 2. Production build: use bundled claude in dist/node_modules
+  const isDev = __dirname.includes('/src');
+  if (!isDev) {
+    try {
+      // dist/node_modules/@anthropic-ai/claude-code/package.json
+      const packageJsonPath = path.join(__dirname, 'node_modules', '@anthropic-ai', 'claude-code', 'package.json');
+      const packageJson = JSON.parse(require('fs').readFileSync(packageJsonPath, 'utf8'));
+
+      if (packageJson.bin && packageJson.bin.claude) {
+        // Get the actual bin file path
+        const binPath = path.join(__dirname, 'node_modules', '@anthropic-ai', 'claude-code', packageJson.bin.claude);
+        return binPath;
+      }
+    } catch (e) {
+      console.warn('⚠️  Bundled claude CLI not found, falling back to system claude');
+    }
+  }
+
+  // 3. Development or fallback: use 'claude' (cross-spawn will resolve from node_modules/.bin)
+  return 'claude';
+};
 
 let activeClaudeProcesses = new Map(); // Track active processes by session ID
 
@@ -237,11 +268,12 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Full command args:', JSON.stringify(args, null, 2));
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
-    // Use Claude CLI from environment variable or default to 'claude'
-    const claudePath = process.env.CLAUDE_CLI_PATH || 'claude';
-    console.log('🔍 Using Claude CLI path:', claudePath);
-    
-    const claudeProcess = spawnFunction(claudePath, args, {
+    // Use Claude CLI - cross-spawn will auto-find in node_modules/.bin
+    const claudePath = getClaudePath();
+    console.log('🔍 Using Claude CLI command:', claudePath);
+
+    // Always use cross-spawn - it handles node_modules/.bin resolution across all platforms
+    const claudeProcess = crossSpawn(claudePath, args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env } // Inherit all environment variables

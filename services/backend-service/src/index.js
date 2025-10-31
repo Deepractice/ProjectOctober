@@ -40,13 +40,14 @@ import mime from 'mime-types';
 import { getProjects, getSessions, getSessionMessages, renameProject, deleteSession, deleteProject, addProjectManually, extractProjectDirectory, clearProjectDirectoryCache } from './projects.js';
 import { spawnClaude, abortClaudeSession } from './claude-cli.js';
 import { spawnCursor, abortCursorSession } from './cursor-cli.js';
+import { mapProjectName, getClaudeProjectDirName } from './project-mapper.js';
 import gitRoutes from './routes/git.js';
 import authRoutes from './routes/auth.js';
 import mcpRoutes from './routes/mcp.js';
 import cursorRoutes from './routes/cursor.js';
 import taskmasterRoutes from './routes/taskmaster.js';
 import mcpUtilsRoutes from './routes/mcp-utils.js';
-import { initializeDatabase } from './database/db.js';
+import { initializeDatabase } from './db.js';
 import { validateApiKey,  authenticateWebSocket } from './middleware/auth.js';
 
 // File system watcher for projects folder
@@ -228,7 +229,9 @@ app.get('/api/projects', async (req, res) => {
 app.get('/api/projects/:projectName/sessions',  async (req, res) => {
     try {
         const { limit = 5, offset = 0 } = req.query;
-        const result = await getSessions(req.params.projectName, parseInt(limit), parseInt(offset));
+        // Map project name to Claude directory name
+        const claudeDirName = getClaudeProjectDirName(mapProjectName(req.params.projectName));
+        const result = await getSessions(claudeDirName, parseInt(limit), parseInt(offset));
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -240,13 +243,16 @@ app.get('/api/projects/:projectName/sessions/:sessionId/messages',  async (req, 
     try {
         const { projectName, sessionId } = req.params;
         const { limit, offset } = req.query;
-        
+
+        // Map project name to Claude directory name
+        const claudeDirName = getClaudeProjectDirName(mapProjectName(projectName));
+
         // Parse limit and offset if provided
         const parsedLimit = limit ? parseInt(limit, 10) : null;
         const parsedOffset = offset ? parseInt(offset, 10) : 0;
-        
-        const result = await getSessionMessages(projectName, sessionId, parsedLimit, parsedOffset);
-        
+
+        const result = await getSessionMessages(claudeDirName, sessionId, parsedLimit, parsedOffset);
+
         // Handle both old and new response formats
         if (Array.isArray(result)) {
             // Backward compatibility: no pagination parameters were provided
@@ -495,18 +501,8 @@ app.put('/api/projects/:projectName/file',  async (req, res) => {
 
 app.get('/api/projects/:projectName/files',  async (req, res) => {
     try {
-
-        // Using fsPromises from import
-
-        // Use extractProjectDirectory to get the actual project path
-        let actualPath;
-        try {
-            actualPath = await extractProjectDirectory(req.params.projectName);
-        } catch (error) {
-            console.error('Error extracting project directory:', error);
-            // Fallback to simple dash replacement
-            actualPath = req.params.projectName.replace(/-/g, '/');
-        }
+        // Map project name to actual file system path
+        const actualPath = mapProjectName(req.params.projectName);
 
         // Check if path exists
         try {
@@ -516,7 +512,6 @@ app.get('/api/projects/:projectName/files',  async (req, res) => {
         }
 
         const files = await getFileTree(actualPath, 10, 0, true);
-        const hiddenFiles = files.filter(f => f.name.startsWith('.'));
         res.json(files);
     } catch (error) {
         console.error('❌ File tree error:', error.message);

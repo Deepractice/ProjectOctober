@@ -7,8 +7,21 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = path.join(__dirname, 'auth.db');
-const INIT_SQL_PATH = path.join(__dirname, 'init.sql');
+// Determine environment and set paths accordingly
+const isDev = __dirname.includes('/src');
+
+let DB_PATH, INIT_SQL_PATH;
+
+if (isDev) {
+  // Development: use migrations/ directory
+  const projectRoot = path.resolve(__dirname, '..');
+  DB_PATH = path.join(projectRoot, 'migrations', 'auth.db');
+  INIT_SQL_PATH = path.join(projectRoot, 'migrations', 'init.sql');
+} else {
+  // Production: database is in dist/ (created at build time)
+  DB_PATH = path.join(__dirname, 'auth.db');
+  INIT_SQL_PATH = null; // Not needed in production
+}
 
 // Create database connection
 const db = new Database(DB_PATH);
@@ -17,9 +30,15 @@ console.log('Connected to SQLite database');
 // Initialize database with schema
 const initializeDatabase = async () => {
   try {
-    const initSQL = fs.readFileSync(INIT_SQL_PATH, 'utf8');
-    db.exec(initSQL);
-    console.log('Database initialized successfully');
+    if (isDev && INIT_SQL_PATH) {
+      // Development: initialize from init.sql
+      const initSQL = fs.readFileSync(INIT_SQL_PATH, 'utf8');
+      db.exec(initSQL);
+      console.log('Database initialized successfully (dev mode)');
+    } else {
+      // Production: database already initialized at build time
+      console.log('Database already initialized (production mode)');
+    }
   } catch (error) {
     console.error('Error initializing database:', error.message);
     throw error;

@@ -2,12 +2,15 @@
   "name": "backend-service",
   "version": "1.8.12",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "node src/index.js",
-    "start": "node src/index.js"
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "start:dev": "node src/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^2.0.30",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
     "chokidar": "^4.0.3",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "node-gyp": "^10.0.0",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "tsup": "^8.5.0"
   }
 }

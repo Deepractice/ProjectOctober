@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { userDb } from '../database/db.js';
+import { userDb } from '../db.js';
 
 // Get JWT secret from environment or use default (for development)
 const JWT_SECRET = process.env.JWT_SECRET || 'claude-ui-dev-secret-change-in-production';

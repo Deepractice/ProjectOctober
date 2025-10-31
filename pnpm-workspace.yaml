@@ -1,3 +1,11 @@
 packages:
   - apps/*
   - services/*
+
+ignoredBuiltDependencies:
+  - bcrypt
+  - better-sqlite3
+  - esbuild
+  - node-pty
+  - sharp
+  - sqlite3

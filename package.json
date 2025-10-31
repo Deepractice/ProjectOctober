@@ -31,5 +31,8 @@
     "auto-changelog": "^2.5.0",
     "release-it": "^19.0.5",
     "turbo": "^2.5.8"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "better-sqlite3", "esbuild", "node-pty", "sharp", "sqlite3"]
   }
 }

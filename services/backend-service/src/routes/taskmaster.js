@@ -16,7 +16,7 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import os from 'os';
-import { extractProjectDirectory } from '../projects.js';
+import { mapProjectName } from '../project-mapper.js';
 import { detectTaskMasterMCPServer } from '../utils/mcp-detector.js';
 import { broadcastTaskMasterProjectUpdate, broadcastTaskMasterTasksUpdate } from '../utils/taskmaster-websocket.js';
 
@@ -278,19 +278,9 @@ router.get('/installation-status', async (req, res) => {
 router.get('/detect/:projectName', async (req, res) => {
     try {
         const { projectName } = req.params;
-        
-        // Use the existing extractProjectDirectory function to get actual project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            console.error('Error extracting project directory:', error);
-            return res.status(404).json({
-                error: 'Project path not found',
-                projectName,
-                message: error.message
-            });
-        }
+
+        // Map project name to actual file system path
+        const projectPath = mapProjectName(projectName);
         
         // Verify the project path exists
         try {
@@ -365,17 +355,8 @@ router.get('/detect-all', async (req, res) => {
         // Run detection for all projects in parallel
         const detectionPromises = projects.map(async (project) => {
             try {
-                // Use the project's fullPath if available, otherwise extract the directory
-                let projectPath;
-                if (project.fullPath) {
-                    projectPath = project.fullPath;
-                } else {
-                    try {
-                        projectPath = await extractProjectDirectory(project.name);
-                    } catch (error) {
-                        throw new Error(`Failed to extract project directory: ${error.message}`);
-                    }
-                }
+                // Use project fullPath or map the project name
+                let projectPath = project.fullPath || mapProjectName(project.name);
                 
                 const [taskMasterResult, mcpResult] = await Promise.all([
                     detectTaskMasterFolder(projectPath),
@@ -471,15 +452,7 @@ router.get('/next/:projectName', async (req, res) => {
         const { projectName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         // Try to execute task-master next command
         try {
@@ -580,15 +553,7 @@ router.get('/tasks/:projectName', async (req, res) => {
         const { projectName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const taskMasterPath = path.join(projectPath, '.taskmaster');
         const tasksFilePath = path.join(taskMasterPath, 'tasks', 'tasks.json');
@@ -695,15 +660,7 @@ router.get('/prd/:projectName', async (req, res) => {
         const { projectName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const docsPath = path.join(projectPath, '.taskmaster', 'docs');
         
@@ -787,15 +744,7 @@ router.post('/prd/:projectName', async (req, res) => {
         }
 
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const docsPath = path.join(projectPath, '.taskmaster', 'docs');
         const filePath = path.join(docsPath, fileName);
@@ -856,15 +805,7 @@ router.get('/prd/:projectName/:fileName', async (req, res) => {
         const { projectName, fileName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const filePath = path.join(projectPath, '.taskmaster', 'docs', fileName);
         
@@ -921,15 +862,7 @@ router.delete('/prd/:projectName/:fileName', async (req, res) => {
         const { projectName, fileName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const filePath = path.join(projectPath, '.taskmaster', 'docs', fileName);
         
@@ -981,15 +914,7 @@ router.post('/init/:projectName', async (req, res) => {
         const { projectName } = req.params;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         // Check if TaskMaster is already initialized
         const taskMasterPath = path.join(projectPath, '.taskmaster');
@@ -1078,15 +1003,7 @@ router.post('/add-task/:projectName', async (req, res) => {
         }
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         // Build the task-master add-task command
         const args = ['task-master-ai', 'add-task'];
@@ -1175,15 +1092,7 @@ router.put('/update-task/:projectName/:taskId', async (req, res) => {
         const { title, description, status, priority, details } = req.body;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         // If only updating status, use set-status command
         if (status && Object.keys(req.body).length === 1) {
@@ -1302,15 +1211,7 @@ router.post('/parse-prd/:projectName', async (req, res) => {
         const { fileName = 'prd.txt', numTasks, append = false } = req.body;
         
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         const prdPath = path.join(projectPath, '.taskmaster', 'docs', fileName);
         
@@ -1856,15 +1757,7 @@ router.post('/apply-template/:projectName', async (req, res) => {
         }
 
         // Get project path
-        let projectPath;
-        try {
-            projectPath = await extractProjectDirectory(projectName);
-        } catch (error) {
-            return res.status(404).json({
-                error: 'Project not found',
-                message: `Project "${projectName}" does not exist`
-            });
-        }
+        const projectPath = mapProjectName(projectName);
 
         // Get the template content (this would normally fetch from the templates list)
         const templates = await getAvailableTemplates();
