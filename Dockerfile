@@ -145,7 +145,7 @@ exec node server/index.js\n\
 # 设置环境变量
 ENV NODE_ENV=production \
     PORT=3001 \
-    CLAUDE_CLI_PATH=claude \
+    CLAUDE_CLI_PATH=/usr/local/bin/claude \
     HOME=/home/node
 
 # 切换到 node 用户
