@@ -91,60 +91,16 @@ RUN apt-get update && \
 RUN printf '#!/bin/bash\n\
 set -e\n\
 \n\
-echo "🔧 设置运行时权限..."\n\
-sudo chmod -R 777 /opt/claude-config 2>/dev/null || true\n\
-sudo chown -R node:node /app 2>/dev/null || true\n\
-\n\
-# 检查项目目录权限（如果宿主机已设置正确UID:1000则跳过）\n\
-if [ -d "/project" ]; then\n\
-  PROJECT_UID=$(stat -c "%u" /project 2>/dev/null || stat -f "%u" /project 2>/dev/null)\n\
-  if [ "$PROJECT_UID" != "1000" ]; then\n\
-    echo "📂 设置 /project 目录权限 (当前UID: $PROJECT_UID)..."\n\
-    sudo chown node:node /project 2>/dev/null || true\n\
-  else\n\
-    echo "✓ /project 目录权限已正确设置 (UID: 1000)"\n\
-  fi\n\
-fi\n\
-\n\
-echo "📁 创建必要的目录结构..."\n\
-mkdir -p /opt/claude-config/.claude 2>/dev/null || true\n\
-\n\
-# 启动 Vite 开发服务器（如果项目存在）\n\
-if [ -d "/project" ] && [ -f "/project/package.json" ]; then\n\
-  echo "🚀 检测到项目，准备启动 Vite 开发服务器..."\n\
-  cd /project\n\
-  \n\
-  # 检查并安装依赖\n\
-  if [ ! -d "node_modules" ]; then\n\
-    echo "📦 安装项目依赖（包括开发依赖）..."\n\
-    # 检查是否需要设置权限\n\
-    if [ "$PROJECT_UID" != "1000" ]; then\n\
-      echo "⚙️  后台设置文件权限..."\n\
-      (sudo chown -R node:node /project 2>/dev/null || true) &\n\
-    fi\n\
-    npm install --registry=https://registry.npmmirror.com/ 2>&1 | tail -20\n\
-  else\n\
-    echo "✓ node_modules 已存在，跳过安装"\n\
-  fi\n\
-  \n\
-  # 后台启动 Vite\n\
-  echo "✅ 启动 Vite 开发服务器 (端口 5173)..."\n\
-  npx vite --host 0.0.0.0 --port 5173 > /tmp/vite.log 2>&1 &\n\
-  VITE_PID=$!\n\
-  echo "Vite 进程 ID: $VITE_PID"\n\
-  \n\
-  cd /app\n\
-else\n\
-  echo "⚠️  未检测到 /project 目录或 package.json，跳过 Vite 启动"\n\
-fi\n\
-\n\
-echo "✅ 启动 Claude Code UI 服务器 (端口 3001, 用户: node)..."\n\
+# 定义带时间戳的日志函数\n\
+log_with_time() {\n\
+  echo "[$(date "+%%Y-%%m-%%d %%H:%%M:%%S")] $1"\n\
+}\n\
+log_with_time "✅ 启动 Claude Code UI 服务器 (端口 3001, 用户: node)..."\n\
 exec node server/index.js\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # 设置环境变量
-ENV NODE_ENV=production \
-    PORT=3001 \
+ENV PORT=3001 \
     CLAUDE_CLI_PATH=claude \
     HOME=/home/node
 
@@ -152,7 +108,7 @@ ENV NODE_ENV=production \
 USER node
 
 # 暴露端口
-EXPOSE 3001 5173
+EXPOSE 3001
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
