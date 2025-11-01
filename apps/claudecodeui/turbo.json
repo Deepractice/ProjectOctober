@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": []
+    },
+    "build": {
+      "outputs": ["dist/**"],
+      "dependsOn": []
+    },
+    "server": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build"]
+    },
+    "client": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": []
+    },
+    "start": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build"]
+    }
+  }
+}
