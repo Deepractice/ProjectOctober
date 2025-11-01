@@ -436,7 +436,6 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
                 projectPath: selectedProject.fullPath || selectedProject.path,
                 sessionId: isPlainShell ? null : selectedSession?.id,
                 hasSession: isPlainShell ? false : !!selectedSession,
-                provider: isPlainShell ? 'plain-shell' : (selectedSession?.__provider || 'claude'),
                 cols: terminal.current.cols,
                 rows: terminal.current.rows,
                 initialCommand: initialCommand,
@@ -547,16 +546,11 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            {selectedSession && (() => {
-              const displaySessionName = selectedSession.__provider === 'cursor'
-                ? (selectedSession.name || 'Untitled Session')
-                : (selectedSession.summary || 'New Session');
-              return (
-                <span className="text-xs text-blue-300">
-                  ({displaySessionName.slice(0, 30)}...)
-                </span>
-              );
-            })()}
+            {selectedSession && (
+              <span className="text-xs text-blue-300">
+                ({(selectedSession.summary || 'New Session').slice(0, 30)}...)
+              </span>
+            )}
             {!selectedSession && (
               <span className="text-xs text-gray-400">(New Session)</span>
             )}
@@ -622,15 +616,10 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
                 <span>Continue in Shell</span>
               </button>
               <p className="text-gray-400 text-sm mt-3 px-2">
-                {isPlainShell ? 
+                {isPlainShell ?
                   `Run ${initialCommand || 'command'} in ${selectedProject.displayName}` :
-                  selectedSession ? 
-                    (() => {
-                      const displaySessionName = selectedSession.__provider === 'cursor'
-                        ? (selectedSession.name || 'Untitled Session')
-                        : (selectedSession.summary || 'New Session');
-                      return `Resume session: ${displaySessionName.slice(0, 50)}...`;
-                    })() : 
+                  selectedSession ?
+                    `Resume session: ${(selectedSession.summary || 'New Session').slice(0, 50)}...` :
                     'Start a new Claude session'
                 }
               </p>

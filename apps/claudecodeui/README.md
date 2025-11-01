@@ -1,10 +1,10 @@
 # Claude Code UI
 
-A web-based UI for Claude Code CLI and Cursor CLI that enables desktop and mobile access to your AI coding sessions.
+A web-based UI for Claude Code CLI that enables desktop and mobile access to your AI coding sessions.
 
 **Part of Project October Monorepo**
 
-A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Cursor CLI](https://docs.cursor.com/en/cli/overview). You can use it locally or remotely to view your active projects and sessions in Claude Code or Cursor and make changes to them from everywhere (mobile or desktop). Supports models including **Claude Sonnet 4**, **Opus 4.1**, and **GPT-5**
+A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). You can use it locally or remotely to view your active projects and sessions in Claude Code and make changes to them from everywhere (mobile or desktop). Supports Claude models including **Sonnet 4** and **Opus 4.1**
 
 ## Screenshots
 
@@ -25,14 +25,6 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 <em>Responsive mobile design with touch navigation</em>
 </td>
 </tr>
-<tr>
-<td align="center" colspan="2">
-<h3>CLI Selection</h3>
-<img src="public/screenshots/cli-selection.png" alt="CLI Selection" width="400">
-<br>
-<em>Select between Claude Code and Cursor CLI</em>
-</td>
-</tr>
 </table>
 
 
@@ -41,14 +33,14 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 
 ## Features
 
-- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Claude Code from mobile 
-- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Claude Code or Cursor
-- **Integrated Shell Terminal** - Direct access to Claude Code or Cursor CLI through built-in shell functionality
+- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Claude Code from mobile
+- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Claude Code
+- **Integrated Shell Terminal** - Direct access to Claude Code CLI through built-in shell functionality
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
-- **Git Explorer** - View, stage and commit your changes. You can also switch branches 
+- **Git Explorer** - View, stage and commit your changes. You can also switch branches
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
 - **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
-- **Model Compatibility** - Works with Claude Sonnet 4, Opus 4.1, and GPT-5
+- **Model Compatibility** - Works with Claude Sonnet 4 and Opus 4.1
 
 
 ## Quick Start
@@ -56,8 +48,7 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v20 or higher
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured, and/or
-- [Cursor CLI](https://docs.cursor.com/en/cli/overview) installed and configured
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
 
 ### One-click Operation (Recommended)
 
@@ -187,7 +178,7 @@ The UI automatically discovers Claude Code projects from `~/.claude/projects/` a
 - **MCP support** - Add your own MCP servers through the UI 
 
 #### Chat Interface
-- **Use responsive chat or Claude Code/Cursor CLI** - You can either use the adapted chat interface or use the shell button to connect to your selected CLI. 
+- **Use responsive chat or Claude Code CLI** - You can either use the adapted chat interface or use the shell button to connect to Claude Code CLI
 - **Real-time Communication** - Stream responses from Claude with WebSocket connection
 - **Session Management** - Resume previous conversations or start fresh sessions
 - **Message History** - Complete conversation history with timestamps and metadata
@@ -234,7 +225,7 @@ The UI automatically discovers Claude Code projects from `~/.claude/projects/` a
 ### Backend (Node.js + Express)
 - **Express Server** - RESTful API with static file serving
 - **WebSocket Server** - Communication for chats and project refresh
-- **CLI Integration (Claude Code / Cursor)** - Process spawning and management
+- **CLI Integration** - Claude Code process spawning and management
 - **Session Management** - JSONL parsing and conversation persistence
 - **File System API** - Exposing file browser for projects
 

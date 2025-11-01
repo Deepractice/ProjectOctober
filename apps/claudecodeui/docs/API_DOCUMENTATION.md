@@ -148,15 +148,14 @@ Authorization: Bearer <token>
       "total": 5,
       "hasMore": false
     },
-    "sessions": [...],
-    "cursorSessions": [...]
+    "sessions": [...]
   }
 ]
 ```
 
 **Notes**:
 - Automatically discovers projects from `~/.claude/projects/`
-- Includes both Claude and Cursor sessions
+- Includes Claude Code sessions
 
 #### 2.2 Get Project Sessions
 ```http
@@ -571,8 +570,7 @@ Authorization: Bearer <token>
 ```json
 {
   "project": "project-name",
-  "files": ["file1.js", "file2.js"],
-  "provider": "claude"
+  "files": ["file1.js", "file2.js"]
 }
 ```
 
@@ -584,7 +582,7 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
-- Uses Claude SDK or Cursor CLI to generate conventional commit messages
+- Uses Claude SDK to generate conventional commit messages
 - Analyzes git diffs to understand changes
 - Format: `type(scope): subject\n\nbody`
 
@@ -936,229 +934,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 6. Cursor APIs (`/api/cursor`)
+### 6. Command APIs (`/api/commands`)
 
-#### 6.1 Get Cursor Config
-```http
-GET /api/cursor/config
-Authorization: Bearer <token>
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "config": {
-    "version": 1,
-    "model": {
-      "modelId": "gpt-5",
-      "displayName": "GPT-5"
-    },
-    "permissions": {
-      "allow": [],
-      "deny": []
-    }
-  },
-  "path": "/Users/user/.cursor/cli-config.json"
-}
-```
-
-#### 6.2 Update Cursor Config
-```http
-POST /api/cursor/config
-Authorization: Bearer <token>
-```
-
-**Request Body**:
-```json
-{
-  "permissions": {
-    "allow": ["read", "write"],
-    "deny": []
-  },
-  "model": {
-    "modelId": "gpt-5",
-    "displayName": "GPT-5"
-  }
-}
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "config": {...},
-  "message": "Cursor configuration updated successfully"
-}
-```
-
-#### 6.3 Get Cursor MCP Servers
-```http
-GET /api/cursor/mcp
-Authorization: Bearer <token>
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "servers": [
-    {
-      "id": "my-server",
-      "name": "my-server",
-      "type": "stdio",
-      "scope": "cursor",
-      "config": {...},
-      "raw": {...}
-    }
-  ],
-  "path": "/Users/user/.cursor/mcp.json"
-}
-```
-
-#### 6.4 Add MCP Server to Cursor
-```http
-POST /api/cursor/mcp/add
-Authorization: Bearer <token>
-```
-
-**Request Body**:
-```json
-{
-  "name": "my-server",
-  "type": "stdio",
-  "command": "npx",
-  "args": ["-y", "package"],
-  "env": {}
-}
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "MCP server added to Cursor configuration",
-  "config": {...}
-}
-```
-
-#### 6.5 Remove MCP Server from Cursor
-```http
-DELETE /api/cursor/mcp/:name
-Authorization: Bearer <token>
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "MCP server removed from Cursor configuration",
-  "config": {...}
-}
-```
-
-#### 6.6 Add MCP Server to Cursor (JSON)
-```http
-POST /api/cursor/mcp/add-json
-Authorization: Bearer <token>
-```
-
-**Request Body**:
-```json
-{
-  "name": "my-server",
-  "jsonConfig": {
-    "command": "npx",
-    "args": ["-y", "package"]
-  }
-}
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "MCP server added via JSON",
-  "config": {...}
-}
-```
-
-#### 6.7 Get Cursor Sessions
-```http
-GET /api/cursor/sessions?projectPath=/path/to/project
-Authorization: Bearer <token>
-```
-
-**Query Parameters**:
-- `projectPath` (required): Project directory path
-
-**Response**:
-```json
-{
-  "success": true,
-  "sessions": [
-    {
-      "id": "session-id",
-      "name": "Session Name",
-      "createdAt": "2025-01-01T00:00:00Z",
-      "mode": "chat",
-      "projectPath": "/path/to/project",
-      "lastMessage": "Preview of last message...",
-      "messageCount": 15
-    }
-  ],
-  "cwdId": "md5-hash",
-  "path": "/Users/user/.cursor/chats/md5-hash"
-}
-```
-
-**Notes**:
-- Uses MD5 hash of project path as cwdId
-- Reads from SQLite database in `~/.cursor/chats/<cwdId>/<sessionId>/store.db`
-
-#### 6.8 Get Cursor Session Details
-```http
-GET /api/cursor/sessions/:sessionId?projectPath=/path/to/project
-Authorization: Bearer <token>
-```
-
-**Query Parameters**:
-- `projectPath` (required): Project directory path
-
-**Response**:
-```json
-{
-  "success": true,
-  "session": {
-    "id": "session-id",
-    "projectPath": "/path/to/project",
-    "messages": [
-      {
-        "id": "blob-hash",
-        "sequence": 1,
-        "rowid": 1,
-        "content": {
-          "role": "user",
-          "content": "Hello"
-        }
-      }
-    ],
-    "metadata": {...},
-    "cwdId": "md5-hash"
-  }
-}
-```
-
-**Notes**:
-- Parses SQLite database with protobuf DAG structure
-- Performs topological sort for chronological message order
-- Filters out system messages
-
----
-
-### 7. Command APIs (`/api/commands`)
-
-#### 7.1 List Commands
+#### 6.1 List Commands
 ```http
 POST /api/commands/list
 Authorization: Bearer <token>
@@ -1210,7 +988,7 @@ Authorization: Bearer <token>
 - `/status` - Show system status
 - `/rewind [N]` - Rewind conversation by N steps
 
-#### 7.2 Load Command
+#### 6.2 Load Command
 ```http
 POST /api/commands/load
 Authorization: Bearer <token>
@@ -1234,7 +1012,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### 7.3 Execute Command
+#### 6.3 Execute Command
 ```http
 POST /api/commands/execute
 Authorization: Bearer <token>
@@ -1247,7 +1025,6 @@ Authorization: Bearer <token>
   "commandPath": null,
   "args": [],
   "context": {
-    "provider": "claude",
     "model": "claude-sonnet-4.5",
     "projectPath": "/path/to/project",
     "sessionId": "session-id"
@@ -1287,9 +1064,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 8. Settings APIs (`/api/settings`)
+### 7. Settings APIs (`/api/settings`)
 
-#### 8.1 Get API Keys
+#### 7.1 Get API Keys
 ```http
 GET /api/settings/api-keys
 Authorization: Bearer <token>
@@ -1314,7 +1091,7 @@ Authorization: Bearer <token>
 **Notes**:
 - API keys are truncated for security (first 10 chars + "...")
 
-#### 8.2 Create API Key
+#### 7.2 Create API Key
 ```http
 POST /api/settings/api-keys
 Authorization: Bearer <token>
@@ -1345,7 +1122,7 @@ Authorization: Bearer <token>
 - Full API key is only returned on creation
 - API key format: `ccui_<random_64_chars>`
 
-#### 8.3 Delete API Key
+#### 7.3 Delete API Key
 ```http
 DELETE /api/settings/api-keys/:keyId
 Authorization: Bearer <token>
@@ -1358,7 +1135,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### 8.4 Toggle API Key Status
+#### 7.4 Toggle API Key Status
 ```http
 PATCH /api/settings/api-keys/:keyId/toggle
 Authorization: Bearer <token>
@@ -1378,7 +1155,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### 8.5 Get Credentials
+#### 7.5 Get Credentials
 ```http
 GET /api/settings/credentials?type=github
 Authorization: Bearer <token>
@@ -1407,7 +1184,7 @@ Authorization: Bearer <token>
 **Notes**:
 - Credential values are NOT returned for security
 
-#### 8.6 Create Credential
+#### 7.6 Create Credential
 ```http
 POST /api/settings/credentials
 Authorization: Bearer <token>
@@ -1441,7 +1218,7 @@ Authorization: Bearer <token>
 **Notes**:
 - Credential value is encrypted in database
 
-#### 8.7 Delete Credential
+#### 7.7 Delete Credential
 ```http
 DELETE /api/settings/credentials/:credentialId
 Authorization: Bearer <token>
@@ -1454,7 +1231,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### 8.8 Toggle Credential Status
+#### 7.8 Toggle Credential Status
 ```http
 PATCH /api/settings/credentials/:credentialId/toggle
 Authorization: Bearer <token>
@@ -1476,9 +1253,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 9. System APIs
+### 8. System APIs
 
-#### 9.1 Get Server Config
+#### 8.1 Get Server Config
 ```http
 GET /api/config
 Authorization: Bearer <token>
@@ -1492,7 +1269,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### 9.2 System Update
+#### 8.2 System Update
 ```http
 POST /api/system/update
 Authorization: Bearer <token>
@@ -1511,7 +1288,7 @@ Authorization: Bearer <token>
 - Runs: `git checkout main && git pull && npm install`
 - Server restart required after update
 
-#### 9.3 Browse Filesystem
+#### 8.3 Browse Filesystem
 ```http
 GET /api/browse-filesystem?path=/Users/user/Projects
 Authorization: Bearer <token>
@@ -1538,7 +1315,7 @@ Authorization: Bearer <token>
 - Returns only directories (max 20)
 - Prioritizes common directories (Desktop, Documents, Projects, etc.)
 
-#### 9.4 Upload Images
+#### 8.4 Upload Images
 ```http
 POST /api/projects/:projectName/upload-images
 Authorization: Bearer <token>
@@ -1567,7 +1344,7 @@ Content-Type: multipart/form-data
 - Returns base64-encoded images
 - Temporary files are cleaned up after processing
 
-#### 9.5 Audio Transcription
+#### 8.5 Audio Transcription
 ```http
 POST /api/transcribe
 Authorization: Bearer <token>
@@ -1593,9 +1370,9 @@ Content-Type: multipart/form-data
 
 ---
 
-### 10. WebSocket APIs
+### 9. WebSocket APIs
 
-#### 10.1 Chat WebSocket (`/ws`)
+#### 9.1 Chat WebSocket (`/ws`)
 
 **Connection**:
 ```javascript
@@ -1618,39 +1395,23 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 }
 ```
 
-2. **Cursor Command**:
-```json
-{
-  "type": "cursor-command",
-  "command": "Refactor this code",
-  "options": {
-    "cwd": "/path/to/project",
-    "sessionId": "session-id",
-    "resume": false,
-    "model": "gpt-5"
-  }
-}
-```
-
-3. **Abort Session**:
+2. **Abort Session**:
 ```json
 {
   "type": "abort-session",
-  "sessionId": "session-id",
-  "provider": "claude"
+  "sessionId": "session-id"
 }
 ```
 
-4. **Check Session Status**:
+3. **Check Session Status**:
 ```json
 {
   "type": "check-session-status",
-  "sessionId": "session-id",
-  "provider": "claude"
+  "sessionId": "session-id"
 }
 ```
 
-5. **Get Active Sessions**:
+4. **Get Active Sessions**:
 ```json
 {
   "type": "get-active-sessions"
@@ -1680,8 +1441,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```json
 {
   "type": "session-started",
-  "sessionId": "new-session-id",
-  "provider": "claude"
+  "sessionId": "new-session-id"
 }
 ```
 
@@ -1690,7 +1450,6 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 {
   "type": "session-aborted",
   "sessionId": "session-id",
-  "provider": "claude",
   "success": true
 }
 ```
@@ -1700,7 +1459,6 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 {
   "type": "session-status",
   "sessionId": "session-id",
-  "provider": "claude",
   "isProcessing": true
 }
 ```
@@ -1709,10 +1467,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```json
 {
   "type": "active-sessions",
-  "sessions": {
-    "claude": ["session-1", "session-2"],
-    "cursor": ["session-3"]
-  }
+  "sessions": ["session-1", "session-2"]
 }
 ```
 
@@ -1735,7 +1490,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 }
 ```
 
-#### 10.2 Shell WebSocket (`/shell`)
+#### 9.2 Shell WebSocket (`/shell`)
 
 **Connection**:
 ```javascript
@@ -1751,7 +1506,6 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
   "projectPath": "/path/to/project",
   "sessionId": "session-id",
   "hasSession": true,
-  "provider": "claude",
   "initialCommand": "claude",
   "isPlainShell": false
 }
