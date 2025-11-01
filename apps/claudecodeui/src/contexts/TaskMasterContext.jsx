@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../utils/api';
-import { useAuth } from './AuthContext';
 import { useWebSocketContext } from './WebSocketContext';
 
 const TaskMasterContext = createContext({
@@ -43,10 +42,7 @@ export const useTaskMaster = () => {
 export const TaskMasterProvider = ({ children }) => {
   // Get WebSocket messages from shared context to avoid duplicate connections
   const { messages } = useWebSocketContext();
-  
-  // Authentication context
-  const { user, token, isLoading: authLoading } = useAuth();
-  
+
   // State
   const [projects, setProjects] = useState([]);
   const [currentProject, setCurrentProjectState] = useState(null);
@@ -78,13 +74,6 @@ export const TaskMasterProvider = ({ children }) => {
 
   // Refresh projects with TaskMaster metadata
   const refreshProjects = useCallback(async () => {
-    // Only make API calls if user is authenticated
-    if (!user || !token) {
-      setProjects([]);
-      setCurrentProjectState(null); // This might be the problem!
-      return;
-    }
-
     try {
       setIsLoading(true);
       clearError();
@@ -127,7 +116,7 @@ export const TaskMasterProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, token]); // Remove currentProject dependency to avoid infinite loops
+  }, []); // Remove currentProject dependency to avoid infinite loops
 
   // Set current project and load its TaskMaster details
   const setCurrentProject = useCallback(async (project) => {
@@ -169,12 +158,6 @@ export const TaskMasterProvider = ({ children }) => {
 
   // Refresh MCP server status
   const refreshMCPStatus = useCallback(async () => {
-    // Only make API calls if user is authenticated
-    if (!user || !token) {
-      setMCPServerStatus(null);
-      return;
-    }
-
     try {
       setIsLoadingMCP(true);
       clearError();
@@ -185,18 +168,11 @@ export const TaskMasterProvider = ({ children }) => {
     } finally {
       setIsLoadingMCP(false);
     }
-  }, [user, token]);
+  }, []);
 
   // Refresh tasks for current project - load real TaskMaster data
   const refreshTasks = useCallback(async () => {
     if (!currentProject) {
-      setTasks([]);
-      setNextTask(null);
-      return;
-    }
-
-    // Only make API calls if user is authenticated
-    if (!user || !token) {
       setTasks([]);
       setNextTask(null);
       return;
@@ -234,31 +210,20 @@ export const TaskMasterProvider = ({ children }) => {
     } finally {
       setIsLoadingTasks(false);
     }
-  }, [currentProject, user, token]);
+  }, [currentProject]);
 
-  // Load initial data on mount or when auth changes
+  // Load initial data on mount
   useEffect(() => {
-    if (!authLoading && user && token) {
-      refreshProjects();
-      refreshMCPStatus();
-    } else {
-      console.log('Auth not ready or no user, skipping project load:', { authLoading, user: !!user, token: !!token });
-    }
-  }, [refreshProjects, refreshMCPStatus, authLoading, user, token]);
-
-  // Clear errors when authentication changes
-  useEffect(() => {
-    if (user && token) {
-      clearError();
-    }
-  }, [user, token, clearError]);
+    refreshProjects();
+    refreshMCPStatus();
+  }, [refreshProjects, refreshMCPStatus]);
 
   // Refresh tasks when current project changes
   useEffect(() => {
-    if (currentProject?.name && user && token) {
+    if (currentProject?.name) {
       refreshTasks();
     }
-  }, [currentProject?.name, user, token, refreshTasks]);
+  }, [currentProject?.name, refreshTasks]);
 
   // Handle WebSocket messages for TaskMaster updates
   useEffect(() => {

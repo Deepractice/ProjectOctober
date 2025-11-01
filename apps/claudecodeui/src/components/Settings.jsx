@@ -881,9 +881,6 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
   </div>
 )}
 
-              </div>
-            )}
-
             {/* Tools Tab */}
             {activeTab === 'tools' && (
               <div className="space-y-6 md:space-y-8">
@@ -1852,9 +1849,10 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Login Modal */}
-      {showLoginModal && (
+    {/* Login Modal */}
+    {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 max-md:items-stretch max-md:justify-stretch">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-3/4 flex flex-col md:max-w-4xl md:h-3/4 md:rounded-lg md:m-4 max-md:max-w-none max-md:h-full max-md:rounded-none max-md:m-0">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">

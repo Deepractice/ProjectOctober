@@ -6,6 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "turbo dev",
+    "dev:smart": "node scripts/error-summarizer.js",
+    "dev:quiet": "./scripts/dev-quiet.sh",
+    "dev:verbose": "turbo dev",
+    "dev:original": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "clean": "turbo clean && rm -rf node_modules"

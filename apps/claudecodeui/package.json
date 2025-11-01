@@ -22,9 +22,9 @@
     "url": "https://github.com/siteboon/claudecodeui/issues"
   },
   "scripts": {
-    "dev": "concurrently --kill-others \"npm run server\" \"npm run client\"",
-    "server": "node server/index.js",
-    "client": "vite --host",
+    "dev": "concurrently --kill-others --raw --prefix none \"npm run server\" \"npm run client\"",
+    "server": "NODE_ENV=production node server/index.js",
+    "client": "vite --host --logLevel error",
     "build": "vite build",
     "preview": "vite preview",
     "start": "npm run build && npm run server",
