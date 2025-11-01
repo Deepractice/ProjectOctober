@@ -1,38 +1,26 @@
 {
-  "name": "@siteboon/claude-code-ui",
-  "version": "1.8.12",
-  "description": "A web-based UI for Claude Code CLI",
+  "name": "project-october",
+  "version": "1.0.0",
+  "description": "Project October - Monorepo",
   "private": true,
   "type": "module",
-  "homepage": "https://claudecodeui.siteboon.ai",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/siteboon/claudecodeui.git"
-  },
-  "bugs": {
-    "url": "https://github.com/siteboon/claudecodeui/issues"
-  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "release": "release-it"
+    "clean": "turbo clean && rm -rf node_modules"
   },
-  "keywords": [
-    "claude coode",
-    "ai",
-    "anthropic",
-    "ui",
-    "mobile"
-  ],
-  "author": "Claude Code UI Contributors",
+  "author": "Deepractice",
   "license": "MIT",
+  "packageManager": "pnpm@10.15.1",
   "devDependencies": {
-    "auto-changelog": "^2.5.0",
-    "release-it": "^19.0.5",
     "turbo": "^2.5.8"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["bcrypt", "better-sqlite3", "esbuild", "node-pty", "sharp", "sqlite3"]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   }
 }

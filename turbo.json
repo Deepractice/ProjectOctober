@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "build/**"]
     },
     "dev": {
       "cache": false,
@@ -15,6 +15,18 @@
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "clean": {
+      "cache": false
     }
-  }
+  },
+  "globalEnv": [
+    "NODE_ENV",
+    "PORT",
+    "VITE_PORT",
+    "JWT_SECRET",
+    "DATABASE_PATH",
+    "CONTEXT_WINDOW",
+    "VITE_CONTEXT_WINDOW"
+  ]
 }
