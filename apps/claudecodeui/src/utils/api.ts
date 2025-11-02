@@ -1,15 +1,15 @@
 // Utility function for authenticated API calls
-export const authenticatedFetch = (url, options = {}) => {
+export const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = localStorage.getItem('auth-token');
-  
-  const defaultHeaders = {
+
+  const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
   };
-  
+
   if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`;
+    (defaultHeaders as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return fetch(url, {
     ...options,
     headers: {
@@ -23,49 +23,49 @@ export const authenticatedFetch = (url, options = {}) => {
 export const api = {
   // Auth endpoints (no token required)
   auth: {
-    status: () => fetch('/api/auth/status'),
-    login: (username, password) => fetch('/api/auth/login', {
+    status: (): Promise<Response> => fetch('/api/auth/status'),
+    login: (username: string, password: string): Promise<Response> => fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     }),
-    register: (username, password) => fetch('/api/auth/register', {
+    register: (username: string, password: string): Promise<Response> => fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     }),
-    user: () => authenticatedFetch('/api/auth/user'),
-    logout: () => authenticatedFetch('/api/auth/logout', { method: 'POST' }),
+    user: (): Promise<Response> => authenticatedFetch('/api/auth/user'),
+    logout: (): Promise<Response> => authenticatedFetch('/api/auth/logout', { method: 'POST' }),
   },
   
   // Protected endpoints
-  config: () => authenticatedFetch('/api/config'),
-  sessions: (limit = 5, offset = 0) =>
+  config: (): Promise<Response> => authenticatedFetch('/api/config'),
+  sessions: (limit: number = 5, offset: number = 0): Promise<Response> =>
     authenticatedFetch(`/api/sessions?limit=${limit}&offset=${offset}`),
-  sessionMessages: (sessionId, limit = null, offset = 0) => {
+  sessionMessages: (sessionId: string, limit: number | null = null, offset: number = 0): Promise<Response> => {
     const params = new URLSearchParams();
     if (limit !== null) {
-      params.append('limit', limit);
-      params.append('offset', offset);
+      params.append('limit', String(limit));
+      params.append('offset', String(offset));
     }
     const queryString = params.toString();
     const url = `/api/sessions/${sessionId}/messages${queryString ? `?${queryString}` : ''}`;
     return authenticatedFetch(url);
   },
-  deleteSession: (sessionId) =>
+  deleteSession: (sessionId: string): Promise<Response> =>
     authenticatedFetch(`/api/sessions/${sessionId}`, {
       method: 'DELETE',
     }),
-  readFile: (filePath) =>
+  readFile: (filePath: string): Promise<Response> =>
     authenticatedFetch(`/api/file?filePath=${encodeURIComponent(filePath)}`),
-  saveFile: (filePath, content) =>
+  saveFile: (filePath: string, content: string): Promise<Response> =>
     authenticatedFetch(`/api/file`, {
       method: 'PUT',
       body: JSON.stringify({ filePath, content }),
     }),
-  getFiles: () =>
+  getFiles: (): Promise<Response> =>
     authenticatedFetch(`/api/files`),
-  transcribe: (formData) =>
+  transcribe: (formData: FormData): Promise<Response> =>
     authenticatedFetch('/api/transcribe', {
       method: 'POST',
       body: formData,
@@ -73,13 +73,13 @@ export const api = {
     }),
 
   // Browse filesystem for project suggestions
-  browseFilesystem: (dirPath = null) => {
+  browseFilesystem: (dirPath: string | null = null): Promise<Response> => {
     const params = new URLSearchParams();
     if (dirPath) params.append('path', dirPath);
-    
+
     return authenticatedFetch(`/api/browse-filesystem?${params}`);
   },
 
   // Generic GET method for any endpoint
-  get: (endpoint) => authenticatedFetch(`/api${endpoint}`),
+  get: (endpoint: string): Promise<Response> => authenticatedFetch(`/api${endpoint}`),
 };

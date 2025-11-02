@@ -1,6 +1,6 @@
 // Safe wrapper for localStorage operations with error handling
 const safeLocalStorage = {
-  setItem: (key, value) => {
+  setItem: (key: string, value: string) => {
     try {
       // For chat messages, implement compression and size limits
       if (key.startsWith('chat_messages_') && typeof value === 'string') {
@@ -63,7 +63,7 @@ const safeLocalStorage = {
       }
     }
   },
-  getItem: (key) => {
+  getItem: (key: string): string | null => {
     try {
       return localStorage.getItem(key);
     } catch (error) {
@@ -71,7 +71,7 @@ const safeLocalStorage = {
       return null;
     }
   },
-  removeItem: (key) => {
+  removeItem: (key: string) => {
     try {
       localStorage.removeItem(key);
     } catch (error) {
