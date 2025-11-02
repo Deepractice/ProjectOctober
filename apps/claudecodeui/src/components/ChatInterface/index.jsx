@@ -17,7 +17,6 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { useTasksSettings } from '../../contexts/TasksSettingsContext';
 
 import { authenticatedFetch } from '../../utils/api';
 import { useDiffCalculation } from '../../hooks/useDiffCalculation';
@@ -41,7 +40,6 @@ import ClaudeStatusBar from './ClaudeStatusBar';
 //
 // This ensures uninterrupted chat experience by pausing sidebar refreshes during conversations.
 function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onReplaceTemporarySession, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
-  const { tasksEnabled } = useTasksSettings();
 
   // Diff calculation hook for file edit diffs
   const createDiff = useDiffCalculation();
@@ -926,10 +924,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                       visibleMessages={visibleMessages}
                       isLoading={isLoading}
                       setProvider={setProvider}
-                      setInput={setInput}
                       textareaRef={textareaRef}
-                      tasksEnabled={tasksEnabled}
-                      onShowAllTasks={onShowAllTasks}
                       loadEarlierMessages={loadEarlierMessages}
                       createDiff={createDiff}
                       onFileOpen={onFileOpen}

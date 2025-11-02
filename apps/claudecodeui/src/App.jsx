@@ -28,8 +28,6 @@ import Settings from './components/Settings';
 import QuickSettingsPanel from './components/QuickSettingsPanel';
 
 import { ThemeProvider } from './contexts/ThemeContext';
-import { TaskMasterProvider } from './contexts/TaskMasterContext';
-import { TasksSettingsProvider } from './contexts/TasksSettingsContext';
 import { WebSocketProvider, useWebSocketContext } from './contexts/WebSocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useVersionCheck } from './hooks/useVersionCheck';
@@ -907,18 +905,14 @@ function App() {
   return (
     <ThemeProvider>
       <WebSocketProvider>
-        <TasksSettingsProvider>
-          <TaskMasterProvider>
-            <ProtectedRoute>
-              <Router>
-                <Routes>
-                  <Route path="/" element={<AppContent />} />
-                  <Route path="/session/:sessionId" element={<AppContent />} />
-                </Routes>
-              </Router>
-            </ProtectedRoute>
-          </TaskMasterProvider>
-        </TasksSettingsProvider>
+        <ProtectedRoute>
+          <Router>
+            <Routes>
+              <Route path="/" element={<AppContent />} />
+              <Route path="/session/:sessionId" element={<AppContent />} />
+            </Routes>
+          </Router>
+        </ProtectedRoute>
       </WebSocketProvider>
     </ThemeProvider>
   );

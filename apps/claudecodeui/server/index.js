@@ -40,8 +40,6 @@ import mime from 'mime-types';
 import { getProjects, getSessions, getSessionMessages, renameProject, deleteSession, deleteProject, addProjectManually, extractProjectDirectory, clearProjectDirectoryCache } from './projects.js';
 import { queryClaudeSDK, abortClaudeSDKSession, isClaudeSDKSessionActive, getActiveClaudeSDKSessions } from './claude-sdk.js';
 import mcpRoutes from './routes/mcp.js';
-import taskmasterRoutes from './routes/taskmaster.js';
-import mcpUtilsRoutes from './routes/mcp-utils.js';
 import commandsRoutes from './routes/commands.js';
 
 // File system watcher for projects folder
@@ -147,8 +145,6 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API Routes
 app.use('/api/mcp', mcpRoutes);
-app.use('/api/taskmaster', taskmasterRoutes);
-app.use('/api/mcp-utils', mcpUtilsRoutes);
 app.use('/api/commands', commandsRoutes);
 
 // Serve public files (like api-docs.html)

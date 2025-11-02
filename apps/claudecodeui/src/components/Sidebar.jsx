@@ -7,10 +7,7 @@ import { Input } from './ui/input';
 import { FolderOpen, Folder, Plus, MessageSquare, Clock, ChevronDown, ChevronRight, Edit3, Check, X, Trash2, Settings, FolderPlus, RefreshCw, Sparkles, Edit2, Star, Search } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ClaudeLogo from './ClaudeLogo';
-import TaskIndicator from './TaskIndicator';
 import { api } from '../utils/api';
-import { useTaskMaster } from '../contexts/TaskMasterContext';
-import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
 // Move formatTimeAgo outside component to avoid recreation on every render
 const formatTimeAgo = (dateString, currentTime) => {
@@ -80,11 +77,6 @@ function Sidebar({
   const [filteredPaths, setFilteredPaths] = useState([]);
   const [selectedPathIndex, setSelectedPathIndex] = useState(-1);
 
-  // TaskMaster context
-  const { setCurrentProject, mcpServerStatus } = useTaskMaster();
-  const { tasksEnabled } = useTasksSettings();
-
-  
   // Starred projects state - persisted in localStorage
   const [starredProjects, setStarredProjects] = useState(() => {
     try {
@@ -557,13 +549,10 @@ function Sidebar({
     return displayName.includes(searchLower) || projectName.includes(searchLower);
   });
 
-  // Enhanced project selection that updates both the main UI and TaskMaster context
+  // Enhanced project selection
   const handleProjectSelect = (project) => {
     // Call the original project select handler
     onProjectSelect(project);
-    
-    // Update TaskMaster context with the selected project
-    setCurrentProject(project);
   };
 
   return (
@@ -1054,20 +1043,6 @@ function Sidebar({
                                     <h3 className="text-sm font-medium text-foreground truncate">
                                       {project.displayName}
                                     </h3>
-                                    {tasksEnabled && (
-                                      <TaskIndicator
-                                        status={(() => {
-                                          const projectConfigured = project.taskmaster?.hasTaskmaster;
-                                          const mcpConfigured = mcpServerStatus?.hasMCPServer && mcpServerStatus?.isConfigured;
-                                          if (projectConfigured && mcpConfigured) return 'fully-configured';
-                                          if (projectConfigured) return 'taskmaster-only';
-                                          if (mcpConfigured) return 'mcp-only';
-                                          return 'not-configured';
-                                        })()}
-                                        size="xs"
-                                        className="hidden md:inline-flex flex-shrink-0 ml-2"
-                                      />
-                                    )}
                                   </div>
                                   <p className="text-xs text-muted-foreground">
                                     {(() => {

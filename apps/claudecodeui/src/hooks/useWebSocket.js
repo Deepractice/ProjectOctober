@@ -10,7 +10,7 @@ import { decodeHtmlEntities, formatUsageLimitText } from '../components/ChatInte
  * Processes 16 different message types including:
  * - session-created, assistant-content, thinking, message-chunk, claude-complete
  * - tool-use, tool-result, user-message-chunk, code-execution, interactive-prompt
- * - session-aborted, file-ready, session-complete, projects_updated, taskmaster-project-updated
+ * - session-aborted, file-ready, session-complete, projects_updated
  * - session-permission-request
  *
  * @param {Object} params - WebSocket handler parameters
@@ -89,7 +89,7 @@ export function useWebSocket({
 
       // Filter messages by session ID to prevent cross-session interference
       // Skip filtering for global messages that apply to all sessions
-      const globalMessageTypes = ['projects_updated', 'taskmaster-project-updated', 'session-created', 'claude-complete'];
+      const globalMessageTypes = ['projects_updated', 'session-created', 'claude-complete'];
       const isGlobalMessage = globalMessageTypes.includes(latestMessage.type);
 
       // For new sessions (currentSessionId is null), allow messages through
