@@ -42,10 +42,15 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
 
   // Connect to shell function
   const connectToShell = () => {
-    if (!isInitialized || isConnected || isConnecting) return;
-    
+    console.log('🔍 connectToShell called', { isInitialized, isConnected, isConnecting });
+    if (!isInitialized || isConnected || isConnecting) {
+      console.warn('❌ connectToShell blocked:', { isInitialized, isConnected, isConnecting });
+      return;
+    }
+
+    console.log('✅ connectToShell proceeding...');
     setIsConnecting(true);
-    
+
     // Start the WebSocket connection
     connectWebSocket();
   };
@@ -169,19 +174,23 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
             }
           }
         }, 100);
-        
+
+        console.log('✅ Existing session reused, setting isInitialized = true');
         setIsInitialized(true);
         return;
       } catch (error) {
+        console.error('Failed to reuse existing session, creating new one:', error);
         // Clear the broken session and continue to create a new one
         shellSessions.delete(sessionKey);
         terminal.current = null;
         fitAddon.current = null;
         ws.current = null;
+        // Don't return here - let the code continue to create a new terminal
       }
     }
 
-    if (terminal.current) {
+    // Only return if terminal already exists AND is properly initialized
+    if (terminal.current && fitAddon.current) {
       return;
     }
 
@@ -302,7 +311,8 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         }
       }
     }, 100);
-    
+
+    console.log('✅ Terminal initialized, setting isInitialized = true');
     setIsInitialized(true);
 
     // Handle terminal input
@@ -603,12 +613,16 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         
         {/* Connect button when not connected */}
         {isInitialized && !isConnected && !isConnecting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 p-4">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 p-4" style={{ zIndex: 1000, pointerEvents: 'auto' }}>
             <div className="text-center max-w-sm w-full">
               <button
-                onClick={connectToShell}
+                onClick={() => {
+                  console.log('🖱️ Button clicked!');
+                  connectToShell();
+                }}
                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 text-base font-medium w-full sm:w-auto"
                 title="Connect to shell"
+                style={{ cursor: 'pointer', pointerEvents: 'auto' }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
