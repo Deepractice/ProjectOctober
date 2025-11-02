@@ -17,6 +17,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { shallow } from 'zustand/shallow';
 
 import { authenticatedFetch } from '../../utils/api';
 import { useDiffCalculation } from '../../hooks/useDiffCalculation';
@@ -43,6 +44,14 @@ import { useMessageStore } from '../../stores';
 //
 // This ensures uninterrupted chat experience by pausing sidebar refreshes during conversations.
 function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onReplaceTemporarySession, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
+
+  // Debug: Track component mount/unmount
+  useEffect(() => {
+    console.log('🔷 ChatInterface MOUNTED');
+    return () => {
+      console.log('🔶 ChatInterface UNMOUNTING');
+    };
+  }, []);
 
   // Diff calculation hook for file edit diffs
   const createDiff = useDiffCalculation();
@@ -134,12 +143,28 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   } = wsState;
 
   // === NEW: Subscribe to messageStore (Global State) ===
-  const chatMessages = useMessageStore(
-    state => state.getDisplayMessages(currentSessionId || selectedSession?.id || '')
+  // Compute stable sessionId to prevent infinite update loop
+  const activeSessionId = useMemo(
+    () => currentSessionId || selectedSession?.id || '',
+    [currentSessionId, selectedSession?.id]
   );
 
-  // Alias for backward compatibility
-  const setChatMessages = legacySetChatMessages;
+  // Subscribe to entire Maps (not individual session data)
+  // This gives us stable references - the Map itself only changes when modified
+  const sessionMessagesMap = useMessageStore((state) => state.sessionMessages);
+  const optimisticMessagesMap = useMessageStore((state) => state.optimisticMessages);
+
+  // Extract messages for current session in component (memoized)
+  const chatMessages = useMemo(() => {
+    const server = sessionMessagesMap.get(activeSessionId) || [];
+    const optimistic = optimisticMessagesMap.get(activeSessionId) || [];
+    return [...server, ...optimistic];
+  }, [sessionMessagesMap, optimisticMessagesMap, activeSessionId]);
+
+  // No-op setter for backward compatibility (all writes go to store now)
+  const setChatMessages = useCallback(() => {
+    console.warn('setChatMessages called but ignored - use messageStore actions instead');
+  }, []);
 
   // Messages Hook - handles session message loading and conversion
   const {
@@ -284,7 +309,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         // Only clear messages if this is NOT a system-initiated session change AND we're not loading
         // During system session changes or while loading, preserve the chat messages
         if (!isSystemSessionChange && !isLoading) {
-          setChatMessages([]);
+          // Clear store instead of local state
+          if (currentSessionId) {
+            useMessageStore.getState().clearSessionMessages(currentSessionId);
+          }
           setSessionMessages([]);
         }
         setCurrentSessionId(null);
@@ -302,7 +330,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     };
 
     loadMessages();
-  }, [selectedSession, selectedProject, loadSessionMessages, loadCursorSessionMessages, setSessionMessages, setChatMessages, setCurrentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading, ws, sendMessage, scrollToBottom, isSystemSessionChange, currentSessionId, isLoading]);
+  }, [selectedSession, selectedProject, loadSessionMessages, loadCursorSessionMessages, setSessionMessages, setCurrentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading, ws, sendMessage, scrollToBottom, isSystemSessionChange, currentSessionId, isLoading]);
 
   // External Message Update Handler: Reload messages when external CLI modifies current session
   // This triggers when App.jsx detects a JSONL file change for the currently-viewed session
@@ -318,12 +346,16 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             const projectPath = selectedProject.fullPath || selectedProject.path;
             const converted = await loadCursorSessionMessages(projectPath, selectedSession.id);
             setSessionMessages([]);
-            setChatMessages(converted);
+            // Write to store instead of local state
+            useMessageStore.getState().setServerMessages(selectedSession.id, converted);
           } else {
             // Reload Claude messages from API/JSONL
             const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
-            // convertedMessages will be automatically updated via useMemo
+
+            // Write to store
+            const converted = convertSessionMessages(messages);
+            useMessageStore.getState().setServerMessages(selectedSession.id, converted);
 
             // Smart scroll behavior: only auto-scroll if user is near bottom
             if (isNearBottom && autoScrollToBottom) {
@@ -338,14 +370,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
       reloadExternalMessages();
     }
-  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, setSessionMessages, setChatMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
+  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, setSessionMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
 
-  // Update chatMessages when convertedMessages changes
-  useEffect(() => {
-    if (sessionMessages.length > 0) {
-      setChatMessages(convertedMessages);
-    }
-  }, [convertedMessages, sessionMessages]);
+  // REMOVED: Redundant sync - messages already written to store at lines 260, 277
 
   // Notify parent when input focus changes
   useEffect(() => {
@@ -354,12 +381,17 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
   }, [isInputFocused, onInputFocusChange]);
 
-  // Persist chat messages to localStorage
+  // Persist chat messages to localStorage (debounced)
+  const prevMessageCountRef = useRef(0);
   useEffect(() => {
     if (selectedProject && chatMessages.length > 0) {
-      safeLocalStorage.setItem(`chat_messages_${selectedProject.name}`, JSON.stringify(chatMessages));
+      // Only save when message count changes significantly (every 5 messages) or on completion
+      if (Math.abs(chatMessages.length - prevMessageCountRef.current) >= 5 || !isLoading) {
+        safeLocalStorage.setItem(`chat_messages_${selectedProject.name}`, JSON.stringify(chatMessages));
+        prevMessageCountRef.current = chatMessages.length;
+      }
     }
-  }, [chatMessages, selectedProject]);
+  }, [chatMessages, selectedProject, isLoading]);
 
   // Track processing state: notify parent when isLoading becomes true
   // Note: onSessionNotProcessing is called directly in completion message handlers
@@ -456,11 +488,15 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         uploadedImages = result.images;
       } catch (error) {
         console.error('Image upload failed:', error);
-        setChatMessages(prev => [...prev, {
-          type: 'error',
-          content: `Failed to upload images: ${error.message}`,
-          timestamp: new Date()
-        }]);
+        // Write error to store
+        const errorSessionId = currentSessionId || selectedSession?.id || '';
+        if (errorSessionId) {
+          useMessageStore.getState().addOptimisticMessage(errorSessionId, {
+            type: 'error',
+            content: `Failed to upload images: ${error.message}`,
+            timestamp: new Date()
+          });
+        }
         return;
       }
     }
@@ -559,7 +595,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     setAttachedImages([]);
     setUploadingImages(new Map());
     setImageErrors(new Map());
-  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setChatMessages, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
+  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
 
   // Store handleSubmit in ref so handleCustomCommand can access it
   useEffect(() => {
@@ -646,7 +682,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   };
 
   const handleNewSession = () => {
-    setChatMessages([]);
+    // Clear current session from store
+    if (currentSessionId) {
+      useMessageStore.getState().clearSessionMessages(currentSessionId);
+    }
     setInput('');
     setIsLoading(false);
     setCanAbortSession(false);

@@ -1,30 +1,19 @@
 #
 # Claude Code UI - Ubuntu-based Production Image
-# Optimized for AI development environment
+# Minimal and fast
 #
 
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install comprehensive development tools for AI environment
+# Install only essential packages (minimal set for faster build)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      # Core utilities
-      curl wget ca-certificates gnupg sudo bash \
-      # Version control
-      git openssh-client \
-      # Build tools (for native npm modules)
-      build-essential gcc g++ make python3 python3-pip \
-      # Database and storage
-      sqlite3 \
-      # Text editors and utilities
-      vim nano \
-      # Network tools
-      net-tools iputils-ping \
-      # Process management
+      curl ca-certificates gnupg sudo \
+      git \
+      build-essential python3 \
       procps && \
-    # Clean up
     rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20 LTS
@@ -41,14 +30,15 @@ RUN npm install -g @anthropic-ai/claude-code
 # Set working directory
 WORKDIR /app
 
+# Copy package files first (for better layer caching)
+COPY apps/claudecodeui/package*.json ./
+
+# Install production dependencies (this layer will be cached if package.json doesn't change)
+RUN npm install --omit=dev --production
+
 # Copy application files
 COPY apps/claudecodeui/dist/ ./dist/
 COPY apps/claudecodeui/server/ ./server/
-COPY apps/claudecodeui/package*.json ./
-
-# Install production dependencies
-# Native modules will compile using the build tools installed above
-RUN npm install --omit=dev --production
 
 # Copy entrypoint script
 COPY docker/entrypoint.js ./entrypoint.js

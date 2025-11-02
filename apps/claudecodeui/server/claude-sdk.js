@@ -401,6 +401,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
       const transformedMessage = transformMessage(message);
       ws.send(JSON.stringify({
         type: 'claude-response',
+        sessionId: capturedSessionId,
         data: transformedMessage
       }));
 
@@ -411,6 +412,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
           console.log('📊 Token budget from modelUsage:', tokenBudget);
           ws.send(JSON.stringify({
             type: 'token-budget',
+            sessionId: capturedSessionId,
             data: tokenBudget
           }));
         }
@@ -449,6 +451,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
     // Send error to WebSocket
     ws.send(JSON.stringify({
       type: 'claude-error',
+      sessionId: capturedSessionId,
       error: error.message
     }));
 

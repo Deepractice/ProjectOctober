@@ -92,7 +92,11 @@ function AppContent() {
     };
   }, [connect, disconnect, refreshSessions]);
 
-  // Handle sessions_updated message for external file changes
+  // TEMPORARILY DISABLED: Handle sessions_updated message for external file changes
+  // This was causing infinite loop by re-registering handler on every selectedSession change
+  // Handler is already registered in sessionStore.ts at module load time
+  // TODO: Move external file change detection logic to sessionStore
+  /*
   useEffect(() => {
     const messageStore = useMessageStore.getState();
 
@@ -119,6 +123,7 @@ function AppContent() {
       messageStore.unregisterHandler('sessions_updated');
     };
   }, [selectedSession]);
+  */
 
   // Handle URL-based session loading
   useEffect(() => {

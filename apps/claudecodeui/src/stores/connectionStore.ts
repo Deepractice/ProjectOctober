@@ -21,21 +21,17 @@ export const useConnectionStore = create<ConnectionState>()(
       // Connect to WebSocket
       connect: async () => {
         try {
-          // Get authentication token
+          // Get authentication token (optional for internal network deployment)
           const token = localStorage.getItem('auth-token');
           if (!token) {
-            console.warn('No authentication token found for WebSocket connection');
-            return;
+            console.warn('No authentication token found, connecting without auth (internal network mode)');
           }
 
           // Fetch server configuration to get the correct WebSocket URL
           let wsBaseUrl;
           try {
-            const configResponse = await fetch('/api/config', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const configResponse = await fetch('/api/config', { headers });
             const config = await configResponse.json();
             wsBaseUrl = config.wsUrl;
 
@@ -54,8 +50,10 @@ export const useConnectionStore = create<ConnectionState>()(
             wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
           }
 
-          // Include token in WebSocket URL as query parameter
-          const wsUrl = `${wsBaseUrl}/ws?token=${encodeURIComponent(token)}`;
+          // Include token in WebSocket URL as query parameter (if available)
+          const wsUrl = token
+            ? `${wsBaseUrl}/ws?token=${encodeURIComponent(token)}`
+            : `${wsBaseUrl}/ws`;
           const websocket = new WebSocket(wsUrl);
 
           websocket.onopen = () => {

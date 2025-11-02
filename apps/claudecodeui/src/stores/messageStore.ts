@@ -72,13 +72,19 @@ export const useMessageStore = create<MessageState>()(
 
       // Register message handler
       registerHandler: (type, handler) => {
+        const wasRegistered = messageHandlers.has(type);
         messageHandlers.set(type, handler);
-        console.log('📝 Registered handler for:', type);
+        console.log(`📝 ${wasRegistered ? 'RE-REGISTERING' : 'Registering'} handler for:`, type,
+                    '| Total handlers:', messageHandlers.size,
+                    '| Stack:', new Error().stack?.split('\n')[2]?.trim());
       },
 
       // Unregister message handler
       unregisterHandler: (type) => {
+        const wasRegistered = messageHandlers.has(type);
         messageHandlers.delete(type);
+        console.log(`🗑️ ${wasRegistered ? 'Unregistered' : 'Attempted to unregister non-existent'} handler:`, type,
+                    '| Total handlers:', messageHandlers.size);
       },
 
       // Clear messages
