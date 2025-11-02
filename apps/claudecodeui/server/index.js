@@ -84,8 +84,8 @@ async function setupSessionsWatcher() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(async () => {
                 try {
-                    // Get updated sessions list
-                    const updatedSessions = await getSessions();
+                    // Get updated sessions list (get up to 100 sessions)
+                    const updatedSessions = await getSessions(100);
 
                     // Notify all connected clients about the session changes
                     const updateMessage = JSON.stringify({
@@ -238,6 +238,20 @@ app.post('/api/system/update', async (req, res) => {
             success: false,
             error: error.message
         });
+    }
+});
+
+// Get current project information
+app.get('/api/project', (req, res) => {
+    try {
+        const project = getCurrentProject();
+        res.json({
+            name: project.name,
+            path: project.path,
+            fullPath: project.fullPath
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

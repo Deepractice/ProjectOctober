@@ -32,6 +32,7 @@ import { WebSocketProvider, useWebSocketContext } from './contexts/WebSocketCont
 import ProtectedRoute from './components/ProtectedRoute';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import useLocalStorage from './hooks/useLocalStorage';
+import { useSessionManager } from './hooks/useSessionManager';
 import { api, authenticatedFetch } from './utils/api';
 
 
@@ -42,13 +43,15 @@ function AppContent() {
   
   const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck('siteboon', 'claudecodeui');
   const [showVersionModal, setShowVersionModal] = useState(false);
-  
-  const [sessions, setSessions] = useState([]);
+
+  // Use centralized session manager
+  const sessionManager = useSessionManager();
+  const { sessions, isLoading: isLoadingSessions } = sessionManager;
+
   const [selectedSession, setSelectedSession] = useState(null);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'files'
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState('tools');
@@ -75,14 +78,36 @@ function AppContent() {
 
   const { ws, sendMessage, messages } = useWebSocketContext();
 
-  // Create a mock project object for single-project mode
+  // Create a project object for single-project mode
   // In single-project mode, we don't have project selection, but MainContent still expects a project object
-  const mockProject = {
+  const [mockProject, setMockProject] = useState({
     name: 'Current Project',
     displayName: 'Current Project',
     path: '/',
     fullPath: '/'
-  };
+  });
+
+  // Load project information from backend on mount
+  useEffect(() => {
+    const loadProjectInfo = async () => {
+      try {
+        const response = await fetch('/api/project');
+        if (response.ok) {
+          const projectData = await response.json();
+          setMockProject({
+            name: projectData.name,
+            displayName: projectData.name,
+            path: projectData.path,
+            fullPath: projectData.fullPath
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load project info:', error);
+        // Keep default mockProject on error
+      }
+    };
+    loadProjectInfo();
+  }, []);
 
   // Detect if running as PWA
   const [isPWA, setIsPWA] = useState(false);
@@ -119,16 +144,11 @@ function AppContent() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
-  useEffect(() => {
-    // Fetch sessions on component mount
-    fetchSessions();
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Helper function to determine if an update is purely additive (new sessions)
@@ -202,14 +222,14 @@ function AppContent() {
 
           if (!isAdditiveUpdate) {
             // Skip updates that would modify existing selected session
+            console.log('⏭️ Skipping session update - protecting active session');
             return;
           }
-          // Continue with additive updates below
         }
 
-        // Update sessions state with the new data from WebSocket
+        // Update sessions using session manager
         const updatedSessions = latestMessage.sessions;
-        setSessions(updatedSessions);
+        sessionManager.handleSessionsUpdated(updatedSessions);
 
         // Update selected session only if it was deleted - avoid unnecessary reloads
         if (selectedSession) {
@@ -218,55 +238,10 @@ function AppContent() {
             // Session was deleted
             setSelectedSession(null);
           }
-          // Don't update if session still exists with same ID - prevents reload
         }
       }
     }
-  }, [messages, selectedSession, activeSessions]);
-
-  const fetchSessions = async () => {
-    try {
-      setIsLoadingSessions(true);
-      const response = await api.sessions();
-      const data = await response.json();
-
-      // Extract sessions array from API response
-      const sessionsArray = data.sessions || [];
-
-      // Optimize to preserve object references when data hasn't changed
-      setSessions(prevSessions => {
-        // If no previous sessions, just set the new data
-        if (prevSessions.length === 0) {
-          return sessionsArray;
-        }
-
-        // Check if the sessions data has actually changed
-        const hasChanges = sessionsArray.some((newSession, index) => {
-          const prevSession = prevSessions[index];
-          if (!prevSession) return true;
-
-          // Compare key properties that would affect UI
-          return (
-            newSession.id !== prevSession.id ||
-            newSession.title !== prevSession.title ||
-            newSession.created_at !== prevSession.created_at ||
-            newSession.updated_at !== prevSession.updated_at
-          );
-        }) || sessionsArray.length !== prevSessions.length;
-
-        // Only update if there are actual changes
-        return hasChanges ? sessionsArray : prevSessions;
-      });
-
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
-
-  // Expose fetchSessions globally for component access
-  window.refreshSessions = fetchSessions;
+  }, [messages, selectedSession, activeSessions, sessions, sessionManager]);
 
   // Expose openSettings function globally for component access
   window.openSettings = useCallback((tab = 'tools') => {
@@ -319,53 +294,31 @@ function AppContent() {
     }
   };
 
-  const handleSessionDelete = (sessionId) => {
+  const handleSessionDelete = async (sessionId) => {
     // If the deleted session was currently selected, clear it
     if (selectedSession?.id === sessionId) {
       setSelectedSession(null);
       navigate('/');
     }
 
-    // Update sessions state locally instead of full refresh
-    setSessions(prevSessions =>
-      prevSessions.filter(session => session.id !== sessionId)
-    );
+    // Use session manager's delete method
+    try {
+      await sessionManager.deleteSession(sessionId);
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
   };
 
-  const handleSidebarRefresh = async () => {
-    // Refresh sessions, don't change selected state
-    try {
-      const response = await api.sessions();
-      const data = await response.json();
-      const freshSessions = data.sessions || [];
+  const handleSidebarRefresh = () => {
+    // Use session manager's refresh method
+    sessionManager.refreshSessions();
 
-      // Optimize to preserve object references and minimize re-renders
-      setSessions(prevSessions => {
-        // Check if sessions data has actually changed
-        const hasChanges = freshSessions.some((newSession, index) => {
-          const prevSession = prevSessions[index];
-          if (!prevSession) return true;
-
-          return (
-            newSession.id !== prevSession.id ||
-            newSession.title !== prevSession.title ||
-            newSession.created_at !== prevSession.created_at ||
-            newSession.updated_at !== prevSession.updated_at
-          );
-        }) || freshSessions.length !== prevSessions.length;
-
-        return hasChanges ? freshSessions : prevSessions;
-      });
-
-      // If we have a selected session, try to find it in the refreshed sessions
-      if (selectedSession) {
-        const refreshedSession = freshSessions.find(s => s.id === selectedSession.id);
-        if (refreshedSession && JSON.stringify(refreshedSession) !== JSON.stringify(selectedSession)) {
-          setSelectedSession(refreshedSession);
-        }
+    // If we have a selected session, try to find it in the refreshed sessions
+    if (selectedSession) {
+      const refreshedSession = sessions.find(s => s.id === selectedSession.id);
+      if (refreshedSession && JSON.stringify(refreshedSession) !== JSON.stringify(selectedSession)) {
+        setSelectedSession(refreshedSession);
       }
-    } catch (error) {
-      console.error('Error refreshing sidebar:', error);
     }
   };
 

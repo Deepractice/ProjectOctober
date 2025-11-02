@@ -66,6 +66,14 @@ export function useWebSocket() {
       websocket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+
+          // Debug: Log all incoming WebSocket messages
+          console.log('📨 WebSocket message received:', {
+            type: data.type,
+            sessionId: data.sessionId,
+            timestamp: new Date().toISOString()
+          });
+
           setMessages(prev => [...prev, data]);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);

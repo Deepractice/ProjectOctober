@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { authenticatedFetch } from '../utils/api';
 import safeLocalStorage from '../utils/safeLocalStorage';
 import { decodeHtmlEntities, formatUsageLimitText } from '../components/ChatInterface/MessageRenderer';
@@ -7,11 +7,17 @@ import { decodeHtmlEntities, formatUsageLimitText } from '../components/ChatInte
  * useWebSocket Hook
  *
  * Handles WebSocket message processing for Claude Code chat interface
- * Processes 16 different message types including:
- * - session-created, assistant-content, thinking, message-chunk, claude-complete
- * - tool-use, tool-result, user-message-chunk, code-execution, interactive-prompt
- * - session-aborted, file-ready, session-complete, projects_updated
- * - session-permission-request
+ * Processes 10 different message types:
+ * - session-created: New session created by Claude CLI
+ * - token-budget: Token budget updates (deprecated)
+ * - claude-response: Assistant responses with tool uses and text
+ * - claude-output: Streaming output from Claude
+ * - claude-interactive-prompt: Interactive prompts from CLI
+ * - claude-error: Error messages
+ * - claude-complete: Conversation completion
+ * - session-aborted: Session interruption
+ * - session-status: Session processing status
+ * - claude-status: Claude working status updates
  *
  * @param {Object} params - WebSocket handler parameters
  * @param {Array} params.messages - WebSocket messages array
@@ -82,10 +88,35 @@ export function useWebSocket({
   setCurrentSessionId,
   setTokenBudget
 }) {
+  // Track processed messages to prevent duplicate processing
+  const processedMessagesRef = useRef(new Set());
+
   useEffect(() => {
+    console.log('🔄 useWebSocket useEffect triggered, messages.length:', messages.length, 'currentSessionId:', currentSessionId);
+
     // Handle WebSocket messages
     if (messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
+
+      // Create unique message ID for deduplication
+      const messageId = `${latestMessage.type}-${latestMessage.sessionId || 'null'}-${latestMessage.timestamp || messages.length}`;
+
+      // Skip if we've already processed this message
+      if (processedMessagesRef.current.has(messageId)) {
+        console.log('⏭️ Skipping already processed message:', messageId);
+        return;
+      }
+
+      // Mark as processed
+      processedMessagesRef.current.add(messageId);
+
+      // Keep set size manageable (keep last 100 message IDs)
+      if (processedMessagesRef.current.size > 100) {
+        const oldestId = Array.from(processedMessagesRef.current)[0];
+        processedMessagesRef.current.delete(oldestId);
+      }
+
+      console.log('🎯 Processing latest message:', latestMessage.type, 'sessionId:', latestMessage.sessionId, 'messageId:', messageId);
 
       // Filter messages by session ID to prevent cross-session interference
       // Skip filtering for global messages that apply to all sessions
@@ -105,12 +136,20 @@ export function useWebSocket({
           // Store it temporarily until conversation completes (prevents premature session association)
           if (latestMessage.sessionId && !currentSessionId) {
             sessionStorage.setItem('pendingSessionId', latestMessage.sessionId);
-            
+
             // Session Protection: Replace temporary "new-session-*" identifier with real session ID
             // This maintains protection continuity - no gap between temp ID and real ID
             // The temporary session is removed and real session is marked as active
             if (onReplaceTemporarySession) {
               onReplaceTemporarySession(latestMessage.sessionId);
+            }
+
+            // IMMEDIATE REFRESH: Trigger session list update right away
+            // This ensures the new session appears in sidebar immediately
+            // Don't wait for file watcher (400ms+ delay) or claude-complete (even longer)
+            console.log('🔄 New session created, triggering immediate refresh:', latestMessage.sessionId);
+            if (window.refreshSessions) {
+              setTimeout(() => window.refreshSessions(), 200);
             }
           }
           break;
@@ -122,8 +161,8 @@ export function useWebSocket({
 
         case 'claude-response':
           const messageData = latestMessage.data.message || latestMessage.data;
-          
-          // Handle Cursor streaming format (content_block_delta / content_block_stop)
+
+          // Handle streaming format (content_block_delta / content_block_stop)
           if (messageData && typeof messageData === 'object' && messageData.type) {
             if (messageData.type === 'content_block_delta' && messageData.delta?.text) {
               // Decode HTML entities and buffer deltas
@@ -210,23 +249,22 @@ export function useWebSocket({
           }
           
           // Handle system/init for new sessions (when currentSessionId is null)
-          if (latestMessage.data.type === 'system' && 
-              latestMessage.data.subtype === 'init' && 
-              latestMessage.data.session_id && 
+          // NOTE: Do NOT navigate immediately - this causes UI flicker
+          // Instead, wait for claude-complete to navigate
+          if (latestMessage.data.type === 'system' &&
+              latestMessage.data.subtype === 'init' &&
+              latestMessage.data.session_id &&
               !currentSessionId) {
-            
-            console.log('🔄 New session init detected:', {
+
+            console.log('🔄 New session init detected, storing for navigation after completion:', {
               newSession: latestMessage.data.session_id
             });
-            
-            // Mark this as a system-initiated session change to preserve messages
-            setIsSystemSessionChange(true);
-            
-            // Switch to the new session
-            if (onNavigateToSession) {
-              onNavigateToSession(latestMessage.data.session_id);
-            }
-            return; // Don't process the message further, let the navigation handle it
+
+            // Store the session ID for navigation after completion
+            // Don't navigate now to avoid clearing messages during conversation
+            sessionStorage.setItem('pendingNavigationSessionId', latestMessage.data.session_id);
+
+            return; // Don't process the message further
           }
           
           // For system/init messages that match current session, just ignore them
@@ -347,160 +385,7 @@ export function useWebSocket({
             timestamp: new Date()
           }]);
           break;
-          
-        case 'cursor-system':
-          // Handle Cursor system/init messages similar to Claude
-          try {
-            const cdata = latestMessage.data;
-            if (cdata && cdata.type === 'system' && cdata.subtype === 'init' && cdata.session_id) {
-              // If we already have a session and this differs, switch (duplication/redirect)
-              if (currentSessionId && cdata.session_id !== currentSessionId) {
-                console.log('🔄 Cursor session switch detected:', { originalSession: currentSessionId, newSession: cdata.session_id });
-                setIsSystemSessionChange(true);
-                if (onNavigateToSession) {
-                  onNavigateToSession(cdata.session_id);
-                }
-                return;
-              }
-              // If we don't yet have a session, adopt this one
-              if (!currentSessionId) {
-                console.log('🔄 Cursor new session init detected:', { newSession: cdata.session_id });
-                setIsSystemSessionChange(true);
-                if (onNavigateToSession) {
-                  onNavigateToSession(cdata.session_id);
-                }
-                return;
-              }
-            }
-            // For other cursor-system messages, avoid dumping raw objects to chat
-          } catch (e) {
-            console.warn('Error handling cursor-system message:', e);
-          }
-          break;
-          
-        case 'cursor-user':
-          // Handle Cursor user messages (usually echoes)
-          // Don't add user messages as they're already shown from input
-          break;
-          
-        case 'cursor-tool-use':
-          // Handle Cursor tool use messages
-          setChatMessages(prev => [...prev, {
-            type: 'assistant',
-            content: `Using tool: ${latestMessage.tool} ${latestMessage.input ? `with ${latestMessage.input}` : ''}`,
-            timestamp: new Date(),
-            isToolUse: true,
-            toolName: latestMessage.tool,
-            toolInput: latestMessage.input
-          }]);
-          break;
-        
-        case 'cursor-error':
-          // Show Cursor errors as error messages in chat
-          setChatMessages(prev => [...prev, {
-            type: 'error',
-            content: `Cursor error: ${latestMessage.error || 'Unknown error'}`,
-            timestamp: new Date()
-          }]);
-          break;
-          
-        case 'cursor-result':
-          // Get session ID from message or fall back to current session
-          const cursorCompletedSessionId = latestMessage.sessionId || currentSessionId;
 
-          // Only update UI state if this is the current session
-          if (cursorCompletedSessionId === currentSessionId) {
-            setIsLoading(false);
-            setCanAbortSession(false);
-            setClaudeStatus(null);
-          }
-
-          // Always mark the completed session as inactive and not processing
-          if (cursorCompletedSessionId) {
-            if (onSessionInactive) {
-              onSessionInactive(cursorCompletedSessionId);
-            }
-            if (onSessionNotProcessing) {
-              onSessionNotProcessing(cursorCompletedSessionId);
-            }
-          }
-
-          // Only process result for current session
-          if (cursorCompletedSessionId === currentSessionId) {
-            try {
-              const r = latestMessage.data || {};
-              const textResult = typeof r.result === 'string' ? r.result : '';
-              // Flush buffered deltas before finalizing
-              if (streamTimerRef.current) {
-                clearTimeout(streamTimerRef.current);
-                streamTimerRef.current = null;
-              }
-              const pendingChunk = streamBufferRef.current;
-              streamBufferRef.current = '';
-
-              setChatMessages(prev => {
-                const updated = [...prev];
-                // Try to consolidate into the last streaming assistant message
-                const last = updated[updated.length - 1];
-                if (last && last.type === 'assistant' && !last.isToolUse && last.isStreaming) {
-                  // Replace streaming content with the final content so deltas don't remain
-                  const finalContent = textResult && textResult.trim() ? textResult : (last.content || '') + (pendingChunk || '');
-                  last.content = finalContent;
-                  last.isStreaming = false;
-                } else if (textResult && textResult.trim()) {
-                  updated.push({ type: r.is_error ? 'error' : 'assistant', content: textResult, timestamp: new Date(), isStreaming: false });
-                }
-                return updated;
-              });
-            } catch (e) {
-              console.warn('Error handling cursor-result message:', e);
-            }
-          }
-
-          // Store session ID for future use and trigger refresh (for new sessions)
-          const pendingCursorSessionId = sessionStorage.getItem('pendingSessionId');
-          if (cursorCompletedSessionId && !currentSessionId && cursorCompletedSessionId === pendingCursorSessionId) {
-            setCurrentSessionId(cursorCompletedSessionId);
-            sessionStorage.removeItem('pendingSessionId');
-
-            // Trigger a project refresh to update the sidebar with the new session
-            if (window.refreshProjects) {
-              setTimeout(() => window.refreshProjects(), 500);
-            }
-          }
-          break;
-
-        case 'cursor-output':
-          // Handle Cursor raw terminal output; strip ANSI and ignore empty control-only payloads
-          try {
-            const raw = String(latestMessage.data ?? '');
-            const cleaned = raw.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').trim();
-            if (cleaned) {
-              streamBufferRef.current += (streamBufferRef.current ? `\n${cleaned}` : cleaned);
-              if (!streamTimerRef.current) {
-                streamTimerRef.current = setTimeout(() => {
-                  const chunk = streamBufferRef.current;
-                  streamBufferRef.current = '';
-                  streamTimerRef.current = null;
-                  if (!chunk) return;
-                  setChatMessages(prev => {
-                    const updated = [...prev];
-                    const last = updated[updated.length - 1];
-                    if (last && last.type === 'assistant' && !last.isToolUse && last.isStreaming) {
-                      last.content = last.content ? `${last.content}\n${chunk}` : chunk;
-                    } else {
-                      updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true });
-                    }
-                    return updated;
-                  });
-                }, 100);
-              }
-            }
-          } catch (e) {
-            console.warn('Error handling cursor-output message:', e);
-          }
-          break;
-          
         case 'claude-complete':
           // Get session ID from message or fall back to current session
           const completedSessionId = latestMessage.sessionId || currentSessionId || sessionStorage.getItem('pendingSessionId');
@@ -541,12 +426,28 @@ export function useWebSocket({
           
           // If we have a pending session ID and the conversation completed successfully, use it
           const pendingSessionId = sessionStorage.getItem('pendingSessionId');
+          const pendingNavigationSessionId = sessionStorage.getItem('pendingNavigationSessionId');
+
           if (pendingSessionId && !currentSessionId && latestMessage.exitCode === 0) {
-                setCurrentSessionId(pendingSessionId);
+            setCurrentSessionId(pendingSessionId);
             sessionStorage.removeItem('pendingSessionId');
 
-            // No need to manually refresh - projects_updated WebSocket message will handle it
+            // Manually refresh sessions to ensure new session appears in sidebar
+            // File watcher should also trigger, but this ensures immediate feedback
             console.log('✅ New session complete, ID set to:', pendingSessionId);
+            if (window.refreshSessions) {
+              setTimeout(() => window.refreshSessions(), 500);
+            }
+
+            // Navigate to the new session after completion (not during conversation)
+            if (pendingNavigationSessionId) {
+              console.log('🔄 Navigating to new session after completion:', pendingNavigationSessionId);
+              sessionStorage.removeItem('pendingNavigationSessionId');
+              if (onNavigateToSession) {
+                // Delay navigation to ensure session is in the list
+                setTimeout(() => onNavigateToSession(pendingNavigationSessionId), 700);
+              }
+            }
           }
           
           // Clear persisted chat messages after successful completion

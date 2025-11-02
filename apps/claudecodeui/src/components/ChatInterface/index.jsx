@@ -199,7 +199,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         }
       }
     }
-  }, [isNearBottom, hasMoreMessages, isLoadingMoreMessages, selectedSession, selectedProject, loadSessionMessages]);
+  }, [isNearBottom, hasMoreMessages, isLoadingMoreMessages, selectedSession, selectedProject, loadSessionMessages, setSessionMessages]);
 
   useEffect(() => {
     // Load session messages when session changes
@@ -304,7 +304,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     };
 
     loadMessages();
-  }, [selectedSession, selectedProject, loadCursorSessionMessages, scrollToBottom, isSystemSessionChange]);
+  }, [selectedSession, selectedProject, loadSessionMessages, loadCursorSessionMessages, setSessionMessages, setChatMessages, setCurrentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading, ws, sendMessage, scrollToBottom, isSystemSessionChange, currentSessionId, isLoading]);
 
   // External Message Update Handler: Reload messages when external CLI modifies current session
   // This triggers when App.jsx detects a JSONL file change for the currently-viewed session
@@ -340,7 +340,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
       reloadExternalMessages();
     }
-  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
+  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, setSessionMessages, setChatMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
 
   // Update chatMessages when convertedMessages changes
   useEffect(() => {

@@ -55,13 +55,19 @@ async function getSessions(limit = 5, offset = 0) {
   const project = getCurrentProject();
   const projectDir = project.claudeProjectDir;
 
+  console.log('📁 getSessions - projectDir:', projectDir);
+
   try {
     const files = await fs.readdir(projectDir);
+    console.log('📄 getSessions - all files:', files);
+
     // agent-*.jsonl files contain session start data at this point. This needs to be revisited
     // periodically to make sure only accurate data is there and no new functionality is added there
     const jsonlFiles = files.filter(file => file.endsWith('.jsonl') && !file.startsWith('agent-'));
-    
+    console.log('✅ getSessions - filtered jsonl files:', jsonlFiles);
+
     if (jsonlFiles.length === 0) {
+      console.log('⚠️ getSessions - No jsonl files found, returning empty');
       return { sessions: [], hasMore: false, total: 0 };
     }
     
