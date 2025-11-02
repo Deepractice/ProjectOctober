@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { X } from 'lucide-react';
 
 function ImageViewer({ file, onClose }) {
-  const imagePath = `/api/projects/${file.projectName}/files/content?path=${encodeURIComponent(file.path)}`;
+  const imagePath = `/api/files/content?path=${encodeURIComponent(file.path)}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

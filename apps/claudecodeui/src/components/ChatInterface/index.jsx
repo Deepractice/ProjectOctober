@@ -182,7 +182,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         const previousScrollTop = container.scrollTop;
         
         // Load more messages
-        const moreMessages = await loadSessionMessages(selectedProject.name, selectedSession.id, true);
+        const moreMessages = await loadSessionMessages(selectedSession.id, true);
         
         if (moreMessages.length > 0) {
           // Prepend new messages to the existing ones
@@ -273,7 +273,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           // Only load messages from API if this is a user-initiated session change
           // For system-initiated changes, preserve existing messages and rely on WebSocket
           if (!isSystemSessionChange) {
-            const messages = await loadSessionMessages(selectedProject.name, selectedSession.id, false);
+            const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
             // convertedMessages will be automatically updated via useMemo
             // Scroll will be handled by the main scroll useEffect after messages are rendered
@@ -323,7 +323,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setChatMessages(converted);
           } else {
             // Reload Claude messages from API/JSONL
-            const messages = await loadSessionMessages(selectedProject.name, selectedSession.id, false);
+            const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
             // convertedMessages will be automatically updated via useMemo
 
@@ -543,7 +543,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     // Fetch token usage once when session loads
     const fetchInitialTokenUsage = async () => {
       try {
-        const url = `/api/projects/${selectedProject.name}/sessions/${selectedSession.id}/token-usage`;
+        const url = `/api/sessions/${selectedSession.id}/token-usage`;
 
         const response = await authenticatedFetch(url);
 
@@ -608,7 +608,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const response = await fetch(`/api/projects/${selectedProject.name}/upload-images`, {
+        const response = await fetch(`/api/upload-images`, {
           method: 'POST',
           headers: headers,
           body: formData

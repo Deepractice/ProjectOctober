@@ -515,7 +515,7 @@ export function useWebSocket({
             if (selectedProject && selectedSession?.id) {
               const fetchUpdatedTokenUsage = async () => {
                 try {
-                  const url = `/api/projects/${selectedProject.name}/sessions/${selectedSession.id}/token-usage`;
+                  const url = `/api/sessions/${selectedSession.id}/token-usage`;
                   const response = await authenticatedFetch(url);
                   if (response.ok) {
                     const data = await response.json();
