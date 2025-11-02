@@ -77,7 +77,6 @@ function InputArea({
           isLoading={isLoading}
           onAbort={handleAbortSession}
           provider={provider}
-          showThinking={showThinking}
         />
       </div>
 

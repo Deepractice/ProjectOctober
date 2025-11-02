@@ -56,7 +56,6 @@ function ClaudeStatusBar({
         isLoading={isLoading}
         onAbort={onAbort}
         provider={provider}
-        showThinking={showThinking}
       />
     </div>
   );

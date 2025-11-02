@@ -80,7 +80,7 @@ function FileTree({ selectedProject }) {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const response = await api.getFiles(selectedProject.name);
+      const response = await api.getFiles();
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -129,7 +129,7 @@ function FileTree({ selectedProject }) {
     if (!date) return '-';
     const now = new Date();
     const past = new Date(date);
-    const diffInSeconds = Math.floor((now - past) / 1000);
+    const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
     
     if (diffInSeconds < 60) return 'just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;

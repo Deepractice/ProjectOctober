@@ -1,37 +1,30 @@
 version: '3.8'
 
-# Claude Code UI - 生产环境部署配置
-# 使用上游开源主线代码，支持多项目模式
+# Claude Code UI - Simple 3-variable configuration
+# Everything else is fixed in the image
 
 services:
   claude-code-ui:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: claude-code-ui
     env_file:
-      - .env
+      - .env.docker
     ports:
-      - "3001:3001"
-      - "5173:5173"
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - CLAUDE_CLI_PATH=/usr/local/bin/claude
-      # 认证配置（可选）
-      - USE_EXTERNAL_AUTH=false
-      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-change-in-production}
-      - API_KEY=${API_KEY:-}
+      # Only 2 runtime variables needed (from .env.docker)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
     volumes:
-      # Claude 配置和 sessions 持久化
+      # Claude config and sessions
       - claude-data:/opt/claude-config
-      # SSH 密钥（用于 Git 操作）
-      - ~/.ssh:/home/claudeuser/.ssh:ro
-      # Git 配置
-      - ~/.gitconfig:/home/claudeuser/.gitconfig:ro
-      # Project directory (configured via PROJECT_PATH in .env)
-      # If not set, the container will start without a project
+      # Project directory (3rd variable from .env.docker)
       - ${PROJECT_PATH:-.}:/project
+      # Optional: SSH and Git config
+      - ~/.ssh:/home/node/.ssh:ro
+      - ~/.gitconfig:/home/node/.gitconfig:ro
     restart: unless-stopped
     networks:
       - claude-network

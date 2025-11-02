@@ -133,7 +133,7 @@ function renderToolInput(message, autoExpandTools, showRawParameters, onFileOpen
                   if (!onFileOpen) return;
 
                   try {
-                    const response = await api.readFile(selectedProject?.name, input.file_path);
+                    const response = await api.readFile(input.file_path);
                     const data = await response.json();
 
                     if (!response.ok || data.error) {
@@ -202,7 +202,7 @@ function renderToolInput(message, autoExpandTools, showRawParameters, onFileOpen
                   if (!onFileOpen) return;
 
                   try {
-                    const response = await api.readFile(selectedProject?.name, input.file_path);
+                    const response = await api.readFile(input.file_path);
                     const data = await response.json();
                     const newContent = (response.ok && !data.error) ? data.content || '' : input.content || '';
 

@@ -8,7 +8,7 @@ function AppModals({
   // Settings Modal
   showSettings,
   onCloseSettings,
-  sessions,
+  projects,
   settingsInitialTab,
 
   // Version Modal
@@ -43,7 +43,7 @@ function AppModals({
       <Settings
         isOpen={showSettings}
         onClose={onCloseSettings}
-        sessions={sessions}
+        projects={projects}
         initialTab={settingsInitialTab}
       />
 

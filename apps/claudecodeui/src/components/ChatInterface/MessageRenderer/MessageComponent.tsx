@@ -3,6 +3,20 @@ import ClaudeLogo from '../../ClaudeLogo.jsx';
 import TodoList from '../../TodoList';
 import ToolUseDisplay from './ToolUseDisplay';
 import { Markdown, formatUsageLimitText } from './index';
+import type { ChatMessage, ProjectInfo } from '~/types';
+
+interface MessageComponentProps {
+  message: any; // TODO: Use ChatMessage type after fixing message structure
+  index: number;
+  prevMessage: any | null;
+  createDiff: (oldCode: string, newCode: string) => any;
+  onFileOpen?: (filePath: string) => void;
+  onShowSettings?: () => void;
+  autoExpandTools: boolean;
+  showRawParameters: boolean;
+  showThinking: boolean;
+  selectedProject: ProjectInfo;
+}
 
 // Memoized message component to prevent unnecessary re-renders
 const MessageComponent = memo(({
@@ -16,7 +30,7 @@ const MessageComponent = memo(({
   showRawParameters,
   showThinking,
   selectedProject
-}) => {
+}: MessageComponentProps) => {
   const isGrouped = prevMessage && prevMessage.type === message.type &&
                    ((prevMessage.type === 'assistant') ||
                     (prevMessage.type === 'user') ||

@@ -1,23 +1,29 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
-const ScrollArea = React.forwardRef(({ className, children, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <div 
-      className="h-full w-full rounded-[inherit] overflow-auto"
-      style={{
-        WebkitOverflowScrolling: 'touch',
-        touchAction: 'pan-y'
-      }}
+export interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+  children?: React.ReactNode;
+}
+
+const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
+  ({ className, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("relative overflow-hidden", className)}
+      {...props}
     >
-      {children}
+      <div
+        className="h-full w-full rounded-[inherit] overflow-auto"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y'
+        } as React.CSSProperties}
+      >
+        {children}
+      </div>
     </div>
-  </div>
-))
+  )
+)
 ScrollArea.displayName = "ScrollArea"
 
 export { ScrollArea }

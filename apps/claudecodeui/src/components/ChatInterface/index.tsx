@@ -113,8 +113,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
   // Destructure WebSocket state for cleaner code
   const {
-    chatMessages,
-    setChatMessages,
+    chatMessages: legacyChatMessages,  // Still kept for backward compat
+    setChatMessages: legacySetChatMessages,
     isLoading,
     setIsLoading,
     currentSessionId,
@@ -132,6 +132,14 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     streamBufferRef,
     streamTimerRef
   } = wsState;
+
+  // === NEW: Subscribe to messageStore (Global State) ===
+  const chatMessages = useMessageStore(
+    state => state.getDisplayMessages(currentSessionId || selectedSession?.id || '')
+  );
+
+  // Alias for backward compatibility
+  const setChatMessages = legacySetChatMessages;
 
   // Messages Hook - handles session message loading and conversion
   const {
@@ -246,7 +254,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             const projectPath = selectedProject.fullPath || selectedProject.path;
             const converted = await loadCursorSessionMessages(projectPath, selectedSession.id);
             setSessionMessages([]);
-            setChatMessages(converted);
+
+            // === NEW: Write to messageStore ===
+            useMessageStore.getState().setServerMessages(selectedSession.id, converted);
           } else {
             // Reset the flag after handling system session change
             setIsSystemSessionChange(false);
@@ -260,7 +270,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           if (!isSystemSessionChange) {
             const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
-            // convertedMessages will be automatically updated via useMemo
+
+            // === NEW: Convert and write to messageStore ===
+            const converted = convertSessionMessages(messages);
+            useMessageStore.getState().setServerMessages(selectedSession.id, converted);
             // Scroll will be handled by the main scroll useEffect after messages are rendered
           } else {
             // Reset the flag after handling system session change
@@ -452,14 +465,18 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       }
     }
 
-    const userMessage = {
-      type: 'user',
+    const userMessage: import('../../types').ChatMessage = {
+      type: 'user' as const,
       content: input,
       images: uploadedImages,
       timestamp: new Date()
     };
 
-    setChatMessages(prev => [...prev, userMessage]);
+    // === NEW: Optimistic Update to messageStore ===
+    const sessionId = currentSessionId || selectedSession?.id || sessionStorage.getItem('cursorSessionId') || '';
+    if (sessionId) {
+      useMessageStore.getState().addOptimisticMessage(sessionId, userMessage);
+    }
     setIsLoading(true);
     setCanAbortSession(true);
     // Set a default status when starting

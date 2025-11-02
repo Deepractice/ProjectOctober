@@ -363,6 +363,8 @@ function MainContent({
               autoScrollToBottom={autoScrollToBottom}
               sendByCtrlEnter={sendByCtrlEnter}
               externalMessageUpdate={externalMessageUpdate}
+              onTaskClick={() => {}}
+              onShowAllTasks={() => {}}
             />
           </ErrorBoundary>
         </div>

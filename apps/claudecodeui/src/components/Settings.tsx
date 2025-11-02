@@ -35,6 +35,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
       headers: {},
       timeout: 30000
     },
+    raw: '',
     jsonInput: '', // For JSON import
     importMode: 'form' // 'form' or 'json'
   });
@@ -436,6 +437,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
         headers: {},
         timeout: 30000
       },
+      raw: '',
       jsonInput: '',
       importMode: 'form'
     });
@@ -1492,7 +1494,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
                               }
                             }}
                             className={`w-full px-3 py-2 border ${jsonValidationError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm`}
-                            rows="8"
+                            rows={8}
                             placeholder={'{\n  "type": "stdio",\n  "command": "/path/to/server",\n  "args": ["--api-key", "abc123"],\n  "env": {\n    "CACHE_DIR": "/tmp"\n  }\n}'}
                             required
                           />
@@ -1531,7 +1533,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
                             value={Array.isArray(mcpFormData.config.args) ? mcpFormData.config.args.join('\n') : ''}
                             onChange={(e) => updateMcpConfig('args', e.target.value.split('\n').filter(arg => arg.trim()))}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                            rows="3"
+                            rows={3}
                             placeholder="--api-key&#10;abc123"
                           />
                         </div>
@@ -1572,7 +1574,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
                           updateMcpConfig('env', env);
                         }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        rows="3"
+                        rows={3}
                         placeholder="API_KEY=your-key&#10;DEBUG=true"
                       />
                     </div>
@@ -1596,7 +1598,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
                             updateMcpConfig('headers', headers);
                           }}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                          rows="3"
+                          rows={3}
                           placeholder="Authorization=Bearer token&#10;X-API-Key=your-key"
                         />
                       </div>

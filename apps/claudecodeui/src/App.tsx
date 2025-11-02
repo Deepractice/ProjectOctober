@@ -272,7 +272,7 @@ function AppContent() {
       <AppModals
         showSettings={showSettings}
         onCloseSettings={() => setShowSettings(false)}
-        sessions={sessions}
+        projects={project ? [project] : []}
         settingsInitialTab={settingsInitialTab}
         showVersionModal={showVersionModal}
         onCloseVersionModal={() => setShowVersionModal(false)}

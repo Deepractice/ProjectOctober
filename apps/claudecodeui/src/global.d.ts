@@ -8,6 +8,11 @@ declare global {
     refreshSessions?: () => void;
     openSettings?: () => void;
   }
+
+  // Extend Navigator for PWA detection
+  interface Navigator {
+    standalone?: boolean;
+  }
 }
 
 export {};

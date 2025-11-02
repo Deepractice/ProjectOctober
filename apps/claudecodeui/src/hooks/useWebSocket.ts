@@ -59,12 +59,11 @@ export function useWebSocket({
     }
   }, [selectedSession?.id]);
 
-  // Setup WebSocket message handlers
+  // Setup WebSocket message handlers (now writes to messageStore)
   useWebSocketHandlers({
     currentSessionId: state.currentSessionId,
     selectedSession,
     selectedProject,
-    setChatMessages: state.setChatMessages,
     setIsLoading: state.setIsLoading,
     setCanAbortSession: state.setCanAbortSession,
     setClaudeStatus: state.setClaudeStatus,
@@ -75,9 +74,6 @@ export function useWebSocket({
     streamTimerRef: state.streamTimerRef,
     onSessionProcessing,
     onNavigateToSession,
-    autoScrollToBottom,
-    scrollToBottom,
-    isNearBottom
   });
 
   // Return complete API

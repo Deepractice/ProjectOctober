@@ -19,7 +19,7 @@ const formatTimeAgo = (dateString, currentTime) => {
     return 'Unknown';
   }
 
-  const diffInMs = now - date;
+  const diffInMs = now.getTime() - date.getTime();
   const diffInSeconds = Math.floor(diffInMs / 1000);
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
@@ -114,7 +114,7 @@ function Sidebar({
 
   // Sort sessions by most recent activity
   const sortedSessions = [...filteredSessions].sort((a, b) =>
-    new Date(b.lastActivity) - new Date(a.lastActivity)
+    new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
   );
 
   return (
@@ -277,7 +277,7 @@ function Sidebar({
               {sortedSessions.map((session) => {
                 // Calculate if session is active (within last 10 minutes)
                 const sessionDate = new Date(session.lastActivity);
-                const diffInMinutes = Math.floor((currentTime - sessionDate) / (1000 * 60));
+                const diffInMinutes = Math.floor((currentTime.getTime() - sessionDate.getTime()) / (1000 * 60));
                 const isActive = diffInMinutes < 10;
 
                 // Get session display values

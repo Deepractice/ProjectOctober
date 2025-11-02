@@ -82,15 +82,33 @@ export type WebSocketMessage =
  * Message Store State
  */
 export interface MessageState {
-  // State
+  // Message routing (existing)
   recentMessages: (WebSocketMessage & { messageId: string })[];
   processedMessageIds: Set<string>;
 
-  // Actions
+  // Chat message storage (new)
+  sessionMessages: Map<string, import('./chat').ChatMessage[]>;      // Server messages
+  optimisticMessages: Map<string, import('./chat').ChatMessage[]>;   // Client pending
+  loadingSessions: Set<string>;                                       // Loading indicators
+  messageMetadata: Map<string, import('./chat').MessageMetadata>;    // Pagination metadata
+
+  // Message routing actions (existing)
   handleMessage: (message: WebSocketMessage) => void;
   registerHandler: (type: WebSocketMessageType, handler: (message: any) => void) => void;
   unregisterHandler: (type: WebSocketMessageType) => void;
   clearMessages: () => void;
   getMessagesByType: (type: WebSocketMessageType) => WebSocketMessage[];
   getMessagesBySession: (sessionId: string) => WebSocketMessage[];
+
+  // Chat message actions (new)
+  addOptimisticMessage: (sessionId: string, message: import('./chat').ChatMessage) => void;
+  clearOptimisticMessages: (sessionId: string) => void;
+  setServerMessages: (sessionId: string, messages: import('./chat').ChatMessage[]) => void;
+  appendServerMessage: (sessionId: string, message: import('./chat').ChatMessage) => void;
+  updateMessage: (sessionId: string, messageId: string, updates: Partial<import('./chat').ChatMessage>) => void;
+  hasSessionMessages: (sessionId: string) => boolean;
+  getDisplayMessages: (sessionId: string) => import('./chat').ChatMessage[];
+  clearSessionMessages: (sessionId: string) => void;
+  setLoading: (sessionId: string, loading: boolean) => void;
+  setMetadata: (sessionId: string, metadata: import('./chat').MessageMetadata) => void;
 }

@@ -96,7 +96,7 @@ export const useSessionStore = create<SessionState>()(
       replaceTemporarySession: (realSessionId) => {
         if (!realSessionId) return;
         set((state) => {
-          const newSet = new Set();
+          const newSet = new Set<string>();
           for (const sessionId of state.activeSessions) {
             if (!sessionId.startsWith('new-session-')) {
               newSet.add(sessionId);

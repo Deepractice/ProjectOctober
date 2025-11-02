@@ -1,13 +1,13 @@
 /**
- * useWebSocketHandlers Hook
+ * useWebSocketHandlers Hook - REFACTORED
  *
- * Extracts WebSocket message handling logic from ChatInterface.
- * This hook manages all WebSocket message handlers and their state updates.
+ * WebSocket message handlers that write to global messageStore.
+ * Handlers are registered once and use refs to access latest state.
  *
- * Design Principles:
- * - Single Responsibility: Only handles WebSocket messages
- * - Loose Coupling: Accepts state setters as parameters instead of managing state
- * - Testable: Pure message handling logic
+ * Key Changes:
+ * - Handlers call messageStore actions directly
+ * - Zero re-registrations (empty dependency array)
+ * - Latest state accessed via stateRef
  */
 
 import { useEffect, useRef } from 'react';
@@ -15,6 +15,7 @@ import { useMessageStore } from '../stores';
 import { decodeHtmlEntities, formatUsageLimitText } from '../components/ChatInterface/MessageRenderer';
 import { authenticatedFetch } from '../utils/api';
 import safeLocalStorage from '../utils/safeLocalStorage';
+import type { ChatMessage } from '../types';
 
 export function useWebSocketHandlers({
   // Current session context
@@ -22,8 +23,7 @@ export function useWebSocketHandlers({
   selectedSession,
   selectedProject,
 
-  // State setters for chat messages
-  setChatMessages,
+  // State setters (still needed for non-message state)
   setIsLoading,
   setCanAbortSession,
   setClaudeStatus,
@@ -38,76 +38,107 @@ export function useWebSocketHandlers({
   // Callbacks
   onSessionProcessing,
   onNavigateToSession,
-
-  // Settings
-  autoScrollToBottom,
-  scrollToBottom,
-  isNearBottom
 }) {
+  // Store latest state in ref to avoid re-registering handlers
+  const stateRef = useRef({
+    currentSessionId,
+    selectedSession,
+    selectedProject,
+    setIsLoading,
+    setCanAbortSession,
+    setClaudeStatus,
+    setIsSystemSessionChange,
+    setTokenBudget,
+    setCurrentSessionId,
+    onSessionProcessing,
+    onNavigateToSession,
+  });
+
+  // Update ref when props change (no re-registration)
+  useEffect(() => {
+    stateRef.current = {
+      currentSessionId,
+      selectedSession,
+      selectedProject,
+      setIsLoading,
+      setCanAbortSession,
+      setClaudeStatus,
+      setIsSystemSessionChange,
+      setTokenBudget,
+      setCurrentSessionId,
+      onSessionProcessing,
+      onNavigateToSession,
+    };
+  });
+
+  // Register handlers ONCE on mount
   useEffect(() => {
     const messageStore = useMessageStore.getState();
 
-    // Handler for claude-response messages
-    const handleClaudeResponse = (msg) => {
-      // Only process if this is for the current session
+    // Helper: Flush streaming buffer to store
+    const flushStreamBuffer = (sessionId: string, isStreaming: boolean = true) => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
+
+      const chunk = streamBufferRef.current;
+      streamBufferRef.current = '';
+
+      if (!chunk) return;
+
+      // Get current messages to check if we should append or create new
+      const currentMessages = messageStore.getDisplayMessages(sessionId);
+      const lastMessage = currentMessages[currentMessages.length - 1];
+
+      if (lastMessage && lastMessage.type === 'assistant' && !lastMessage.isToolUse && lastMessage.isStreaming) {
+        // Update existing streaming message
+        const updatedContent = (lastMessage.content || '') + chunk;
+        messageStore.updateMessage(sessionId, lastMessage.id!, {
+          content: updatedContent,
+          isStreaming
+        });
+      } else {
+        // Create new message
+        const newMessage: ChatMessage = {
+          type: 'assistant',
+          content: chunk,
+          timestamp: new Date(),
+          isStreaming
+        };
+        messageStore.appendServerMessage(sessionId, newMessage);
+      }
+    };
+
+    // Handler: claude-response
+    const handleClaudeResponse = (msg: any) => {
+      const { currentSessionId, setIsSystemSessionChange, onNavigateToSession } = stateRef.current;
+
+      // Only process for current session
       if (msg.sessionId && currentSessionId && msg.sessionId !== currentSessionId) {
         return;
       }
 
-      const messageData = msg.data.message || msg.data;
+      const messageData = msg.data?.message || msg.data;
 
       // Handle streaming format
       if (messageData && typeof messageData === 'object' && messageData.type) {
+        // Streaming delta
         if (messageData.type === 'content_block_delta' && messageData.delta?.text) {
           const decodedText = decodeHtmlEntities(messageData.delta.text);
           streamBufferRef.current += decodedText;
+
           if (!streamTimerRef.current) {
             streamTimerRef.current = setTimeout(() => {
-              const chunk = streamBufferRef.current;
-              streamBufferRef.current = '';
-              streamTimerRef.current = null;
-              if (!chunk) return;
-              setChatMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.type === 'assistant' && !last.isToolUse && last.isStreaming) {
-                  last.content = (last.content || '') + chunk;
-                } else {
-                  updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true });
-                }
-                return updated;
-              });
+              flushStreamBuffer(currentSessionId, true);
             }, 100);
           }
           return;
         }
+
+        // Streaming stop
         if (messageData.type === 'content_block_stop') {
-          if (streamTimerRef.current) {
-            clearTimeout(streamTimerRef.current);
-            streamTimerRef.current = null;
-          }
-          const chunk = streamBufferRef.current;
-          streamBufferRef.current = '';
-          if (chunk) {
-            setChatMessages(prev => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last && last.type === 'assistant' && !last.isToolUse && last.isStreaming) {
-                last.content = (last.content || '') + chunk;
-              } else {
-                updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true });
-              }
-              return updated;
-            });
-          }
-          setChatMessages(prev => {
-            const updated = [...prev];
-            const last = updated[updated.length - 1];
-            if (last && last.type === 'assistant' && last.isStreaming) {
-              last.isStreaming = false;
-            }
-            return updated;
-          });
+          flushStreamBuffer(currentSessionId, false);
           return;
         }
       }
@@ -115,83 +146,84 @@ export function useWebSocketHandlers({
       // Handle system/init messages for session changes
       if (messageData.type === 'system' &&
           messageData.subtype === 'init' &&
-          messageData.session_id &&
-          currentSessionId &&
-          messageData.session_id !== currentSessionId) {
-        setIsSystemSessionChange(true);
-        if (onNavigateToSession) {
-          onNavigateToSession(messageData.session_id);
+          messageData.session_id) {
+
+        if (currentSessionId && messageData.session_id !== currentSessionId) {
+          setIsSystemSessionChange(true);
+          if (onNavigateToSession) {
+            onNavigateToSession(messageData.session_id);
+          }
+        } else if (!currentSessionId) {
+          sessionStorage.setItem('pendingNavigationSessionId', messageData.session_id);
         }
         return;
       }
 
-      if (messageData.type === 'system' &&
-          messageData.subtype === 'init' &&
-          messageData.session_id &&
-          !currentSessionId) {
-        sessionStorage.setItem('pendingNavigationSessionId', messageData.session_id);
-        return;
-      }
-
-      // Handle different content types
+      // Handle content (text, tool use)
       if (Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
           if (part.type === 'tool_use') {
-            const toolInput = part.input ? JSON.stringify(part.input, null, 2) : '';
-            setChatMessages(prev => [...prev, {
+            const toolMessage: ChatMessage = {
               type: 'assistant',
               content: '',
               timestamp: new Date(),
               isToolUse: true,
               toolName: part.name,
-              toolInput: toolInput,
+              toolInput: part.input ? JSON.stringify(part.input, null, 2) : '',
               toolId: part.id,
               toolResult: null
-            }]);
+            };
+            messageStore.appendServerMessage(currentSessionId, toolMessage);
           } else if (part.type === 'text' && part.text?.trim()) {
             let content = decodeHtmlEntities(part.text);
             content = formatUsageLimitText(content);
-            setChatMessages(prev => [...prev, {
+            const textMessage: ChatMessage = {
               type: 'assistant',
-              content: content,
+              content,
               timestamp: new Date()
-            }]);
+            };
+            messageStore.appendServerMessage(currentSessionId, textMessage);
           }
         }
       } else if (typeof messageData.content === 'string' && messageData.content.trim()) {
         let content = decodeHtmlEntities(messageData.content);
         content = formatUsageLimitText(content);
-        setChatMessages(prev => [...prev, {
+        const textMessage: ChatMessage = {
           type: 'assistant',
-          content: content,
+          content,
           timestamp: new Date()
-        }]);
+        };
+        messageStore.appendServerMessage(currentSessionId, textMessage);
       }
 
       // Handle tool results
       if (messageData.role === 'user' && Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
           if (part.type === 'tool_result') {
-            setChatMessages(prev => prev.map(msg => {
-              if (msg.isToolUse && msg.toolId === part.tool_use_id) {
-                return {
-                  ...msg,
-                  toolResult: {
-                    content: part.content,
-                    isError: part.is_error,
-                    timestamp: new Date()
-                  }
-                };
-              }
-              return msg;
-            }));
+            // Find and update the corresponding tool use message
+            const messages = messageStore.getDisplayMessages(currentSessionId);
+            const toolMessage = messages.find(m =>
+              m.type === 'assistant' && m.isToolUse && m.toolId === part.tool_use_id
+            );
+
+            if (toolMessage?.id) {
+              messageStore.updateMessage(currentSessionId, toolMessage.id, {
+                toolResult: {
+                  content: part.content,
+                  isError: part.is_error,
+                  timestamp: new Date()
+                }
+              });
+            }
           }
         }
       }
     };
 
-    // Handler for claude-output (streaming)
-    const handleClaudeOutput = (msg) => {
+    // Handler: claude-output (streaming)
+    const handleClaudeOutput = (msg: any) => {
+      const { currentSessionId } = stateRef.current;
+
       if (msg.sessionId && currentSessionId && msg.sessionId !== currentSessionId) {
         return;
       }
@@ -199,48 +231,55 @@ export function useWebSocketHandlers({
       const cleaned = String(msg.data || '');
       if (cleaned.trim()) {
         streamBufferRef.current += (streamBufferRef.current ? `\n${cleaned}` : cleaned);
+
         if (!streamTimerRef.current) {
           streamTimerRef.current = setTimeout(() => {
-            const chunk = streamBufferRef.current;
-            streamBufferRef.current = '';
-            streamTimerRef.current = null;
-            if (!chunk) return;
-            setChatMessages(prev => {
-              const updated = [...prev];
-              const last = updated[updated.length - 1];
-              if (last && last.type === 'assistant' && !last.isToolUse && last.isStreaming) {
-                last.content = last.content ? `${last.content}\n${chunk}` : chunk;
-              } else {
-                updated.push({ type: 'assistant', content: chunk, timestamp: new Date(), isStreaming: true });
-              }
-              return updated;
-            });
+            flushStreamBuffer(currentSessionId, true);
           }, 100);
         }
       }
     };
 
-    // Handler for claude-error
-    const handleClaudeError = (msg) => {
+    // Handler: claude-error
+    const handleClaudeError = (msg: any) => {
+      const { currentSessionId } = stateRef.current;
+
       if (msg.sessionId && currentSessionId && msg.sessionId !== currentSessionId) {
         return;
       }
 
-      setChatMessages(prev => [...prev, {
+      const errorMessage: ChatMessage = {
         type: 'error',
         content: `Error: ${msg.error}`,
         timestamp: new Date()
-      }]);
+      };
+      messageStore.appendServerMessage(currentSessionId, errorMessage);
     };
 
-    // Handler for claude-complete
-    const handleClaudeComplete = (msg) => {
+    // Handler: claude-complete
+    const handleClaudeComplete = (msg: any) => {
+      const {
+        currentSessionId,
+        selectedProject,
+        selectedSession,
+        setIsLoading,
+        setCanAbortSession,
+        setClaudeStatus,
+        setTokenBudget,
+        setCurrentSessionId
+      } = stateRef.current;
+
       const completedSessionId = msg.sessionId || currentSessionId || sessionStorage.getItem('pendingSessionId');
 
       if (completedSessionId === currentSessionId || !currentSessionId) {
         setIsLoading(false);
         setCanAbortSession(false);
         setClaudeStatus(null);
+
+        // Clear optimistic messages on completion
+        if (currentSessionId) {
+          messageStore.clearOptimisticMessages(currentSessionId);
+        }
 
         // Fetch updated token usage
         if (selectedProject && selectedSession?.id) {
@@ -269,6 +308,7 @@ export function useWebSocketHandlers({
 
         if (pendingNavigationSessionId) {
           sessionStorage.removeItem('pendingNavigationSessionId');
+          const { onNavigateToSession } = stateRef.current;
           if (onNavigateToSession) {
             setTimeout(() => onNavigateToSession(pendingNavigationSessionId), 700);
           }
@@ -280,8 +320,9 @@ export function useWebSocketHandlers({
       }
     };
 
-    // Handler for session-aborted
-    const handleSessionAborted = (msg) => {
+    // Handler: session-aborted
+    const handleSessionAborted = (msg: any) => {
+      const { currentSessionId, setIsLoading, setCanAbortSession, setClaudeStatus } = stateRef.current;
       const abortedSessionId = msg.sessionId || currentSessionId;
 
       if (abortedSessionId === currentSessionId) {
@@ -290,18 +331,22 @@ export function useWebSocketHandlers({
         setClaudeStatus(null);
       }
 
-      setChatMessages(prev => [...prev, {
+      const abortMessage: ChatMessage = {
         type: 'assistant',
         content: 'Session interrupted by user.',
         timestamp: new Date()
-      }]);
+      };
+      messageStore.appendServerMessage(abortedSessionId, abortMessage);
     };
 
-    // Handler for session-status
-    const handleSessionStatus = (msg) => {
+    // Handler: session-status
+    const handleSessionStatus = (msg: any) => {
+      const { currentSessionId, selectedSession, setIsLoading, setCanAbortSession, onSessionProcessing } = stateRef.current;
+
       const statusSessionId = msg.sessionId;
       const isCurrentSession = statusSessionId === currentSessionId ||
                                (selectedSession && statusSessionId === selectedSession.id);
+
       if (isCurrentSession && msg.isProcessing) {
         setIsLoading(true);
         setCanAbortSession(true);
@@ -311,9 +356,11 @@ export function useWebSocketHandlers({
       }
     };
 
-    // Handler for claude-status
-    const handleClaudeStatus = (msg) => {
+    // Handler: claude-status
+    const handleClaudeStatus = (msg: any) => {
+      const { setClaudeStatus, setIsLoading, setCanAbortSession } = stateRef.current;
       const statusData = msg.data;
+
       if (statusData) {
         let statusInfo = {
           text: 'Working...',
@@ -345,7 +392,8 @@ export function useWebSocketHandlers({
       }
     };
 
-    // Register all handlers
+    // Register all handlers (ONCE)
+    console.log('✅ Registering WebSocket handlers (one-time)');
     messageStore.registerHandler('claude-response', handleClaudeResponse);
     messageStore.registerHandler('claude-output', handleClaudeOutput);
     messageStore.registerHandler('claude-error', handleClaudeError);
@@ -354,8 +402,9 @@ export function useWebSocketHandlers({
     messageStore.registerHandler('session-status', handleSessionStatus);
     messageStore.registerHandler('claude-status', handleClaudeStatus);
 
-    // Cleanup handlers on unmount
+    // Cleanup on unmount
     return () => {
+      console.log('🧹 Unregistering WebSocket handlers');
       messageStore.unregisterHandler('claude-response');
       messageStore.unregisterHandler('claude-output');
       messageStore.unregisterHandler('claude-error');
@@ -364,23 +413,5 @@ export function useWebSocketHandlers({
       messageStore.unregisterHandler('session-status');
       messageStore.unregisterHandler('claude-status');
     };
-  }, [
-    currentSessionId,
-    selectedSession,
-    selectedProject,
-    onSessionProcessing,
-    onNavigateToSession,
-    autoScrollToBottom,
-    scrollToBottom,
-    isNearBottom,
-    setChatMessages,
-    setIsLoading,
-    setCanAbortSession,
-    setClaudeStatus,
-    setIsSystemSessionChange,
-    setTokenBudget,
-    setCurrentSessionId,
-    streamBufferRef,
-    streamTimerRef
-  ]);
+  }, []); // Empty deps - register once on mount
 }

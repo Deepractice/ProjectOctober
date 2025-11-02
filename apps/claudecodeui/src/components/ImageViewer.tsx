@@ -28,8 +28,11 @@ function ImageViewer({ file, onClose }) {
             alt={file.name}
             className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-md"
             onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              if (target.nextSibling) {
+                (target.nextSibling as HTMLElement).style.display = 'block';
+              }
             }}
           />
           <div

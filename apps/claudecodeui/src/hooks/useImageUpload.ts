@@ -82,8 +82,8 @@ export const useImageUpload = () => {
     const items = Array.from(e.clipboardData.items);
 
     for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
+      if ((item as DataTransferItem).type.startsWith('image/')) {
+        const file = (item as DataTransferItem).getAsFile();
         if (file) {
           handleImageFiles([file]);
         }
@@ -93,7 +93,7 @@ export const useImageUpload = () => {
     // Fallback for some browsers/platforms
     if (items.length === 0 && e.clipboardData.files.length > 0) {
       const files = Array.from(e.clipboardData.files);
-      const imageFiles = files.filter(f => f.type.startsWith('image/'));
+      const imageFiles = files.filter(f => (f as DataTransferItem).type.startsWith('image/'));
       if (imageFiles.length > 0) {
         handleImageFiles(imageFiles);
       }

@@ -40,6 +40,7 @@ export type {
   AssistantMessage,
   ErrorMessage,
   ChatMessage,
+  MessageMetadata,
   ProjectInfo,
 } from './chat';
 

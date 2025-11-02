@@ -216,7 +216,7 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         foreground: '#d4d4d4',
         cursor: '#ffffff',
         cursorAccent: '#1e1e1e',
-        selection: '#264f78',
+        selectionBackground: '#264f78',
         selectionForeground: '#ffffff',
         
         // Standard ANSI colors (0-7)

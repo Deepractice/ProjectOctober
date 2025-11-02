@@ -67,7 +67,7 @@ export const useUIStore = create<UIState>()(
       name: 'ui-preferences',
       version: 1,
       // Migrate old localStorage keys
-      migrate: (persistedState, version) => {
+      migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           // Try to import old localStorage values
           try {
@@ -79,7 +79,7 @@ export const useUIStore = create<UIState>()(
             const sidebarVisible = localStorage.getItem('sidebarVisible');
 
             return {
-              ...persistedState,
+              ...(persistedState as object || {}),
               autoExpandTools: autoExpandTools ? JSON.parse(autoExpandTools) : false,
               showRawParameters: showRawParameters ? JSON.parse(showRawParameters) : false,
               showThinking: showThinking ? JSON.parse(showThinking) : true,

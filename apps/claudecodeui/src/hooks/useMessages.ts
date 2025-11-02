@@ -338,7 +338,7 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
           console.log('Error parsing blob content:', e);
         }
         if (text && text.trim()) {
-          const message = {
+          const message: any = {
             type: role,
             content: text,
             timestamp: new Date(Date.now() + blobIdx * 1000),
@@ -346,12 +346,12 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
             sequence: blob.sequence,
             rowid: blob.rowid
           };
-          
+
           // Add reasoning if we have it
           if (reasoningText) {
             message.reasoning = reasoningText;
           }
-          
+
           converted.push(message);
         }
       }
@@ -367,7 +367,7 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
           return a.rowid - b.rowid;
         }
         // Fallback to timestamp
-        return new Date(a.timestamp) - new Date(b.timestamp);
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
       });
       
       return converted;

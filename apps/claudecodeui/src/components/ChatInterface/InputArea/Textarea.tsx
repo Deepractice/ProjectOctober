@@ -52,7 +52,7 @@ function Textarea({
   slashCommands = [],
   frequentCommands = [],
   commandQuery = '',
-  dropzoneProps = {},
+  dropzoneProps = { getRootProps: () => ({}), getInputProps: () => ({}), isDragActive: false, open: () => {} },
   onChange,
   onClick,
   onKeyDown,

@@ -229,7 +229,7 @@ function CodeEditor({ file, onClose, projectPath, isSidebar = false, isExpanded 
         const settingsBtn = dom.querySelector('.cm-settings-btn');
         settingsBtn?.addEventListener('click', () => {
           if (window.openSettings) {
-            window.openSettings('appearance');
+            window.openSettings();
           }
         });
 
@@ -299,7 +299,7 @@ function CodeEditor({ file, onClose, projectPath, isSidebar = false, isExpanded 
         }
 
         // Otherwise, load from disk
-        const response = await api.readFile(file.projectName, file.path);
+        const response = await api.readFile(file.path);
 
         if (!response.ok) {
           throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
@@ -327,7 +327,7 @@ function CodeEditor({ file, onClose, projectPath, isSidebar = false, isExpanded 
         contentLength: content?.length
       });
 
-      const response = await api.saveFile(file.projectName, file.path, content);
+      const response = await api.saveFile(file.path, content);
 
       console.log('Save response:', {
         status: response.status,

@@ -37,7 +37,7 @@ export const useFileAutocomplete = ({
 
   const fetchProjectFiles = async () => {
     try {
-      const response = await api.getFiles(selectedProject.name);
+      const response = await api.getFiles();
       if (response.ok) {
         const files = await response.json();
         // Flatten the file tree to get all file paths

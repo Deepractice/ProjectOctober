@@ -7,11 +7,11 @@ import React, { useEffect, useRef } from 'react';
  * @param {number} selectedIndex - Currently selected command index
  * @param {Function} onSelect - Callback when a command is selected
  * @param {Function} onClose - Callback when menu should close
- * @param {Object} position - Position object { top, left } for absolute positioning
+ * @param {Object} position - Position object { top, left, bottom? } for absolute positioning
  * @param {boolean} isOpen - Whether the menu is open
  * @param {Array} frequentCommands - Array of frequently used command objects
  */
-const CommandMenu = ({ commands = [], selectedIndex = -1, onSelect, onClose, position = { top: 0, left: 0 }, isOpen = false, frequentCommands = [] }) => {
+const CommandMenu = ({ commands = [], selectedIndex = -1, onSelect, onClose, position = { top: 0, left: 0, bottom: undefined }, isOpen = false, frequentCommands = [] }) => {
   const menuRef = useRef(null);
   const selectedItemRef = useRef(null);
 
@@ -101,7 +101,7 @@ const CommandMenu = ({ commands = [], selectedIndex = -1, onSelect, onClose, pos
           transform: 'translateY(0)',
           transition: 'opacity 150ms ease-in-out, transform 150ms ease-in-out',
           textAlign: 'center'
-        }}
+        } as React.CSSProperties}
       >
         No commands available
       </div>
@@ -170,7 +170,7 @@ const CommandMenu = ({ commands = [], selectedIndex = -1, onSelect, onClose, pos
         opacity: isOpen ? 1 : 0,
         transform: isOpen ? 'translateY(0)' : 'translateY(-10px)',
         transition: 'opacity 150ms ease-in-out, transform 150ms ease-in-out'
-      }}
+      } as React.CSSProperties}
     >
       {orderedNamespaces.map((namespace) => (
         <div key={namespace} className="command-group">
