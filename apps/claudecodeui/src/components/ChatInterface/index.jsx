@@ -22,14 +22,15 @@ import { useTasksSettings } from '../../contexts/TasksSettingsContext';
 import { authenticatedFetch } from '../../utils/api';
 import { useDiffCalculation } from '../../hooks/useDiffCalculation';
 import { useImageUpload } from '../../hooks/useImageUpload';
-import { useFileAutocomplete } from '../../hooks/useFileAutocomplete';
-import { useCommands } from '../../hooks/useCommands';
 import { useMessages } from '../../hooks/useMessages';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import safeLocalStorage from '../../utils/safeLocalStorage';
 import { decodeHtmlEntities } from './MessageRenderer';
 import MessagesArea from './MessagesArea';
 import InputArea from './InputArea';
+import CommandPalette from './CommandPalette';
+import FileAutocomplete from './FileAutocomplete';
+import ClaudeStatusBar from './ClaudeStatusBar';
 
 // ChatInterface: Main chat component with Session Protection System integration
 // 
@@ -91,24 +92,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   // Ref to store handleSubmit so we can call it from handleCustomCommand
   const handleSubmitRef = useRef(null);
 
-  // File autocomplete hook for @ file path suggestions
-  const {
-    showFileDropdown,
-    filteredFiles,
-    selectedFileIndex,
-    atSymbolPosition,
-    selectFile,
-    handleFileKeyDown,
-    setShowFileDropdown
-  } = useFileAutocomplete({
-    input,
-    cursorPosition,
-    selectedProject,
-    textareaRef,
-    setInput,
-    setCursorPosition
-  });
-
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const scrollPositionRef = useRef({ height: 0, top: 0 });
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
@@ -123,7 +106,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   });
 
   // Messages Hook - handles session message loading and conversion
-  // MUST be called before useCommands because useCommands needs setSessionMessages
   const {
     sessionMessages,
     setSessionMessages,
@@ -144,39 +126,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     selectedProject,
     decodeHtmlEntities,
     MESSAGES_PER_PAGE: 20
-  });
-
-  // Commands hook for slash command functionality
-  const {
-    showCommandMenu,
-    filteredCommands,
-    selectedCommandIndex,
-    slashPosition,
-    frequentCommands,
-    slashCommands,
-    commandQuery,
-    setShowCommandMenu,
-    setCommandQuery,
-    setSelectedCommandIndex,
-    setSlashPosition,
-    setFilteredCommands,
-    handleCommandSelect,
-    selectCommand,
-    handleCommandKeyDown,
-    detectSlashCommand,
-    commandQueryTimerRef
-  } = useCommands({
-    selectedProject,
-    input,
-    setInput,
-    currentSessionId,
-    provider,
-    tokenBudget,
-    setChatMessages,
-    setSessionMessages,
-    handleSubmitRef,
-    onFileOpen,
-    onShowSettings
   });
 
   // Load permission mode for the current session
@@ -792,21 +741,24 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
-  const handleKeyDown = (e) => {
+  // Note: handleKeyDown is created inside render prop callbacks to access command and file handlers
+  // This placeholder is kept for backwards compatibility if needed
+  const createHandleKeyDown = (handleCommandKeyDown, handleFileKeyDown) => (e) => {
     // Handle command menu navigation
-    if (handleCommandKeyDown(e)) {
+    if (handleCommandKeyDown && handleCommandKeyDown(e)) {
       return;
     }
 
     // Handle file dropdown navigation
-    if (handleFileKeyDown(e)) {
+    if (handleFileKeyDown && handleFileKeyDown(e)) {
       return;
     }
 
     // Handle Tab key for mode switching (only when dropdowns are not showing)
-    if (e.key === 'Tab' && !showFileDropdown && !showCommandMenu) {
+    // Note: showFileDropdown and showCommandMenu are accessed via closures in the render prop
+    const modes = ['default', 'acceptEdits', 'bypassPermissions', 'plan'];
+    if (e.key === 'Tab') {
       e.preventDefault();
-      const modes = ['default', 'acceptEdits', 'bypassPermissions', 'plan'];
       const currentIndex = modes.indexOf(permissionMode);
       const nextIndex = (currentIndex + 1) % modes.length;
       const newMode = modes[nextIndex];
@@ -818,14 +770,14 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       }
       return;
     }
-    
+
     // Handle Enter key: Ctrl+Enter (Cmd+Enter on Mac) sends, Shift+Enter creates new line
     if (e.key === 'Enter') {
       // If we're in composition, don't send message
       if (e.nativeEvent.isComposing) {
         return; // Let IME handle the Enter key
       }
-      
+
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
         // Ctrl+Enter or Cmd+Enter: Send message
         e.preventDefault();
@@ -841,7 +793,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
   };
 
-  const handleInputChange = (e) => {
+  // Note: handleInputChange is created inside render prop callbacks to access detectSlashCommand
+  const createHandleInputChange = (detectSlashCommand) => (e) => {
     const newValue = e.target.value;
     const cursorPos = e.target.selectionStart;
 
@@ -862,7 +815,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
 
     // Detect slash command at cursor position
-    detectSlashCommand(newValue, cursorPos);
+    if (detectSlashCommand) {
+      detectSlashCommand(newValue, cursorPos);
+    }
   };
 
   const handleTextareaClick = (e) => {
@@ -921,91 +876,130 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           }
         `}
       </style>
-      <div className="h-full flex flex-col">
-        <MessagesArea
-          scrollContainerRef={scrollContainerRef}
-          messagesEndRef={messagesEndRef}
-          isLoadingSessionMessages={isLoadingSessionMessages}
-          chatMessages={chatMessages}
-          selectedSession={selectedSession}
-          currentSessionId={currentSessionId}
-          provider={provider}
-          isLoadingMoreMessages={isLoadingMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-          totalMessages={totalMessages}
-          sessionMessages={sessionMessages}
-          visibleMessageCount={visibleMessageCount}
-          visibleMessages={visibleMessages}
-          isLoading={isLoading}
-          setProvider={setProvider}
-          setInput={setInput}
-          textareaRef={textareaRef}
-          tasksEnabled={tasksEnabled}
-          onShowAllTasks={onShowAllTasks}
-          loadEarlierMessages={loadEarlierMessages}
-          createDiff={createDiff}
-          onFileOpen={onFileOpen}
-          onShowSettings={onShowSettings}
-          autoExpandTools={autoExpandTools}
-          showRawParameters={showRawParameters}
-          showThinking={showThinking}
-          selectedProject={selectedProject}
-        />
 
-        <InputArea
-          textareaRef={textareaRef}
-          inputContainerRef={inputContainerRef}
-          isInputFocused={isInputFocused}
-          input={input}
-          cursorPosition={cursorPosition}
-          isLoading={isLoading}
-          selectedProject={selectedProject}
-          attachedImages={attachedImages}
-          uploadingImages={uploadingImages}
-          imageErrors={imageErrors}
-          permissionMode={permissionMode}
-          selectedSession={selectedSession}
-          claudeStatus={claudeStatus}
-          provider={provider}
-          showThinking={showThinking}
-          tokenBudget={tokenBudget}
-          isTextareaExpanded={isTextareaExpanded}
-          isUserScrolledUp={isUserScrolledUp}
-          chatMessages={chatMessages}
-          showFileDropdown={showFileDropdown}
-          filteredFiles={filteredFiles}
-          selectedFileIndex={selectedFileIndex}
-          showCommandMenu={showCommandMenu}
-          filteredCommands={filteredCommands}
-          selectedCommandIndex={selectedCommandIndex}
-          slashCommands={slashCommands}
-          commandQuery={commandQuery}
-          frequentCommands={frequentCommands}
-          sendByCtrlEnter={sendByCtrlEnter}
-          handleAbortSession={handleAbortSession}
-          handleModeSwitch={handleModeSwitch}
-          scrollToBottom={scrollToBottom}
-          setInput={setInput}
-          setIsTextareaExpanded={setIsTextareaExpanded}
-          handleSubmit={handleSubmit}
-          dropzoneProps={dropzoneProps}
-          setAttachedImages={setAttachedImages}
-          selectFile={selectFile}
-          setShowCommandMenu={setShowCommandMenu}
-          setSlashPosition={setSlashPosition}
-          setCommandQuery={setCommandQuery}
-          setSelectedCommandIndex={setSelectedCommandIndex}
-          handleCommandSelect={handleCommandSelect}
-          handleInputChange={handleInputChange}
-          handleTextareaClick={handleTextareaClick}
-          handleKeyDown={handleKeyDown}
-          handlePaste={handlePaste}
-          setIsInputFocused={setIsInputFocused}
-          setCursorPosition={setCursorPosition}
-          setFilteredCommands={setFilteredCommands}
-          handleTranscript={handleTranscript}
-        />
-      </div>
+      <CommandPalette
+        selectedProject={selectedProject}
+        input={input}
+        setInput={setInput}
+        currentSessionId={currentSessionId}
+        provider={provider}
+        tokenBudget={tokenBudget}
+        setChatMessages={setChatMessages}
+        setSessionMessages={setSessionMessages}
+        handleSubmitRef={handleSubmitRef}
+        onFileOpen={onFileOpen}
+        onShowSettings={onShowSettings}
+      >
+        {(commandProps) => (
+          <FileAutocomplete
+            input={input}
+            cursorPosition={cursorPosition}
+            selectedProject={selectedProject}
+            textareaRef={textareaRef}
+            setInput={setInput}
+            setCursorPosition={setCursorPosition}
+          >
+            {(fileProps) => (
+              <ClaudeStatusBar
+                status={claudeStatus}
+                onStatusChange={setClaudeStatus}
+                isLoading={isLoading}
+                onAbort={handleAbortSession}
+                provider={provider}
+                showThinking={showThinking}
+              >
+                {({ status: claudeStatusFromBar }) => (
+                  <div className="h-full flex flex-col">
+                    <MessagesArea
+                      scrollContainerRef={scrollContainerRef}
+                      messagesEndRef={messagesEndRef}
+                      isLoadingSessionMessages={isLoadingSessionMessages}
+                      chatMessages={chatMessages}
+                      selectedSession={selectedSession}
+                      currentSessionId={currentSessionId}
+                      provider={provider}
+                      isLoadingMoreMessages={isLoadingMoreMessages}
+                      hasMoreMessages={hasMoreMessages}
+                      totalMessages={totalMessages}
+                      sessionMessages={sessionMessages}
+                      visibleMessageCount={visibleMessageCount}
+                      visibleMessages={visibleMessages}
+                      isLoading={isLoading}
+                      setProvider={setProvider}
+                      setInput={setInput}
+                      textareaRef={textareaRef}
+                      tasksEnabled={tasksEnabled}
+                      onShowAllTasks={onShowAllTasks}
+                      loadEarlierMessages={loadEarlierMessages}
+                      createDiff={createDiff}
+                      onFileOpen={onFileOpen}
+                      onShowSettings={onShowSettings}
+                      autoExpandTools={autoExpandTools}
+                      showRawParameters={showRawParameters}
+                      showThinking={showThinking}
+                      selectedProject={selectedProject}
+                    />
+
+                    <InputArea
+                      textareaRef={textareaRef}
+                      inputContainerRef={inputContainerRef}
+                      isInputFocused={isInputFocused}
+                      input={input}
+                      cursorPosition={cursorPosition}
+                      isLoading={isLoading}
+                      selectedProject={selectedProject}
+                      attachedImages={attachedImages}
+                      uploadingImages={uploadingImages}
+                      imageErrors={imageErrors}
+                      permissionMode={permissionMode}
+                      selectedSession={selectedSession}
+                      claudeStatus={claudeStatusFromBar}
+                      provider={provider}
+                      showThinking={showThinking}
+                      tokenBudget={tokenBudget}
+                      isTextareaExpanded={isTextareaExpanded}
+                      isUserScrolledUp={isUserScrolledUp}
+                      chatMessages={chatMessages}
+                      showFileDropdown={fileProps.showFileDropdown}
+                      filteredFiles={fileProps.filteredFiles}
+                      selectedFileIndex={fileProps.selectedFileIndex}
+                      showCommandMenu={commandProps.showCommandMenu}
+                      filteredCommands={commandProps.filteredCommands}
+                      selectedCommandIndex={commandProps.selectedCommandIndex}
+                      slashCommands={commandProps.slashCommands}
+                      commandQuery={commandProps.commandQuery}
+                      frequentCommands={commandProps.frequentCommands}
+                      sendByCtrlEnter={sendByCtrlEnter}
+                      handleAbortSession={handleAbortSession}
+                      handleModeSwitch={handleModeSwitch}
+                      scrollToBottom={scrollToBottom}
+                      setInput={setInput}
+                      setIsTextareaExpanded={setIsTextareaExpanded}
+                      handleSubmit={handleSubmit}
+                      dropzoneProps={dropzoneProps}
+                      setAttachedImages={setAttachedImages}
+                      selectFile={fileProps.selectFile}
+                      setShowCommandMenu={commandProps.setShowCommandMenu}
+                      setSlashPosition={commandProps.setSlashPosition}
+                      setCommandQuery={commandProps.setCommandQuery}
+                      setSelectedCommandIndex={commandProps.setSelectedCommandIndex}
+                      handleCommandSelect={commandProps.handleCommandSelect}
+                      handleInputChange={createHandleInputChange(commandProps.detectSlashCommand)}
+                      handleTextareaClick={handleTextareaClick}
+                      handleKeyDown={createHandleKeyDown(commandProps.handleCommandKeyDown, fileProps.handleFileKeyDown)}
+                      handlePaste={handlePaste}
+                      setIsInputFocused={setIsInputFocused}
+                      setCursorPosition={setCursorPosition}
+                      setFilteredCommands={commandProps.setFilteredCommands}
+                      handleTranscript={handleTranscript}
+                    />
+                  </div>
+                )}
+              </ClaudeStatusBar>
+            )}
+          </FileAutocomplete>
+        )}
+      </CommandPalette>
     </>
   );
 }
