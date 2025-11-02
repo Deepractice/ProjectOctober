@@ -37,21 +37,20 @@ import pty from 'node-pty';
 import fetch from 'node-fetch';
 import mime from 'mime-types';
 
-import { getProjects, getSessions, getSessionMessages, renameProject, deleteSession, deleteProject, addProjectManually, extractProjectDirectory, clearProjectDirectoryCache } from './projects.js';
+import { getCurrentProject, getSessions, getSessionMessages, deleteSession } from './projects.js';
 import { queryClaudeSDK, abortClaudeSDKSession, isClaudeSDKSessionActive, getActiveClaudeSDKSessions } from './claude-sdk.js';
 import mcpRoutes from './routes/mcp.js';
-import taskmasterRoutes from './routes/taskmaster.js';
-import mcpUtilsRoutes from './routes/mcp-utils.js';
 import commandsRoutes from './routes/commands.js';
 
 // File system watcher for projects folder
 let projectsWatcher = null;
 const connectedClients = new Set();
 
-// Setup file system watcher for Claude projects folder using chokidar
-async function setupProjectsWatcher() {
+// Setup file system watcher for current project's sessions folder using chokidar
+async function setupSessionsWatcher() {
     const chokidar = (await import('chokidar')).default;
-    const claudeProjectsPath = path.join(process.env.HOME, '.claude', 'projects');
+    const project = getCurrentProject();
+    const sessionPath = project.claudeProjectDir;
 
     if (projectsWatcher) {
         projectsWatcher.close();
@@ -59,7 +58,7 @@ async function setupProjectsWatcher() {
 
     try {
         // Initialize chokidar watcher with optimized settings
-        projectsWatcher = chokidar.watch(claudeProjectsPath, {
+        projectsWatcher = chokidar.watch(sessionPath, {
             ignored: [
                 '**/node_modules/**',
                 '**/.git/**',
@@ -85,20 +84,16 @@ async function setupProjectsWatcher() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(async () => {
                 try {
+                    // Get updated sessions list (get up to 100 sessions)
+                    const updatedSessions = await getSessions(100);
 
-                    // Clear project directory cache when files change
-                    clearProjectDirectoryCache();
-
-                    // Get updated projects list
-                    const updatedProjects = await getProjects();
-
-                    // Notify all connected clients about the project changes
+                    // Notify all connected clients about the session changes
                     const updateMessage = JSON.stringify({
-                        type: 'projects_updated',
-                        projects: updatedProjects,
+                        type: 'sessions_updated',
+                        sessions: updatedSessions.sessions || [],
                         timestamp: new Date().toISOString(),
                         changeType: eventType,
-                        changedFile: path.relative(claudeProjectsPath, filePath)
+                        changedFile: path.relative(sessionPath, filePath)
                     });
 
                     connectedClients.forEach(client => {
@@ -108,7 +103,7 @@ async function setupProjectsWatcher() {
                     });
 
                 } catch (error) {
-                    console.error('❌ Error handling project changes:', error);
+                    console.error('❌ Error handling session changes:', error);
                 }
             }, 300); // 300ms debounce (slightly faster than before)
         };
@@ -127,7 +122,7 @@ async function setupProjectsWatcher() {
             });
 
     } catch (error) {
-        console.error('❌ Failed to setup projects watcher:', error);
+        console.error('❌ Failed to setup sessions watcher:', error);
     }
 }
 
@@ -147,8 +142,6 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API Routes
 app.use('/api/mcp', mcpRoutes);
-app.use('/api/taskmaster', taskmasterRoutes);
-app.use('/api/mcp-utils', mcpUtilsRoutes);
 app.use('/api/commands', commandsRoutes);
 
 // Serve public files (like api-docs.html)
@@ -248,19 +241,25 @@ app.post('/api/system/update', async (req, res) => {
     }
 });
 
-app.get('/api/projects', async (req, res) => {
+// Get current project information
+app.get('/api/project', (req, res) => {
     try {
-        const projects = await getProjects();
-        res.json(projects);
+        const project = getCurrentProject();
+        res.json({
+            name: project.name,
+            path: project.path,
+            fullPath: project.fullPath
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/api/projects/:projectName/sessions', async (req, res) => {
+// Get sessions for current project
+app.get('/api/sessions', async (req, res) => {
     try {
         const { limit = 5, offset = 0 } = req.query;
-        const result = await getSessions(req.params.projectName, parseInt(limit), parseInt(offset));
+        const result = await getSessions(parseInt(limit), parseInt(offset));
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -268,17 +267,17 @@ app.get('/api/projects/:projectName/sessions', async (req, res) => {
 });
 
 // Get messages for a specific session
-app.get('/api/projects/:projectName/sessions/:sessionId/messages', async (req, res) => {
+app.get('/api/sessions/:sessionId/messages', async (req, res) => {
     try {
-        const { projectName, sessionId } = req.params;
+        const { sessionId } = req.params;
         const { limit, offset } = req.query;
-        
+
         // Parse limit and offset if provided
         const parsedLimit = limit ? parseInt(limit, 10) : null;
         const parsedOffset = offset ? parseInt(offset, 10) : 0;
-        
-        const result = await getSessionMessages(projectName, sessionId, parsedLimit, parsedOffset);
-        
+
+        const result = await getSessionMessages(sessionId, parsedLimit, parsedOffset);
+
         // Handle both old and new response formats
         if (Array.isArray(result)) {
             // Backward compatibility: no pagination parameters were provided
@@ -292,133 +291,31 @@ app.get('/api/projects/:projectName/sessions/:sessionId/messages', async (req, r
     }
 });
 
-// Rename project endpoint
-app.put('/api/projects/:projectName/rename', async (req, res) => {
-    try {
-        const { displayName } = req.body;
-        await renameProject(req.params.projectName, displayName);
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // Delete session endpoint
-app.delete('/api/projects/:projectName/sessions/:sessionId', async (req, res) => {
+app.delete('/api/sessions/:sessionId', async (req, res) => {
     try {
-        const { projectName, sessionId } = req.params;
-        await deleteSession(projectName, sessionId);
+        const { sessionId } = req.params;
+        await deleteSession(sessionId);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
-    }
-});
-
-// Delete project endpoint (only if empty)
-app.delete('/api/projects/:projectName', async (req, res) => {
-    try {
-        const { projectName } = req.params;
-        await deleteProject(projectName);
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Create project endpoint
-app.post('/api/projects/create', async (req, res) => {
-    try {
-        const { path: projectPath } = req.body;
-
-        if (!projectPath || !projectPath.trim()) {
-            return res.status(400).json({ error: 'Project path is required' });
-        }
-
-        const project = await addProjectManually(projectPath.trim());
-        res.json({ success: true, project });
-    } catch (error) {
-        console.error('Error creating project:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Browse filesystem endpoint for project suggestions - uses existing getFileTree
-app.get('/api/browse-filesystem', async (req, res) => {    
-    try {
-        const { path: dirPath } = req.query;
-        
-        // Default to home directory if no path provided
-        const homeDir = os.homedir();
-        let targetPath = dirPath ? dirPath.replace('~', homeDir) : homeDir;
-        
-        // Resolve and normalize the path
-        targetPath = path.resolve(targetPath);
-        
-        // Security check - ensure path is accessible
-        try {
-            await fs.promises.access(targetPath);
-            const stats = await fs.promises.stat(targetPath);
-            
-            if (!stats.isDirectory()) {
-                return res.status(400).json({ error: 'Path is not a directory' });
-            }
-        } catch (err) {
-            return res.status(404).json({ error: 'Directory not accessible' });
-        }
-        
-        // Use existing getFileTree function with shallow depth (only direct children)
-        const fileTree = await getFileTree(targetPath, 1, 0, false); // maxDepth=1, showHidden=false
-        
-        // Filter only directories and format for suggestions
-        const directories = fileTree
-            .filter(item => item.type === 'directory')
-            .map(item => ({
-                path: item.path,
-                name: item.name,
-                type: 'directory'
-            }))
-            .slice(0, 20); // Limit results
-            
-        // Add common directories if browsing home directory
-        const suggestions = [];
-        if (targetPath === homeDir) {
-            const commonDirs = ['Desktop', 'Documents', 'Projects', 'Development', 'Dev', 'Code', 'workspace'];
-            const existingCommon = directories.filter(dir => commonDirs.includes(dir.name));
-            const otherDirs = directories.filter(dir => !commonDirs.includes(dir.name));
-            
-            suggestions.push(...existingCommon, ...otherDirs);
-        } else {
-            suggestions.push(...directories);
-        }
-        
-        res.json({ 
-            path: targetPath,
-            suggestions: suggestions 
-        });
-        
-    } catch (error) {
-        console.error('Error browsing filesystem:', error);
-        res.status(500).json({ error: 'Failed to browse filesystem' });
     }
 });
 
 // Read file content endpoint
-app.get('/api/projects/:projectName/file', async (req, res) => {
+app.get('/api/file', async (req, res) => {
     try {
-        const { projectName } = req.params;
         const { filePath } = req.query;
 
-        console.log('📄 File read request:', projectName, filePath);
+        console.log('📄 File read request:', filePath);
 
         // Security: ensure the requested path is inside the project root
         if (!filePath) {
             return res.status(400).json({ error: 'Invalid file path' });
         }
 
-        const projectRoot = await extractProjectDirectory(projectName).catch(() => null);
-        if (!projectRoot) {
-            return res.status(404).json({ error: 'Project not found' });
-        }
+        const project = getCurrentProject();
+        const projectRoot = project.fullPath;
 
         // Handle both absolute and relative paths
         const resolved = path.isAbsolute(filePath)
@@ -444,22 +341,19 @@ app.get('/api/projects/:projectName/file', async (req, res) => {
 });
 
 // Serve binary file content endpoint (for images, etc.)
-app.get('/api/projects/:projectName/files/content', async (req, res) => {
+app.get('/api/files/content', async (req, res) => {
     try {
-        const { projectName } = req.params;
         const { path: filePath } = req.query;
 
-        console.log('🖼️ Binary file serve request:', projectName, filePath);
+        console.log('🖼️ Binary file serve request:', filePath);
 
         // Security: ensure the requested path is inside the project root
         if (!filePath) {
             return res.status(400).json({ error: 'Invalid file path' });
         }
 
-        const projectRoot = await extractProjectDirectory(projectName).catch(() => null);
-        if (!projectRoot) {
-            return res.status(404).json({ error: 'Project not found' });
-        }
+        const project = getCurrentProject();
+        const projectRoot = project.fullPath;
 
         const resolved = path.resolve(filePath);
         const normalizedRoot = path.resolve(projectRoot) + path.sep;
@@ -498,12 +392,11 @@ app.get('/api/projects/:projectName/files/content', async (req, res) => {
 });
 
 // Save file content endpoint
-app.put('/api/projects/:projectName/file', async (req, res) => {
+app.put('/api/file', async (req, res) => {
     try {
-        const { projectName } = req.params;
         const { filePath, content } = req.body;
 
-        console.log('💾 File save request:', projectName, filePath);
+        console.log('💾 File save request:', filePath);
 
         // Security: ensure the requested path is inside the project root
         if (!filePath) {
@@ -514,10 +407,8 @@ app.put('/api/projects/:projectName/file', async (req, res) => {
             return res.status(400).json({ error: 'Content is required' });
         }
 
-        const projectRoot = await extractProjectDirectory(projectName).catch(() => null);
-        if (!projectRoot) {
-            return res.status(404).json({ error: 'Project not found' });
-        }
+        const project = getCurrentProject();
+        const projectRoot = project.fullPath;
 
         // Handle both absolute and relative paths
         const resolved = path.isAbsolute(filePath)
@@ -548,20 +439,14 @@ app.put('/api/projects/:projectName/file', async (req, res) => {
     }
 });
 
-app.get('/api/projects/:projectName/files', async (req, res) => {
+app.get('/api/files', async (req, res) => {
     try {
 
         // Using fsPromises from import
 
-        // Use extractProjectDirectory to get the actual project path
-        let actualPath;
-        try {
-            actualPath = await extractProjectDirectory(req.params.projectName);
-        } catch (error) {
-            console.error('Error extracting project directory:', error);
-            // Fallback to simple dash replacement
-            actualPath = req.params.projectName.replace(/-/g, '/');
-        }
+        // Use getCurrentProject to get the actual project path
+        const project = getCurrentProject();
+        const actualPath = project.fullPath;
 
         // Check if path exists
         try {
@@ -1015,7 +900,7 @@ Agent instructions:`;
 });
 
 // Image upload endpoint
-app.post('/api/projects/:projectName/upload-images', async (req, res) => {
+app.post('/api/upload-images', async (req, res) => {
     try {
         const multer = (await import('multer')).default;
         const path = (await import('path')).default;
@@ -1100,19 +985,14 @@ app.post('/api/projects/:projectName/upload-images', async (req, res) => {
 });
 
 // Get token usage for a specific session
-app.get('/api/projects/:projectName/sessions/:sessionId/token-usage', async (req, res) => {
+app.get('/api/sessions/:sessionId/token-usage', async (req, res) => {
   try {
-    const { projectName, sessionId } = req.params;
+    const { sessionId } = req.params;
     const homeDir = os.homedir();
 
-    // Extract actual project path
-    let projectPath;
-    try {
-      projectPath = await extractProjectDirectory(projectName);
-    } catch (error) {
-      console.error('Error extracting project directory:', error);
-      return res.status(500).json({ error: 'Failed to determine project path' });
-    }
+    // Get actual project path
+    const project = getCurrentProject();
+    const projectPath = project.fullPath;
 
     // Construct the JSONL file path
     // Claude stores session files in ~/.claude/projects/[encoded-project-path]/[session-id].jsonl
@@ -1317,8 +1197,8 @@ async function startServer() {
         server.listen(PORT, '0.0.0.0', async () => {
             console.log(`Claude Code UI server running on http://0.0.0.0:${PORT}`);
 
-            // Start watching the projects folder for changes
-            await setupProjectsWatcher();
+            // Start watching the sessions folder for changes
+            await setupSessionsWatcher();
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);

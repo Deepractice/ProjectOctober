@@ -1,9 +1,7 @@
 import React from 'react';
 import { MessageSquare, Folder, Terminal, GitBranch, Globe, CheckSquare } from 'lucide-react';
-import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
 function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
-  const { tasksEnabled } = useTasksSettings();
   // Detect dark mode
   const isDarkMode = document.documentElement.classList.contains('dark');
   const navItems = [
@@ -26,13 +24,7 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
       id: 'git',
       icon: GitBranch,
       onClick: () => setActiveTab('git')
-    },
-    // Conditionally add tasks tab if enabled
-    ...(tasksEnabled ? [{
-      id: 'tasks',
-      icon: CheckSquare,
-      onClick: () => setActiveTab('tasks')
-    }] : [])
+    }
   ];
 
   return (

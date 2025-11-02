@@ -17,20 +17,22 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { useTasksSettings } from '../../contexts/TasksSettingsContext';
 
 import { authenticatedFetch } from '../../utils/api';
 import { useDiffCalculation } from '../../hooks/useDiffCalculation';
 import { useImageUpload } from '../../hooks/useImageUpload';
 import { useMessages } from '../../hooks/useMessages';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useChatScrolling } from '../../hooks/chat/useChatScrolling';
+import { useChatInput } from '../../hooks/chat/useChatInput';
 import safeLocalStorage from '../../utils/safeLocalStorage';
-import { decodeHtmlEntities } from './MessageRenderer';
+import { decodeHtmlEntities, formatUsageLimitText } from './MessageRenderer';
 import MessagesArea from './MessagesArea';
 import InputArea from './InputArea';
 import CommandPalette from './CommandPalette';
 import FileAutocomplete from './FileAutocomplete';
 import ClaudeStatusBar from './ClaudeStatusBar';
+import { useMessageStore } from '../../stores';
 
 // ChatInterface: Main chat component with Session Protection System integration
 // 
@@ -41,7 +43,6 @@ import ClaudeStatusBar from './ClaudeStatusBar';
 //
 // This ensures uninterrupted chat experience by pausing sidebar refreshes during conversations.
 function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onReplaceTemporarySession, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
-  const { tasksEnabled } = useTasksSettings();
 
   // Diff calculation hook for file edit diffs
   const createDiff = useDiffCalculation();
@@ -59,51 +60,78 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     dropzoneProps
   } = useImageUpload();
 
-  const [input, setInput] = useState(() => {
-    if (typeof window !== 'undefined' && selectedProject) {
-      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
-    }
-    return '';
-  });
-  const [chatMessages, setChatMessages] = useState(() => {
-    if (typeof window !== 'undefined' && selectedProject) {
-      const saved = safeLocalStorage.getItem(`chat_messages_${selectedProject.name}`);
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [isSystemSessionChange, setIsSystemSessionChange] = useState(false);
-  const [permissionMode, setPermissionMode] = useState('default');
+  // Chat input hook - handles input state, debouncing, textarea sizing, draft persistence
+  const {
+    input,
+    setInput,
+    debouncedInput,
+    cursorPosition,
+    setCursorPosition,
+    isInputFocused,
+    setIsInputFocused,
+    isTextareaExpanded,
+    setIsTextareaExpanded,
+    textareaRef,
+    inputContainerRef,
+    handleTranscript,
+    handleTextareaClick,
+    clearInput
+  } = useChatInput({ selectedProject });
+
+  // UI state and refs (non-input, non-scroll)
   const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
-  const inputContainerRef = useRef(null);
-  const scrollContainerRef = useRef(null);
-  const isLoadingSessionRef = useRef(false); // Track session loading to prevent multiple scrolls
-  // Streaming throttle buffers
-  const streamBufferRef = useRef('');
-  const streamTimerRef = useRef(null);
-  const [debouncedInput, setDebouncedInput] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [canAbortSession, setCanAbortSession] = useState(false);
-
-  // Ref to store handleSubmit so we can call it from handleCustomCommand
+  const isLoadingSessionRef = useRef(false);
   const handleSubmitRef = useRef(null);
-
-  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
-  const scrollPositionRef = useRef({ height: 0, top: 0 });
-  const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
-  const [tokenBudget, setTokenBudget] = useState(null);
   const [visibleMessageCount, setVisibleMessageCount] = useState(100);
-  const [claudeStatus, setClaudeStatus] = useState(null);
   const [provider, setProvider] = useState(() => {
     return localStorage.getItem('selected-provider') || 'claude';
   });
   const [cursorModel, setCursorModel] = useState(() => {
     return localStorage.getItem('cursor-model') || 'gpt-5';
   });
+
+  // WebSocket state management - centralized in useWebSocket hook
+  // Note: scrollToBottom and isNearBottom are defined later as callbacks
+  const wsState = useWebSocket({
+    selectedProject,
+    selectedSession,
+    onSessionProcessing,
+    onNavigateToSession,
+    scrollToBottom: () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        // We'll use the destructured setIsUserScrolledUp from wsState
+      }
+    },
+    isNearBottom: () => {
+      if (!scrollContainerRef.current) return false;
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      return scrollHeight - scrollTop - clientHeight < 50;
+    },
+    autoScrollToBottom
+  });
+
+  // Destructure WebSocket state for cleaner code
+  const {
+    chatMessages,
+    setChatMessages,
+    isLoading,
+    setIsLoading,
+    currentSessionId,
+    setCurrentSessionId,
+    canAbortSession,
+    setCanAbortSession,
+    claudeStatus,
+    setClaudeStatus,
+    isSystemSessionChange,
+    setIsSystemSessionChange,
+    tokenBudget,
+    setTokenBudget,
+    permissionMode,
+    setPermissionMode,
+    streamBufferRef,
+    streamTimerRef
+  } = wsState;
 
   // Messages Hook - handles session message loading and conversion
   const {
@@ -128,17 +156,24 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     MESSAGES_PER_PAGE: 20
   });
 
-  // Load permission mode for the current session
-  useEffect(() => {
-    if (selectedSession?.id) {
-      const savedMode = localStorage.getItem(`permissionMode-${selectedSession.id}`);
-      if (savedMode) {
-        setPermissionMode(savedMode);
-      } else {
-        setPermissionMode('default');
-      }
-    }
-  }, [selectedSession?.id]);
+  // Chat scrolling hook - handles all scroll-related logic and infinite scroll
+  const {
+    scrollContainerRef,
+    isUserScrolledUp,
+    setIsUserScrolledUp,
+    scrollToBottom,
+    isNearBottom
+  } = useChatScrolling({
+    chatMessages,
+    autoScrollToBottom,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    selectedSession,
+    selectedProject,
+    loadSessionMessages,
+    setSessionMessages,
+    isLoadingSessionRef
+  });
 
   // When selecting a session from Sidebar, auto-switch provider to match session's origin
   useEffect(() => {
@@ -150,58 +185,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
   // Note: Token budgets are not saved to JSONL files, only sent via WebSocket
   // So we don't try to extract them from loaded sessionMessages
-
-  // Define scroll functions early to avoid hoisting issues in useEffect dependencies
-  const scrollToBottom = useCallback(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-      setIsUserScrolledUp(false);
-    }
-  }, []);
-
-  // Check if user is near the bottom of the scroll container
-  const isNearBottom = useCallback(() => {
-    if (!scrollContainerRef.current) return false;
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    // Consider "near bottom" if within 50px of the bottom
-    return scrollHeight - scrollTop - clientHeight < 50;
-  }, []);
-
-  // Handle scroll events to detect when user manually scrolls up and load more messages
-  const handleScroll = useCallback(async () => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const nearBottom = isNearBottom();
-      setIsUserScrolledUp(!nearBottom);
-      
-      // Check if we should load more messages (scrolled near top)
-      const scrolledNearTop = container.scrollTop < 100;
-      const provider = localStorage.getItem('selected-provider') || 'claude';
-      
-      if (scrolledNearTop && hasMoreMessages && !isLoadingMoreMessages && selectedSession && selectedProject && provider !== 'cursor') {
-        // Save current scroll position
-        const previousScrollHeight = container.scrollHeight;
-        const previousScrollTop = container.scrollTop;
-        
-        // Load more messages
-        const moreMessages = await loadSessionMessages(selectedProject.name, selectedSession.id, true);
-        
-        if (moreMessages.length > 0) {
-          // Prepend new messages to the existing ones
-          setSessionMessages(prev => [...moreMessages, ...prev]);
-          
-          // Restore scroll position after DOM update
-          setTimeout(() => {
-            if (scrollContainerRef.current) {
-              const newScrollHeight = scrollContainerRef.current.scrollHeight;
-              const scrollDiff = newScrollHeight - previousScrollHeight;
-              scrollContainerRef.current.scrollTop = previousScrollTop + scrollDiff;
-            }
-          }, 0);
-        }
-      }
-    }
-  }, [isNearBottom, hasMoreMessages, isLoadingMoreMessages, selectedSession, selectedProject, loadSessionMessages]);
 
   useEffect(() => {
     // Load session messages when session changes
@@ -275,7 +258,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           // Only load messages from API if this is a user-initiated session change
           // For system-initiated changes, preserve existing messages and rely on WebSocket
           if (!isSystemSessionChange) {
-            const messages = await loadSessionMessages(selectedProject.name, selectedSession.id, false);
+            const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
             // convertedMessages will be automatically updated via useMemo
             // Scroll will be handled by the main scroll useEffect after messages are rendered
@@ -306,7 +289,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     };
 
     loadMessages();
-  }, [selectedSession, selectedProject, loadCursorSessionMessages, scrollToBottom, isSystemSessionChange]);
+  }, [selectedSession, selectedProject, loadSessionMessages, loadCursorSessionMessages, setSessionMessages, setChatMessages, setCurrentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading, ws, sendMessage, scrollToBottom, isSystemSessionChange, currentSessionId, isLoading]);
 
   // External Message Update Handler: Reload messages when external CLI modifies current session
   // This triggers when App.jsx detects a JSONL file change for the currently-viewed session
@@ -325,7 +308,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setChatMessages(converted);
           } else {
             // Reload Claude messages from API/JSONL
-            const messages = await loadSessionMessages(selectedProject.name, selectedSession.id, false);
+            const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
             // convertedMessages will be automatically updated via useMemo
 
@@ -342,7 +325,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
       reloadExternalMessages();
     }
-  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
+  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, setSessionMessages, setChatMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
 
   // Update chatMessages when convertedMessages changes
   useEffect(() => {
@@ -358,32 +341,12 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
   }, [isInputFocused, onInputFocusChange]);
 
-  // Persist input draft to localStorage
-  useEffect(() => {
-    if (selectedProject && input !== '') {
-      safeLocalStorage.setItem(`draft_input_${selectedProject.name}`, input);
-    } else if (selectedProject && input === '') {
-      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
-    }
-  }, [input, selectedProject]);
-
   // Persist chat messages to localStorage
   useEffect(() => {
     if (selectedProject && chatMessages.length > 0) {
       safeLocalStorage.setItem(`chat_messages_${selectedProject.name}`, JSON.stringify(chatMessages));
     }
   }, [chatMessages, selectedProject]);
-
-  // Load saved state when project changes (but don't interfere with session loading)
-  useEffect(() => {
-    if (selectedProject) {
-      // Always load saved input draft for the project
-      const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
-      if (savedInput !== input) {
-        setInput(savedInput);
-      }
-    }
-  }, [selectedProject?.name]);
 
   // Track processing state: notify parent when isLoading becomes true
   // Note: onSessionNotProcessing is called directly in completion message handlers
@@ -404,52 +367,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
   }, [currentSessionId, processingSessions]);
 
-  // WebSocket Hook - handles incoming WebSocket messages
-  useWebSocket({
-    messages,
-    currentSessionId,
-    processingSessions,
-    setChatMessages,
-    setIsLoading,
-    setCanAbortSession,
-    setIsExecutingCode: () => {}, // Not used in current code
-    setInteractivePrompt: () => {}, // Not used in current code
-    setPermissionMode,
-    setPermissionRequest: () => {}, // Not used in current code
-    setIsSearchMode: () => {}, // Not used in current code
-    setIsSnapshotMode: () => {}, // Not used in current code
-    setIsLoadingPdf: () => {}, // Not used in current code
-    onSessionActive,
-    onSessionInactive,
-    onSessionProcessing,
-    onSessionNotProcessing,
-    onReplaceTemporarySession,
-    onNavigateToSession,
-    createDiff,
-    scrollContainerRef,
-    scrollToBottom,
-    isNearBottom,
-    autoScrollToBottom,
-    // Additional dependencies needed by useWebSocket
-    streamBufferRef,
-    streamTimerRef,
-    setIsSystemSessionChange,
-    setClaudeStatus,
-    selectedProject,
-    selectedSession,
-    setCurrentSessionId,
-    setTokenBudget
-  });
-
-  // Debounced input handling
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedInput(input);
-    }, 150); // 150ms debounce
-    
-    return () => clearTimeout(timer);
-  }, [input]);
-
   // Show only recent messages for better performance
   const visibleMessages = useMemo(() => {
     if (chatMessages.length <= visibleMessageCount) {
@@ -457,82 +374,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
     return chatMessages.slice(-visibleMessageCount);
   }, [chatMessages, visibleMessageCount]);
-
-  // Capture scroll position before render when auto-scroll is disabled
-  useEffect(() => {
-    if (!autoScrollToBottom && scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      scrollPositionRef.current = {
-        height: container.scrollHeight,
-        top: container.scrollTop
-      };
-    }
-  });
-
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    if (scrollContainerRef.current && chatMessages.length > 0) {
-      if (autoScrollToBottom) {
-        // If auto-scroll is enabled, always scroll to bottom unless user has manually scrolled up
-        if (!isUserScrolledUp) {
-          setTimeout(() => scrollToBottom(), 50); // Small delay to ensure DOM is updated
-        }
-      } else {
-        // When auto-scroll is disabled, preserve the visual position
-        const container = scrollContainerRef.current;
-        const prevHeight = scrollPositionRef.current.height;
-        const prevTop = scrollPositionRef.current.top;
-        const newHeight = container.scrollHeight;
-        const heightDiff = newHeight - prevHeight;
-        
-        // If content was added above the current view, adjust scroll position
-        if (heightDiff > 0 && prevTop > 0) {
-          container.scrollTop = prevTop + heightDiff;
-        }
-      }
-    }
-  }, [chatMessages.length, isUserScrolledUp, scrollToBottom, autoScrollToBottom]);
-
-  // Scroll to bottom when messages first load after session switch
-  useEffect(() => {
-    if (scrollContainerRef.current && chatMessages.length > 0 && !isLoadingSessionRef.current) {
-      // Only scroll if we're not in the middle of loading a session
-      // This prevents the "double scroll" effect during session switching
-      // Also reset scroll state
-      setIsUserScrolledUp(false);
-      setTimeout(() => scrollToBottom(), 200); // Delay to ensure full rendering
-    }
-  }, [selectedSession?.id, selectedProject?.name]); // Only trigger when session/project changes
-
-  // Add scroll event listener to detect user scrolling
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-      return () => scrollContainer.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
-
-  // Initial textarea setup - set to 2 rows height
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-
-      // Check if initially expanded
-      const lineHeight = parseInt(window.getComputedStyle(textareaRef.current).lineHeight);
-      const isExpanded = textareaRef.current.scrollHeight > lineHeight * 2;
-      setIsTextareaExpanded(isExpanded);
-    }
-  }, []); // Only run once on mount
-
-  // Reset textarea height when input is cleared programmatically
-  useEffect(() => {
-    if (textareaRef.current && !input.trim()) {
-      textareaRef.current.style.height = 'auto';
-      setIsTextareaExpanded(false);
-    }
-  }, [input]);
 
   // Load token usage when session changes (but don't poll to avoid conflicts with WebSocket)
   useEffect(() => {
@@ -545,7 +386,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     // Fetch token usage once when session loads
     const fetchInitialTokenUsage = async () => {
       try {
-        const url = `/api/projects/${selectedProject.name}/sessions/${selectedSession.id}/token-usage`;
+        const url = `/api/sessions/${selectedSession.id}/token-usage`;
 
         const response = await authenticatedFetch(url);
 
@@ -563,28 +404,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     fetchInitialTokenUsage();
   }, [selectedSession?.id, selectedProject?.path]);
 
-  const handleTranscript = useCallback((text) => {
-    if (text.trim()) {
-      setInput(prevInput => {
-        const newInput = prevInput.trim() ? `${prevInput} ${text}` : text;
-
-        // Update textarea height after setting new content
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-
-            // Check if expanded after transcript
-            const lineHeight = parseInt(window.getComputedStyle(textareaRef.current).lineHeight);
-            const isExpanded = textareaRef.current.scrollHeight > lineHeight * 2;
-            setIsTextareaExpanded(isExpanded);
-          }
-        }, 0);
-
-        return newInput;
-      });
-    }
-  }, []);
 
   // Load earlier messages by increasing the visible message count
   const loadEarlierMessages = useCallback(() => {
@@ -610,7 +429,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const response = await fetch(`/api/projects/${selectedProject.name}/upload-images`, {
+        const response = await fetch(`/api/upload-images`, {
           method: 'POST',
           headers: headers,
           body: formData
@@ -719,22 +538,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       });
     }
 
-    setInput('');
+    clearInput();
     setAttachedImages([]);
     setUploadingImages(new Map());
     setImageErrors(new Map());
-    setIsTextareaExpanded(false);
-
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-
-    // Clear the saved draft since message was sent
-    if (selectedProject) {
-      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
-    }
-  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setInput, setAttachedImages, setUploadingImages, setImageErrors, setIsTextareaExpanded, textareaRef, setChatMessages, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom]);
+  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setChatMessages, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
 
   // Store handleSubmit in ref so handleCustomCommand can access it
   useEffect(() => {
@@ -819,12 +627,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       detectSlashCommand(newValue, cursorPos);
     }
   };
-
-  const handleTextareaClick = (e) => {
-    setCursorPosition(e.target.selectionStart);
-  };
-
-
 
   const handleNewSession = () => {
     setChatMessages([]);
@@ -926,10 +728,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                       visibleMessages={visibleMessages}
                       isLoading={isLoading}
                       setProvider={setProvider}
-                      setInput={setInput}
                       textareaRef={textareaRef}
-                      tasksEnabled={tasksEnabled}
-                      onShowAllTasks={onShowAllTasks}
                       loadEarlierMessages={loadEarlierMessages}
                       createDiff={createDiff}
                       onFileOpen={onFileOpen}

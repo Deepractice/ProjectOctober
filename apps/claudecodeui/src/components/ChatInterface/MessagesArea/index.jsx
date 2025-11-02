@@ -1,6 +1,5 @@
 import React from 'react';
 import ClaudeLogo from '../../ClaudeLogo.jsx';
-import NextTaskBanner from '../../NextTaskBanner.jsx';
 import MessageComponent from '../MessageRenderer';
 
 function MessagesArea({
@@ -24,10 +23,7 @@ function MessagesArea({
 
   // Functions/Callbacks
   setProvider,
-  setInput,
   textareaRef,
-  tasksEnabled,
-  onShowAllTasks,
   loadEarlierMessages,
   createDiff,
   onFileOpen,
@@ -95,16 +91,6 @@ function MessagesArea({
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Ready to use Claude AI. Start typing your message below.
               </p>
-
-              {/* Show NextTaskBanner when provider is selected and ready */}
-              {provider && tasksEnabled && (
-                <div className="mt-4 px-4 sm:px-0">
-                  <NextTaskBanner
-                    onStartTask={() => setInput('Start the next task')}
-                    onShowAllTasks={onShowAllTasks}
-                  />
-                </div>
-              )}
             </div>
           )}
           {selectedSession && (
@@ -113,16 +99,6 @@ function MessagesArea({
               <p className="text-sm sm:text-base leading-relaxed">
                 Ask questions about your code, request changes, or get help with development tasks
               </p>
-
-              {/* Show NextTaskBanner for existing sessions too */}
-              {tasksEnabled && (
-                <div className="mt-4 px-4 sm:px-0">
-                  <NextTaskBanner
-                    onStartTask={() => setInput('Start the next task')}
-                    onShowAllTasks={onShowAllTasks}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>

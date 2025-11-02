@@ -26,19 +26,19 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
    * Load Claude Code session messages (JSONL format)
    * Supports pagination
    */
-  const loadSessionMessages = useCallback(async (projectName, sessionId, loadMore = false) => {
-    if (!projectName || !sessionId) return [];
-    
+  const loadSessionMessages = useCallback(async (sessionId, loadMore = false) => {
+    if (!sessionId) return [];
+
     const isInitialLoad = !loadMore;
     if (isInitialLoad) {
       setIsLoadingSessionMessages(true);
     } else {
       setIsLoadingMoreMessages(true);
     }
-    
+
     try {
       const currentOffset = loadMore ? messagesOffset : 0;
-      const response = await api.sessionMessages(projectName, sessionId, MESSAGES_PER_PAGE, currentOffset);
+      const response = await api.sessionMessages(sessionId, MESSAGES_PER_PAGE, currentOffset);
       if (!response.ok) {
         throw new Error('Failed to load session messages');
       }
