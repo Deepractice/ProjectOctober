@@ -12,8 +12,9 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { api } from '../utils/api';
 import { useMessageStore } from './messageStore';
+import type { SessionState } from '../types';
 
-export const useSessionStore = create(
+export const useSessionStore = create<SessionState>()(
   devtools(
     (set, get) => ({
       // State

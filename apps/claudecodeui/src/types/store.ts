@@ -40,11 +40,11 @@ export interface UIState {
 export interface ConnectionState {
   ws: WebSocket | null;
   isConnected: boolean;
-  connectionError: string | null;
   reconnectAttempts: number;
+  reconnectTimeout: ReturnType<typeof setTimeout> | null;
 
-  connect: () => void;
+  connect: () => Promise<void>;
+  reconnect: () => void;
+  send: (message: any) => void;
   disconnect: () => void;
-  sendMessage: (message: any) => void;
-  setConnectionError: (error: string | null) => void;
 }

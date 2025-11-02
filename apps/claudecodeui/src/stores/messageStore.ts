@@ -8,11 +8,12 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { MessageState, WebSocketMessageType } from '../types';
 
 // Message handler registry
-const messageHandlers = new Map();
+const messageHandlers = new Map<WebSocketMessageType, (message: any) => void>();
 
-export const useMessageStore = create(
+export const useMessageStore = create<MessageState>()(
   devtools(
     (set, get) => ({
       // State

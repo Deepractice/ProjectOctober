@@ -7,8 +7,9 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { ConnectionState } from '../types';
 
-export const useConnectionStore = create(
+export const useConnectionStore = create<ConnectionState>()(
   devtools(
     (set, get) => ({
       // State

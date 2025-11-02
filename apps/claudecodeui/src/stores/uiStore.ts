@@ -7,8 +7,9 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { UIState } from '../types';
 
-export const useUIStore = create(
+export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       // UI Preferences
