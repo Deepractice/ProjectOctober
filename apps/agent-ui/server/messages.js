@@ -140,7 +140,7 @@ export function extractTextContent(content) {
     return content;
   }
 
-  // Array format (Claude API format)
+  // Array format (Agent API format)
   if (Array.isArray(content)) {
     for (const part of content) {
       if (part.type === 'text' && part.text) {

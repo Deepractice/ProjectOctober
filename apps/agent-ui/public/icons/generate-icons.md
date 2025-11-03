@@ -11,7 +11,7 @@ Create the following icon files in this directory:
 - icon-384x384.png
 - icon-512x512.png
 
-You can use any icon generator tool or create them manually. The icons should be square and represent your Claude Code UI application.
+You can use any icon generator tool or create them manually. The icons should be square and represent your Agent UI application.
 
 For a quick solution, you can:
 1. Create a simple square PNG icon (512x512)

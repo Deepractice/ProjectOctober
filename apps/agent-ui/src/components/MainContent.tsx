@@ -17,7 +17,7 @@ import FileTree from './FileTree';
 import CodeEditor from './CodeEditor';
 import StandaloneShell from './StandaloneShell';
 import ErrorBoundary from './ErrorBoundary';
-import ClaudeLogo from './ClaudeLogo';
+import AgentLogo from './AgentLogo';
 import Tooltip from './Tooltip';
 import { api } from '../utils/api';
 
@@ -41,7 +41,7 @@ function MainContent({
   onSessionProcessing,    // Mark session as processing (thinking/working)
   onSessionNotProcessing, // Mark session as not processing (finished thinking)
   processingSessions,     // Set of session IDs currently processing
-  onNavigateToSession,    // Navigate to a specific session (for Claude CLI session duplication workaround)
+  onNavigateToSession,    // Navigate to a specific session (for Agent CLI session duplication workaround)
   onShowSettings,         // Show tools settings panel
   autoExpandTools,        // Auto-expand tool accordions
   showRawParameters,      // Show raw parameters in tool accordions
@@ -151,7 +151,7 @@ function MainContent({
                 }} 
               />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Loading Claude Code UI</h2>
+            <h2 className="text-xl font-semibold mb-2">Loading Agent UI</h2>
             <p>Setting up your workspace...</p>
           </div>
         </div>
@@ -186,7 +186,7 @@ function MainContent({
             </div>
             <h2 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">Choose Your Project</h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-              Select a project from the sidebar to start coding with Claude. Each project contains your chat sessions and file history.
+              Select a project from the sidebar to start coding with Agent. Each project contains your chat sessions and file history.
             </p>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -224,7 +224,7 @@ function MainContent({
             <div className="min-w-0 flex items-center gap-2">
               {activeTab === 'chat' && selectedSession && (
                 <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
-                  <ClaudeLogo className="w-5 h-5" />
+                  <AgentLogo className="w-5 h-5" />
                 </div>
               )}
               <div className="flex-1 min-w-0">

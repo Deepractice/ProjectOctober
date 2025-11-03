@@ -50,7 +50,7 @@ server/
 - Parse environment variables
 
 **`websocket/chat.js`** (Chat WebSocket)
-- Handle Claude AI chat connections
+- Handle Agent AI chat connections
 - Process chat messages
 - Session management commands
 

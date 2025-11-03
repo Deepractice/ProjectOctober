@@ -1,9 +1,9 @@
 /**
  * Chat WebSocket Handler
- * Handles Claude AI chat connections and messages
+ * Handles Agent AI chat connections and messages
  */
 import { WebSocket } from 'ws';
-import { queryClaudeSDK, abortClaudeSDKSession, isClaudeSDKSessionActive, getActiveClaudeSDKSessions } from '../claude-sdk.js';
+import { queryAgentSDK, abortAgentSDKSession, isAgentSDKSessionActive, getActiveAgentSDKSessions } from '../agent-sdk.js';
 
 export function handleChatConnection(ws, connectedClients) {
   console.log('💬 Chat WebSocket connected');
@@ -15,17 +15,17 @@ export function handleChatConnection(ws, connectedClients) {
     try {
       const data = JSON.parse(message);
 
-      if (data.type === 'claude-command') {
+      if (data.type === 'agent-command') {
         console.log('💬 User message:', data.command || '[Continue/Resume]');
         console.log('📁 Project:', data.options?.projectPath || 'Unknown');
         console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
 
-        // Use Claude Agents SDK
-        await queryClaudeSDK(data.command, data.options, ws);
+        // Use Agent Agents SDK
+        await queryAgentSDK(data.command, data.options, ws);
       } else if (data.type === 'abort-session') {
         console.log('🛑 Abort session request:', data.sessionId);
-        // Use Claude Agents SDK
-        const success = await abortClaudeSDKSession(data.sessionId);
+        // Use Agent Agents SDK
+        const success = await abortAgentSDKSession(data.sessionId);
 
         ws.send(JSON.stringify({
           type: 'session-aborted',
@@ -36,8 +36,8 @@ export function handleChatConnection(ws, connectedClients) {
       } else if (data.type === 'check-session-status') {
         // Check if a specific session is currently processing
         const sessionId = data.sessionId;
-        // Use Claude Agents SDK
-        const isActive = isClaudeSDKSessionActive(sessionId);
+        // Use Agent Agents SDK
+        const isActive = isAgentSDKSessionActive(sessionId);
 
         ws.send(JSON.stringify({
           type: 'session-status',
@@ -48,7 +48,7 @@ export function handleChatConnection(ws, connectedClients) {
       } else if (data.type === 'get-active-sessions') {
         // Get all currently active sessions
         const activeSessions = {
-          claude: getActiveClaudeSDKSessions()
+          claude: getActiveAgentSDKSessions()
         };
         ws.send(JSON.stringify({
           type: 'active-sessions',

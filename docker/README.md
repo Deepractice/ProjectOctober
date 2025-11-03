@@ -1,4 +1,4 @@
-# Claude Code UI - Docker Deployment
+# Agent UI - Docker Deployment
 
 Simple 3-variable configuration. Everything else is fixed.
 
@@ -86,7 +86,7 @@ docker run -d \
 The image includes:
 - Ubuntu 22.04 LTS
 - Node.js 20 LTS + npm
-- Claude Code CLI
+- Agent CLI
 - Python 3 + pip
 - Git, vim, nano
 - Full build toolchain (gcc, g++, make)

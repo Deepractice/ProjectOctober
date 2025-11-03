@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
 
-function ClaudeStatus({ status, onAbort, isLoading, provider = 'claude' }) {
+function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
   const [fakeTokens, setFakeTokens] = useState(0);
@@ -109,4 +109,4 @@ function ClaudeStatus({ status, onAbort, isLoading, provider = 'claude' }) {
   );
 }
 
-export default ClaudeStatus;
+export default AgentStatus;

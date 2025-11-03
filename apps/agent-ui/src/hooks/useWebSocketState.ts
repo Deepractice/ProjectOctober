@@ -24,8 +24,8 @@ export function useWebSocketState({
   const [currentSessionId, setCurrentSessionId] = useState(initialSessionId);
   const [canAbortSession, setCanAbortSession] = useState(false);
 
-  // Claude status state
-  const [claudeStatus, setClaudeStatus] = useState(null);
+  // Agent status state
+  const [claudeStatus, setAgentStatus] = useState(null);
 
   // Session management state
   const [isSystemSessionChange, setIsSystemSessionChange] = useState(false);
@@ -60,7 +60,7 @@ export function useWebSocketState({
     setIsLoading,
     setCurrentSessionId,
     setCanAbortSession,
-    setClaudeStatus,
+    setAgentStatus,
     setIsSystemSessionChange,
     setTokenBudget,
     setPermissionMode,

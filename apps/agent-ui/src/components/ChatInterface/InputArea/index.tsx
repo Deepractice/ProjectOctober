@@ -1,5 +1,5 @@
 import React from 'react';
-import ClaudeStatus from '../../ClaudeStatus';
+import AgentStatus from '../../AgentStatus';
 import TokenUsagePie from '../../TokenUsagePie';
 import ImageAttachments from './ImageAttachments';
 import Textarea from './Textarea';
@@ -72,7 +72,7 @@ function InputArea({
       }`}
     >
       <div className="flex-1">
-        <ClaudeStatus
+        <AgentStatus
           status={claudeStatus}
           isLoading={isLoading}
           onAbort={handleAbortSession}

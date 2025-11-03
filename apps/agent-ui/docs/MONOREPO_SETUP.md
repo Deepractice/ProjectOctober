@@ -1,6 +1,6 @@
-# Monorepo Setup for Claude Code UI
+# Monorepo Setup for Agent UI
 
-This document describes the configuration changes made to integrate Claude Code UI into the Project October monorepo.
+This document describes the configuration changes made to integrate Agent UI into the Project October monorepo.
 
 ## Changes Made
 
@@ -8,7 +8,7 @@ This document describes the configuration changes made to integrate Claude Code 
 ```
 ProjectOctober/
 ├── apps/
-│   └── agent-ui/          # Claude Code UI application
+│   └── agent-ui/          # Agent UI application
 │       ├── src/               # Frontend source
 │       ├── server/            # Backend source
 │       ├── public/            # Static assets

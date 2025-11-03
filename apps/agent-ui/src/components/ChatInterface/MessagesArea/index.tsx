@@ -1,5 +1,5 @@
 import React from 'react';
-import ClaudeLogo from '../../ClaudeLogo.jsx';
+import AgentLogo from '../../AgentLogo.jsx';
 import MessageComponent from '../MessageRenderer';
 
 function MessagesArea({
@@ -52,7 +52,7 @@ function MessagesArea({
               Start a New Conversation
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Type your message below to start chatting with Claude
+              Type your message below to start chatting with Agent
             </p>
           </div>
         </div>
@@ -120,9 +120,9 @@ function MessagesArea({
           <div className="w-full">
             <div className="flex items-center space-x-3 mb-2">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1 bg-transparent">
-                <ClaudeLogo className="w-full h-full" />
+                <AgentLogo className="w-full h-full" />
               </div>
-              <div className="text-sm font-medium text-gray-900 dark:text-white">Claude</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Agent</div>
               {/* Abort button removed - functionality not yet implemented at backend */}
             </div>
             <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">

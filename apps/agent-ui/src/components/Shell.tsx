@@ -239,7 +239,7 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
         brightCyan: '#29b8db',
         brightWhite: '#ffffff',
         
-        // Extended colors for better Claude output
+        // Extended colors for better Agent output
         extendedAnsi: [
           // 16-color palette extension for 256-color support
           '#000000', '#800000', '#008000', '#808000',
@@ -634,7 +634,7 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
                   `Run ${initialCommand || 'command'} in ${selectedProject.displayName}` :
                   selectedSession ?
                     `Resume session: ${(selectedSession.summary || 'New Session').slice(0, 50)}...` :
-                    'Start a new Claude session'
+                    'Start a new Agent session'
                 }
               </p>
             </div>
@@ -652,7 +652,7 @@ function Shell({ selectedProject, selectedSession, isActive, initialCommand, isP
               <p className="text-gray-400 text-sm mt-3 px-2">
                 {isPlainShell ? 
                   `Running ${initialCommand || 'command'} in ${selectedProject.displayName}` :
-                  `Starting Claude CLI in ${selectedProject.displayName}`
+                  `Starting Agent CLI in ${selectedProject.displayName}`
                 }
               </p>
             </div>

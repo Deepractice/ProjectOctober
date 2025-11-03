@@ -6,11 +6,11 @@ export type WebSocketMessageType =
   | 'session-created'
   | 'sessions_updated'
   | 'token-budget'
-  | 'claude-response'
+  | 'agent-response'
   | 'claude-output'
   | 'claude-interactive-prompt'
   | 'claude-error'
-  | 'claude-complete'
+  | 'agent-complete'
   | 'session-aborted'
   | 'session-status'
   | 'claude-status';
@@ -31,8 +31,8 @@ export interface SessionsUpdatedMessage extends BaseWebSocketMessage {
   sessions: import('./session').Session[];
 }
 
-export interface ClaudeCompleteMessage extends BaseWebSocketMessage {
-  type: 'claude-complete';
+export interface AgentCompleteMessage extends BaseWebSocketMessage {
+  type: 'agent-complete';
   sessionId: string;
   exitCode?: number;
 }
@@ -48,19 +48,19 @@ export interface SessionStatusMessage extends BaseWebSocketMessage {
   isProcessing: boolean;
 }
 
-export interface ClaudeResponseMessage extends BaseWebSocketMessage {
-  type: 'claude-response';
+export interface AgentResponseMessage extends BaseWebSocketMessage {
+  type: 'agent-response';
   sessionId: string;
   data?: any;
 }
 
-export interface ClaudeOutputMessage extends BaseWebSocketMessage {
+export interface AgentOutputMessage extends BaseWebSocketMessage {
   type: 'claude-output';
   sessionId: string;
   data?: any;
 }
 
-export interface ClaudeErrorMessage extends BaseWebSocketMessage {
+export interface AgentErrorMessage extends BaseWebSocketMessage {
   type: 'claude-error';
   sessionId: string;
   error?: string;
@@ -70,12 +70,12 @@ export interface ClaudeErrorMessage extends BaseWebSocketMessage {
 export type WebSocketMessage =
   | SessionCreatedMessage
   | SessionsUpdatedMessage
-  | ClaudeCompleteMessage
+  | AgentCompleteMessage
   | SessionAbortedMessage
   | SessionStatusMessage
-  | ClaudeResponseMessage
-  | ClaudeOutputMessage
-  | ClaudeErrorMessage
+  | AgentResponseMessage
+  | AgentOutputMessage
+  | AgentErrorMessage
   | BaseWebSocketMessage;
 
 /**

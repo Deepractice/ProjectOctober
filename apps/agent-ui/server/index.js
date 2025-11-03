@@ -65,8 +65,8 @@ async function startServer() {
     const distIndexPath = path.join(__dirname, '../dist/index.html');
     const isProduction = fs.existsSync(distIndexPath);
 
-    // Log Claude implementation mode
-    console.log('🚀 Using Claude Agents SDK for Claude integration');
+    // Log Agent implementation mode
+    console.log('🚀 Using Agent Agents SDK for Agent integration');
     console.log(`📦 Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
 
     if (!isProduction) {
@@ -74,7 +74,7 @@ async function startServer() {
     }
 
     server.listen(PORT, '0.0.0.0', async () => {
-      console.log(`✅ Claude Code UI server running on http://0.0.0.0:${PORT}`);
+      console.log(`✅ Agent UI server running on http://0.0.0.0:${PORT}`);
 
       // Start watching the sessions folder for changes
       await setupSessionsWatcher(connectedClients);

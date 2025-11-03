@@ -10,7 +10,7 @@
  * Key Integration Points:
  * 1. handleSubmit() - Marks session as active when user sends message (including temp ID for new sessions)
  * 2. session-created handler - Replaces temporary session ID with real WebSocket session ID  
- * 3. claude-complete handler - Marks session as inactive when conversation finishes
+ * 3. agent-complete handler - Marks session as inactive when conversation finishes
  * 4. session-aborted handler - Marks session as inactive when conversation is aborted
  * 
  * This ensures uninterrupted chat experience by coordinating with App.jsx to pause sidebar updates.
@@ -32,7 +32,7 @@ import MessagesArea from './MessagesArea';
 import InputArea from './InputArea';
 import CommandPalette from './CommandPalette';
 import FileAutocomplete from './FileAutocomplete';
-import ClaudeStatusBar from './ClaudeStatusBar';
+import AgentStatusBar from './AgentStatusBar';
 import { useMessageStore } from '../../stores';
 
 // ChatInterface: Main chat component with Session Protection System integration
@@ -141,7 +141,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     canAbortSession,
     setCanAbortSession,
     claudeStatus,
-    setClaudeStatus,
+    setAgentStatus,
     isSystemSessionChange,
     setIsSystemSessionChange,
     tokenBudget,
@@ -265,7 +265,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
   }, [selectedSession?.id, currentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading]);
 
-  // 2. Load Claude messages when session/project changes
+  // 2. Load Agent messages when session/project changes
   useEffect(() => {
     const sessionId = selectedSession?.id;
     const projectPath = selectedProject?.path;
@@ -275,7 +275,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     const provider = localStorage.getItem('selected-provider') || 'claude';
     if (provider !== 'claude') return;
 
-    const loadClaudeMessages = async () => {
+    const loadAgentMessages = async () => {
       isLoadingSessionRef.current = true;
       setCurrentSessionId(sessionId);
 
@@ -288,7 +288,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       setTimeout(() => { isLoadingSessionRef.current = false; }, 250);
     };
 
-    loadClaudeMessages();
+    loadAgentMessages();
   }, [selectedSession?.id, selectedProject?.path, isSystemSessionChange, loadSessionMessages, setSessionMessages, convertSessionMessages, setCurrentSessionId]);
 
   // 3. Load Cursor messages when session/project changes
@@ -369,7 +369,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             // Write to store instead of local state
             useMessageStore.getState().setServerMessages(selectedSession.id, converted);
           } else {
-            // Reload Claude messages from API/JSONL
+            // Reload Agent messages from API/JSONL
             const messages = await loadSessionMessages(selectedSession.id, false);
             setSessionMessages(messages);
 
@@ -534,14 +534,14 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     setIsLoading(true);
     setCanAbortSession(true);
     // Set a default status when starting
-    setClaudeStatus({
+    setAgentStatus({
       text: 'Processing',
       tokens: 0,
       can_interrupt: true
     });
 
     // Always scroll to bottom when user sends a message and reset scroll state
-    setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Claude's response
+    setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Agent's response
     setTimeout(() => scrollToBottom(), 100); // Longer delay to ensure message is rendered
 
     // Session Protection: Mark session as active to prevent automatic project updates during conversation
@@ -588,9 +588,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         }
       });
     } else {
-      // Send Claude command (existing code)
+      // Send Agent command (existing code)
       sendMessage({
-        type: 'claude-command',
+        type: 'agent-command',
         command: input,
         options: {
           projectPath: selectedProject.path,
@@ -608,7 +608,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     setAttachedImages([]);
     setUploadingImages(new Map());
     setImageErrors(new Map());
-  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
+  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setIsLoading, setCanAbortSession, setAgentStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
 
   // Store handleSubmit in ref so handleCustomCommand can access it
   useEffect(() => {
@@ -657,7 +657,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     const newValue = e.target.value;
     const cursorPos = e.target.selectionStart;
 
-    // Auto-select Claude provider if no session exists and user starts typing
+    // Auto-select Agent provider if no session exists and user starts typing
     if (!currentSessionId && newValue.trim() && provider === 'claude') {
       // Provider is already set to 'claude' by default, so no need to change it
       // The session will be created automatically when they submit
@@ -717,7 +717,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center text-gray-500 dark:text-gray-400">
-          <p>Select a project to start chatting with Claude</p>
+          <p>Select a project to start chatting with Agent</p>
         </div>
       </div>
     );
@@ -756,9 +756,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setCursorPosition={setCursorPosition}
           >
             {(fileProps) => (
-              <ClaudeStatusBar
+              <AgentStatusBar
                 status={claudeStatus}
-                onStatusChange={setClaudeStatus}
+                onStatusChange={setAgentStatus}
                 isLoading={isLoading}
                 onAbort={handleAbortSession}
                 provider={provider}
@@ -848,7 +848,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                     />
                   </div>
                 )}
-              </ClaudeStatusBar>
+              </AgentStatusBar>
             )}
           </FileAutocomplete>
         )}

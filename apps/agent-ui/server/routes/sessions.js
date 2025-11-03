@@ -9,7 +9,7 @@ import os from 'os';
 import { promises as fs } from 'fs';
 import { getCurrentProject, getSessions } from '../projects.js';
 import { getSessionMessages, deleteSession } from '../sessions.js';
-import { warmupSession } from '../claude-sdk.js';
+import { warmupSession } from '../agent-sdk.js';
 
 const router = express.Router();
 

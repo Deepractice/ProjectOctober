@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Claude Code UI - Docker Entrypoint
+ * Agent UI - Docker Entrypoint
  * Handles container initialization and starts the server
  */
 
@@ -12,7 +12,7 @@ const { join } = require('path');
 const PORT = process.env.PORT || 3001;
 const PROJECT_DIR = '/project';
 
-console.log('🔧 Initializing Claude Code UI environment...\n');
+console.log('🔧 Initializing Agent UI environment...\n');
 
 /**
  * Execute shell command with sudo
@@ -27,12 +27,12 @@ function execSudo(command) {
 }
 
 /**
- * Setup permissions for Claude config and app directories
+ * Setup permissions for Agent config and app directories
  */
 function setupPermissions() {
   console.log('📁 Setting up permissions...');
 
-  // Claude config directory
+  // Agent config directory
   execSudo('chmod -R 777 /opt/claude-config');
   execSudo('chown -R node:node /app');
 
@@ -53,10 +53,10 @@ function setupProjectDirectory() {
 }
 
 /**
- * Start the Claude Code UI server
+ * Start the Agent UI server
  */
 function startServer() {
-  console.log(`✅ Starting Claude Code UI server on port ${PORT}...\n`);
+  console.log(`✅ Starting Agent UI server on port ${PORT}...\n`);
   console.log('─'.repeat(60));
 
   const serverPath = join(process.cwd(), 'server', 'index.js');

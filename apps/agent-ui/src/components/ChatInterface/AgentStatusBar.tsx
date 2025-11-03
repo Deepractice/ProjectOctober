@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import ClaudeStatus from '../ClaudeStatus';
+import AgentStatus from '../AgentStatus';
 
 /**
- * ClaudeStatusBar - Encapsulates Claude status display and management
+ * AgentStatusBar - Encapsulates Agent status display and management
  *
- * Manages Claude status state and provides status display UI.
+ * Manages Agent status state and provides status display UI.
  * Can be used standalone or via render prop pattern.
  */
-function ClaudeStatusBar({
+function AgentStatusBar({
   // Initial state
   initialStatus = null,
 
@@ -15,7 +15,7 @@ function ClaudeStatusBar({
   status: externalStatus,
   onStatusChange,
 
-  // Other props for ClaudeStatus component
+  // Other props for AgentStatus component
   isLoading,
   onAbort,
   provider,
@@ -48,10 +48,10 @@ function ClaudeStatusBar({
     });
   }
 
-  // Default rendering: display ClaudeStatus component
+  // Default rendering: display AgentStatus component
   return (
     <div className="flex-1">
-      <ClaudeStatus
+      <AgentStatus
         status={claudeStatus}
         isLoading={isLoading}
         onAbort={onAbort}
@@ -61,4 +61,4 @@ function ClaudeStatusBar({
   );
 }
 
-export default ClaudeStatusBar;
+export default AgentStatusBar;

@@ -1,6 +1,6 @@
 /**
  * Sessions File Watcher
- * Monitors Claude project sessions folder and notifies clients of changes
+ * Monitors Agent project sessions folder and notifies clients of changes
  */
 import path from 'path';
 import { WebSocket } from 'ws';

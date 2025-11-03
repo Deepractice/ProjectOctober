@@ -9,7 +9,7 @@ import Shell from './Shell.jsx';
  * @param {Object} session - Session object (optional, for tab usage)
  * @param {string} command - Initial command to run (optional)
  * @param {boolean} isActive - Whether the shell is active (for tab usage, default: true)
- * @param {boolean} isPlainShell - Use plain shell mode vs Claude CLI (default: auto-detect)
+ * @param {boolean} isPlainShell - Use plain shell mode vs Agent CLI (default: auto-detect)
  * @param {boolean} autoConnect - Whether to auto-connect when mounted (default: true)
  * @param {function} onComplete - Callback when process completes (receives exitCode)
  * @param {function} onClose - Callback for close button (optional)

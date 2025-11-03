@@ -7,7 +7,7 @@
  *
  * ## Architecture Overview
  *
- * **Claude Sessions** (stored in ~/.claude/projects/)
+ * **Agent Sessions** (stored in ~/.claude/projects/)
  *    - Each project is a directory named with the project path encoded (/ replaced with -)
  *    - Contains .jsonl files with conversation history
  *
@@ -38,7 +38,7 @@ function getCurrentProject() {
   }
 
   const fullPath = path.resolve(projectPath);
-  // Claude CLI encoding: replace / with -, keep leading -
+  // Agent CLI encoding: replace / with -, keep leading -
   const encodedName = fullPath.replace(/\//g, '-');
 
   return {

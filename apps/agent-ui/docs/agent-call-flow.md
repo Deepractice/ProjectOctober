@@ -1,8 +1,8 @@
-# Claude 对话调用流程分析
+# Agent 对话调用流程分析
 
 ## 概览
 
-系统使用 `@anthropic-ai/claude-agent-sdk` 实现与 Claude 的交互，通过 WebSocket 实现实时流式响应。
+系统使用 `@anthropic-ai/claude-agent-sdk` 实现与 Agent 的交互，通过 WebSocket 实现实时流式响应。
 
 ## 完整调用流程
 
@@ -21,7 +21,7 @@ const handleSubmit = useCallback(async (e) => {
 #### 1.2 构造消息对象 (Line 3783-3796)
 ```javascript
 sendMessage({
-  type: 'claude-command',
+  type: 'agent-command',
   command: input,  // 用户输入的文本
   options: {
     projectPath: selectedProject.path,
@@ -55,24 +55,24 @@ const sendMessage = (message) => {
 ws.on('message', async (message) => {
   const data = JSON.parse(message);
 
-  if (data.type === 'claude-command') {
+  if (data.type === 'agent-command') {
     console.log('💬 User message:', data.command);
     console.log('📁 Project:', data.options?.projectPath);
     console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
 
-    // 调用 Claude SDK
-    await queryClaudeSDK(data.command, data.options, ws);
+    // 调用 Agent SDK
+    await queryAgentSDK(data.command, data.options, ws);
   }
 });
 ```
 
-### 3. Claude SDK 执行
+### 3. Agent SDK 执行
 
-**文件**: `apps/agent-ui/server/claude-sdk.js`
+**文件**: `apps/agent-ui/server/agent-sdk.js`
 
 #### 3.1 主函数入口 (Line 338)
 ```javascript
-async function queryClaudeSDK(command, options = {}, ws) {
+async function queryAgentSDK(command, options = {}, ws) {
   const { sessionId } = options;
   let capturedSessionId = sessionId;
 ```
@@ -190,7 +190,7 @@ for await (const message of queryInstance) {
 
   // 转发消息到前端
   ws.send(JSON.stringify({
-    type: 'claude-response',
+    type: 'agent-response',
     data: message
   }));
 
@@ -217,7 +217,7 @@ await cleanupTempFiles(tempImagePaths, tempDir);
 
 // 发送完成事件
 ws.send(JSON.stringify({
-  type: 'claude-complete',
+  type: 'agent-complete',
   sessionId: capturedSessionId,
   exitCode: 0
 }));
@@ -244,7 +244,7 @@ useEffect(() => {
 
     // 处理不同类型的消息
     switch (latestMessage.type) {
-      case 'claude-response':
+      case 'agent-response':
         // 更新聊天消息
         break;
       case 'session-created':
@@ -254,7 +254,7 @@ useEffect(() => {
       case 'token-budget':
         // 更新 token 使用显示
         break;
-      case 'claude-complete':
+      case 'agent-complete':
         // 标记加载完成
         setIsLoading(false);
         break;
@@ -303,9 +303,9 @@ WebSocket.sendMessage()
    ↓
 Server WebSocket Handler
    ↓
-queryClaudeSDK()
+queryAgentSDK()
    ↓
-Claude Agent SDK
+Agent Agent SDK
    ↓
 Streaming Response
    ↓
@@ -317,7 +317,7 @@ ChatInterface Update UI
 ## 环境变量
 
 ```env
-# Claude API
+# Agent API
 ANTHROPIC_BASE_URL="https://relay.deepractice.ai/api"
 ANTHROPIC_AUTH_TOKEN="cr_xxx..."
 
@@ -346,5 +346,5 @@ PORT=3001
 
 ### 后端
 - `server/index.js` - Express + WebSocket 服务器
-- `server/claude-sdk.js` - Claude SDK 集成
+- `server/agent-sdk.js` - Agent SDK 集成
 - `server/projects.js` - 项目管理

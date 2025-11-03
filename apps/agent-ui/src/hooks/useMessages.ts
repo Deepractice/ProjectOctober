@@ -4,7 +4,7 @@ import { api, authenticatedFetch } from '../utils/api';
 /**
  * useMessages Hook
  * 
- * Manages message loading and state for both Claude Code (JSONL) and Cursor (SQLite) session messages
+ * Manages message loading and state for both Agent (JSONL) and Cursor (SQLite) session messages
  * 
  * @param {Object} options
  * @param {Object} options.selectedProject - Currently selected project
@@ -23,7 +23,7 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
   const [totalMessages, setTotalMessages] = useState(0);
 
   /**
-   * Load Claude Code session messages (JSONL format)
+   * Load Agent session messages (JSONL format)
    * Supports pagination
    */
   const loadSessionMessages = useCallback(async (sessionId, loadMore = false) => {
@@ -170,16 +170,16 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
                       reasoningText = null;
                     }
                     
-                    // Tool call in assistant message - format like Claude Code
-                    // Map ApplyPatch to Edit for consistency with Claude Code
+                    // Tool call in assistant message - format like Agent
+                    // Map ApplyPatch to Edit for consistency with Agent
                     let toolName = part.toolName || 'Unknown Tool';
                     if (toolName === 'ApplyPatch') {
                       toolName = 'Edit';
                     }
                     const toolId = part.toolCallId || `tool_${blobIdx}`;
                     
-                    // Create a tool use message with Claude Code format
-                    // Map Cursor args format to Claude Code format
+                    // Create a tool use message with Agent format
+                    // Map Cursor args format to Agent format
                     let toolInput = part.args;
                     
                     if (toolName === 'Edit' && part.args) {

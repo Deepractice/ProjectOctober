@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { X, Plus, Settings as SettingsIcon, Shield, AlertTriangle, Moon, Sun, Server, Edit3, Trash2, Globe, Terminal, Zap, FolderOpen, LogIn, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import StandaloneShell from './StandaloneShell';
-import ClaudeLogo from './ClaudeLogo';
+import AgentLogo from './AgentLogo';
 import CredentialsSettings from './CredentialsSettings';
 
 function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
@@ -67,7 +67,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
   // Login modal states
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  // Common tool patterns for Claude
+  // Common tool patterns for Agent
   const commonTools = [
     'Bash(git log:*)',
     'Bash(git diff:*)',
@@ -110,7 +110,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
         }
       }
       
-      // Fallback to Claude CLI
+      // Fallback to Agent CLI
       const cliResponse = await fetch('/api/mcp/cli/list', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -171,7 +171,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
         await deleteMcpServer(editingMcpServer.id, 'user');
       }
       
-      // Use Claude CLI to add the server
+      // Use Agent CLI to add the server
       const response = await fetch('/api/mcp/cli/add', {
         method: 'POST',
         headers: {
@@ -197,7 +197,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
           await fetchMcpServers(); // Refresh the list
           return true;
         } else {
-          throw new Error(result.error || 'Failed to save server via Claude CLI');
+          throw new Error(result.error || 'Failed to save server via Agent CLI');
         }
       } else {
         const error = await response.json();
@@ -213,7 +213,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
     try {
       const token = localStorage.getItem('auth-token');
       
-      // Use Claude CLI to remove the server with proper scope
+      // Use Agent CLI to remove the server with proper scope
       const response = await fetch(`/api/mcp/cli/remove/${serverId}?scope=${scope}`, {
         method: 'DELETE',
         headers: {
@@ -228,7 +228,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
           await fetchMcpServers(); // Refresh the list
           return true;
         } else {
-          throw new Error(result.error || 'Failed to delete server via Claude CLI');
+          throw new Error(result.error || 'Failed to delete server via Agent CLI');
         }
       } else {
         const error = await response.json();
@@ -326,7 +326,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
   const loadSettings = async () => {
     try {
       
-      // Load Claude settings from localStorage
+      // Load Agent settings from localStorage
       const savedSettings = localStorage.getItem('claude-settings');
       
       if (savedSettings) {
@@ -356,7 +356,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
   };
 
   // Login handlers
-  const handleClaudeLogin = () => {
+  const handleAgentLogin = () => {
     setSelectedProject(projects?.[0] || { name: 'default', fullPath: process.cwd() });
     setShowLoginModal(true);
   };
@@ -375,7 +375,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
     setSaveStatus(null);
     
     try {
-      // Save Claude settings
+      // Save Agent settings
       const claudeSettings = {
         allowedTools,
         disallowedTools,
@@ -896,7 +896,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
               </div>
             </div>
 
-            {/* Claude Login */}
+            {/* Agent Login */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <LogIn className="w-5 h-5 text-blue-500" />
@@ -908,14 +908,14 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium text-blue-900 dark:text-blue-100">
-                      Claude CLI Login
+                      Agent CLI Login
                     </div>
                     <div className="text-sm text-blue-700 dark:text-blue-300">
-                      Sign in to your Claude account to enable AI features
+                      Sign in to your Agent account to enable AI features
                     </div>
                   </div>
                   <Button
-                    onClick={handleClaudeLogin}
+                    onClick={handleAgentLogin}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                     size="sm"
                   >
@@ -1091,7 +1091,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Model Context Protocol servers provide additional tools and data sources to Claude
+                  Model Context Protocol servers provide additional tools and data sources to Agent
                 </p>
               </div>
               
@@ -1686,7 +1686,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'tools' }) {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-3/4 flex flex-col md:max-w-4xl md:h-3/4 md:rounded-lg md:m-4 max-md:max-w-none max-md:h-full max-md:rounded-none max-md:m-0">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Claude CLI Login
+                Agent CLI Login
               </h3>
               <button
                 onClick={() => setShowLoginModal(false)}

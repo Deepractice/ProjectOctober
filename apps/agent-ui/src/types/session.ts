@@ -60,7 +60,7 @@ export interface SessionState {
   // WebSocket Message Handlers
   handleSessionCreated: (sessionId: SessionId, tempData?: Partial<Session> | null) => void;
   handleSessionsUpdated: (updatedSessions: Session[]) => void;
-  handleClaudeComplete: (sessionId: SessionId) => void;
+  handleAgentComplete: (sessionId: SessionId) => void;
   handleSessionAborted: (sessionId: SessionId) => void;
   handleSessionStatus: (sessionId: SessionId, isProcessing: boolean) => void;
 }

@@ -37,8 +37,8 @@ export function handleShellConnection(ws) {
           welcomeMsg = `\x1b[36mStarting terminal in: ${projectPath}\x1b[0m\r\n`;
         } else {
           welcomeMsg = hasSession ?
-            `\x1b[36mResuming Claude session ${sessionId} in: ${projectPath}\x1b[0m\r\n` :
-            `\x1b[36mStarting new Claude session in: ${projectPath}\x1b[0m\r\n`;
+            `\x1b[36mResuming Agent session ${sessionId} in: ${projectPath}\x1b[0m\r\n` :
+            `\x1b[36mStarting new Agent session in: ${projectPath}\x1b[0m\r\n`;
         }
 
         ws.send(JSON.stringify({

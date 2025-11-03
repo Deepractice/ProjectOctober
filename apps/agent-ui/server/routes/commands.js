@@ -80,7 +80,7 @@ async function scanCommandsDirectory(dir, baseDir, namespace) {
 const builtInCommands = [
   {
     name: '/help',
-    description: 'Show help documentation for Claude Code',
+    description: 'Show help documentation for Agent',
     namespace: 'builtin',
     metadata: { type: 'builtin' }
   },
@@ -134,7 +134,7 @@ const builtInCommands = [
  */
 const builtInHandlers = {
   '/help': async (args, context) => {
-    const helpText = `# Claude Code Commands
+    const helpText = `# Agent Commands
 
 ## Built-in Commands
 

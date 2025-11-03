@@ -26,7 +26,7 @@ export function useWebSocketHandlers({
   // State setters (still needed for non-message state)
   setIsLoading,
   setCanAbortSession,
-  setClaudeStatus,
+  setAgentStatus,
   setIsSystemSessionChange,
   setTokenBudget,
   setCurrentSessionId,
@@ -46,7 +46,7 @@ export function useWebSocketHandlers({
     selectedProject,
     setIsLoading,
     setCanAbortSession,
-    setClaudeStatus,
+    setAgentStatus,
     setIsSystemSessionChange,
     setTokenBudget,
     setCurrentSessionId,
@@ -62,7 +62,7 @@ export function useWebSocketHandlers({
       selectedProject,
       setIsLoading,
       setCanAbortSession,
-      setClaudeStatus,
+      setAgentStatus,
       setIsSystemSessionChange,
       setTokenBudget,
       setCurrentSessionId,
@@ -100,8 +100,8 @@ export function useWebSocketHandlers({
       }
     };
 
-    // Handler: claude-response
-    const handleClaudeResponse = (msg: any) => {
+    // Handler: agent-response
+    const handleAgentResponse = (msg: any) => {
       const { currentSessionId, setIsSystemSessionChange, onNavigateToSession } = stateRef.current;
 
       // Only process for current session
@@ -190,7 +190,7 @@ export function useWebSocketHandlers({
     };
 
     // Handler: claude-output (streaming)
-    const handleClaudeOutput = (msg: any) => {
+    const handleAgentOutput = (msg: any) => {
       const { currentSessionId } = stateRef.current;
 
       if (msg.sessionId && currentSessionId && msg.sessionId !== currentSessionId) {
@@ -210,7 +210,7 @@ export function useWebSocketHandlers({
     };
 
     // Handler: claude-error
-    const handleClaudeError = (msg: any) => {
+    const handleAgentError = (msg: any) => {
       const { currentSessionId } = stateRef.current;
 
       if (msg.sessionId && currentSessionId && msg.sessionId !== currentSessionId) {
@@ -221,15 +221,15 @@ export function useWebSocketHandlers({
       messageStore.addErrorMessage(currentSessionId, msg.error);
     };
 
-    // Handler: claude-complete
-    const handleClaudeComplete = (msg: any) => {
+    // Handler: agent-complete
+    const handleAgentComplete = (msg: any) => {
       const {
         currentSessionId,
         selectedProject,
         selectedSession,
         setIsLoading,
         setCanAbortSession,
-        setClaudeStatus,
+        setAgentStatus,
         setTokenBudget,
         setCurrentSessionId
       } = stateRef.current;
@@ -239,7 +239,7 @@ export function useWebSocketHandlers({
       if (completedSessionId === currentSessionId || !currentSessionId) {
         setIsLoading(false);
         setCanAbortSession(false);
-        setClaudeStatus(null);
+        setAgentStatus(null);
 
         // Note: No need to clear optimistic messages anymore
         // All messages are stored in single sessionMessages list
@@ -285,13 +285,13 @@ export function useWebSocketHandlers({
 
     // Handler: session-aborted
     const handleSessionAborted = (msg: any) => {
-      const { currentSessionId, setIsLoading, setCanAbortSession, setClaudeStatus } = stateRef.current;
+      const { currentSessionId, setIsLoading, setCanAbortSession, setAgentStatus } = stateRef.current;
       const abortedSessionId = msg.sessionId || currentSessionId;
 
       if (abortedSessionId === currentSessionId) {
         setIsLoading(false);
         setCanAbortSession(false);
-        setClaudeStatus(null);
+        setAgentStatus(null);
       }
 
       // Add abort message
@@ -316,8 +316,8 @@ export function useWebSocketHandlers({
     };
 
     // Handler: claude-status
-    const handleClaudeStatus = (msg: any) => {
-      const { setClaudeStatus, setIsLoading, setCanAbortSession } = stateRef.current;
+    const handleAgentStatus = (msg: any) => {
+      const { setAgentStatus, setIsLoading, setCanAbortSession } = stateRef.current;
       const statusData = msg.data;
 
       if (statusData) {
@@ -345,7 +345,7 @@ export function useWebSocketHandlers({
           statusInfo.can_interrupt = statusData.can_interrupt;
         }
 
-        setClaudeStatus(statusInfo);
+        setAgentStatus(statusInfo);
         setIsLoading(true);
         setCanAbortSession(statusInfo.can_interrupt);
       }
@@ -353,21 +353,21 @@ export function useWebSocketHandlers({
 
     // Register all handlers (ONCE)
     console.log('✅ Registering WebSocket handlers (one-time)');
-    messageStore.registerHandler('claude-response', handleClaudeResponse);
-    messageStore.registerHandler('claude-output', handleClaudeOutput);
-    messageStore.registerHandler('claude-error', handleClaudeError);
-    messageStore.registerHandler('claude-complete', handleClaudeComplete);
+    messageStore.registerHandler('agent-response', handleAgentResponse);
+    messageStore.registerHandler('claude-output', handleAgentOutput);
+    messageStore.registerHandler('claude-error', handleAgentError);
+    messageStore.registerHandler('agent-complete', handleAgentComplete);
     messageStore.registerHandler('session-aborted', handleSessionAborted);
     messageStore.registerHandler('session-status', handleSessionStatus);
-    messageStore.registerHandler('claude-status', handleClaudeStatus);
+    messageStore.registerHandler('claude-status', handleAgentStatus);
 
     // Cleanup on unmount
     return () => {
       console.log('🧹 Unregistering WebSocket handlers');
-      messageStore.unregisterHandler('claude-response');
+      messageStore.unregisterHandler('agent-response');
       messageStore.unregisterHandler('claude-output');
       messageStore.unregisterHandler('claude-error');
-      messageStore.unregisterHandler('claude-complete');
+      messageStore.unregisterHandler('agent-complete');
       messageStore.unregisterHandler('session-aborted');
       messageStore.unregisterHandler('session-status');
       messageStore.unregisterHandler('claude-status');

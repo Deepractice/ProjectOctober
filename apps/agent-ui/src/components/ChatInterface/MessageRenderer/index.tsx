@@ -33,12 +33,12 @@ function normalizeInlineCodeFences(text) {
 }
 
 /**
- * Format "Claude AI usage limit reached|<epoch>" into a local time string
+ * Format "Agent AI usage limit reached|<epoch>" into a local time string
  */
 function formatUsageLimitText(text) {
   try {
     if (typeof text !== 'string') return text;
-    return text.replace(/Claude AI usage limit reached\|(\d{10,13})/g, (match, ts) => {
+    return text.replace(/Agent AI usage limit reached\|(\d{10,13})/g, (match, ts) => {
       let timestampMs = parseInt(ts, 10);
       if (!Number.isFinite(timestampMs)) return match;
       if (timestampMs < 1e12) timestampMs *= 1000; // seconds → ms
@@ -70,7 +70,7 @@ function formatUsageLimitText(text) {
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const dateReadable = `${reset.getDate()} ${months[reset.getMonth()]} ${reset.getFullYear()}`;
 
-      return `Claude usage limit reached. Your limit will reset at **${timeStr} ${tzHuman}** - ${dateReadable}`;
+      return `Agent usage limit reached. Your limit will reset at **${timeStr} ${tzHuman}** - ${dateReadable}`;
     });
   } catch {
     return text;

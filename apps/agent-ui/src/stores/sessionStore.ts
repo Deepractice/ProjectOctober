@@ -240,8 +240,8 @@ export const useSessionStore = create<SessionState>()(
         });
       },
 
-      handleClaudeComplete: (sessionId) => {
-        console.log('✅ Claude complete for session:', sessionId);
+      handleAgentComplete: (sessionId) => {
+        console.log('✅ Agent complete for session:', sessionId);
         get().markSessionInactive(sessionId);
         get().markSessionNotProcessing(sessionId);
       },
@@ -277,10 +277,10 @@ const registerHandlers = () => {
     useSessionStore.getState().handleSessionsUpdated(msg.sessions);
   });
 
-  messageStore.registerHandler('claude-complete', (msg) => {
+  messageStore.registerHandler('agent-complete', (msg) => {
     const sessionId = msg.sessionId || sessionStorage.getItem('pendingSessionId');
     if (sessionId) {
-      useSessionStore.getState().handleClaudeComplete(sessionId);
+      useSessionStore.getState().handleAgentComplete(sessionId);
     }
   });
 

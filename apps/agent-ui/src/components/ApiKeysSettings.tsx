@@ -380,7 +380,7 @@ function ApiKeysSettings() {
       <div className="p-4 bg-muted/50 rounded-lg">
         <h4 className="font-semibold mb-2">External API Documentation</h4>
         <p className="text-sm text-muted-foreground mb-3">
-          Learn how to use the external API to trigger Claude/Cursor sessions from your applications.
+          Learn how to use the external API to trigger Agent/Cursor sessions from your applications.
         </p>
         <a
           href="/EXTERNAL_API.md"

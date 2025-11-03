@@ -1,10 +1,10 @@
 <div align="center">
-  <img src="public/logo.svg" alt="Claude Code UI" width="64" height="64">
-  <h1>Claude Code UI</h1>
+  <img src="public/logo.svg" alt="Agent UI" width="64" height="64">
+  <h1>Agent UI</h1>
 </div>
 
 
-A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), and [Cursor CLI](https://docs.cursor.com/en/cli/overview). You can use it locally or remotely to view your active projects and sessions in Claude Code or Cursor and make changes to them from everywhere (mobile or desktop). This gives you a proper interface that works everywhere. Supports models including **Claude Sonnet 4**, **Opus 4.1**, and **GPT-5**
+A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-code), and [Cursor CLI](https://docs.cursor.com/en/cli/overview). You can use it locally or remotely to view your active projects and sessions in Agent or Cursor and make changes to them from everywhere (mobile or desktop). This gives you a proper interface that works everywhere. Supports models including **Agent Sonnet 4**, **Opus 4.1**, and **GPT-5**
 
 ## Screenshots
 
@@ -30,7 +30,7 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 <h3>CLI Selection</h3>
 <img src="public/screenshots/cli-selection.png" alt="CLI Selection" width="400">
 <br>
-<em>Select between Claude Code and Cursor CLI</em>
+<em>Select between Agent and Cursor CLI</em>
 </td>
 </tr>
 </table>
@@ -41,14 +41,14 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 
 ## Features
 
-- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Claude Code from mobile 
-- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Claude Code or Cursor
-- **Integrated Shell Terminal** - Direct access to Claude Code or Cursor CLI through built-in shell functionality
+- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agent from mobile 
+- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Agent or Cursor
+- **Integrated Shell Terminal** - Direct access to Agent or Cursor CLI through built-in shell functionality
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
 - **Git Explorer** - View, stage and commit your changes. You can also switch branches 
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
 - **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
-- **Model Compatibility** - Works with Claude Sonnet 4, Opus 4.1, and GPT-5
+- **Model Compatibility** - Works with Agent Sonnet 4, Opus 4.1, and GPT-5
 
 
 ## Quick Start
@@ -56,7 +56,7 @@ A desktop and mobile UI for [Claude Code](https://docs.anthropic.com/en/docs/cla
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v20 or higher
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured, and/or
+- [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured, and/or
 - [Cursor CLI](https://docs.cursor.com/en/cli/overview) installed and configured
 
 ### One-click Operation (Recommended)
@@ -67,7 +67,7 @@ No installation required, direct operation:
 npx @siteboon/claude-code-ui
 ```
 
-Your default browser will automatically open the Claude Code UI interface.
+Your default browser will automatically open the Agent UI interface.
 
 ### Local Development Installation
 
@@ -101,11 +101,11 @@ The application will start at the port you specified in your .env
 
 ## Security & Tools Configuration
 
-**🔒 Important Notice**: All Claude Code tools are **disabled by default**. This prevents potentially harmful operations from running automatically.
+**🔒 Important Notice**: All Agent tools are **disabled by default**. This prevents potentially harmful operations from running automatically.
 
 ### Enabling Tools
 
-To use Claude Code's full functionality, you'll need to manually enable tools:
+To use Agent's full functionality, you'll need to manually enable tools:
 
 1. **Open Tools Settings** - Click the gear icon in the sidebar
 3. **Enable Selectively** - Turn on only the tools you need
@@ -122,7 +122,7 @@ To use Claude Code's full functionality, you'll need to manually enable tools:
 
 ## TaskMaster AI Integration *(Optional)*
 
-Claude Code UI supports **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** (aka claude-task-master) integration for advanced project management and AI-powered task planning.
+Agent UI supports **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** (aka claude-task-master) integration for advanced project management and AI-powered task planning.
 
 It provides
 - AI-powered task generation from PRDs (Product Requirements Documents)
@@ -138,15 +138,15 @@ After installing it you should be able to enable it from the Settings
 ### Core Features
 
 #### Project Management
-The UI automatically discovers Claude Code projects from `~/.claude/projects/` and provides:
+The UI automatically discovers Agent projects from `~/.claude/projects/` and provides:
 - **Visual Project Browser** - All available projects with metadata and session counts
 - **Project Actions** - Rename, delete, and organize projects
 - **Smart Navigation** - Quick access to recent projects and sessions
 - **MCP support** - Add your own MCP servers through the UI 
 
 #### Chat Interface
-- **Use responsive chat or Claude Code/Cursor CLI** - You can either use the adapted chat interface or use the shell button to connect to your selected CLI. 
-- **Real-time Communication** - Stream responses from Claude with WebSocket connection
+- **Use responsive chat or Agent/Cursor CLI** - You can either use the adapted chat interface or use the shell button to connect to your selected CLI. 
+- **Real-time Communication** - Stream responses from Agent with WebSocket connection
 - **Session Management** - Resume previous conversations or start fresh sessions
 - **Message History** - Complete conversation history with timestamps and metadata
 - **Multi-format Support** - Text, code blocks, and file references
@@ -184,7 +184,7 @@ The UI automatically discovers Claude Code projects from `~/.claude/projects/` a
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │  Claude CLI     │
+│   Frontend      │    │   Backend       │    │  Agent CLI     │
 │   (React/Vite)  │◄──►│ (Express/WS)    │◄──►│  Integration    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -192,7 +192,7 @@ The UI automatically discovers Claude Code projects from `~/.claude/projects/` a
 ### Backend (Node.js + Express)
 - **Express Server** - RESTful API with static file serving
 - **WebSocket Server** - Communication for chats and project refresh
-- **CLI Integration (Claude Code / Cursor)** - Process spawning and management
+- **CLI Integration (Agent / Cursor)** - Process spawning and management
 - **Session Management** - JSONL parsing and conversation persistence
 - **File System API** - Exposing file browser for projects
 
@@ -236,10 +236,10 @@ We welcome contributions! Please follow these guidelines:
 
 ### Common Issues & Solutions
 
-#### "No Claude projects found"
+#### "No Agent projects found"
 **Problem**: The UI shows no projects or empty project list
 **Solutions**:
-- Ensure [Claude CLI](https://docs.anthropic.com/en/docs/claude-code) is properly installed
+- Ensure [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) is properly installed
 - Run `claude` command in at least one project directory to initialize
 - Verify `~/.claude/projects/` directory exists and has proper permissions
 d
@@ -262,7 +262,7 @@ This project is open source and free to use, modify, and distribute under the MI
 ## Acknowledgments
 
 ### Built With
-- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's official CLI
+- **[Agent](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's official CLI
 - **[React](https://react.dev/)** - User interface library
 - **[Vite](https://vitejs.dev/)** - Fast build tool and dev server
 - **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
@@ -281,5 +281,5 @@ This project is open source and free to use, modify, and distribute under the MI
 ---
 
 <div align="center">
-  <strong>Made with care for the Claude Code community.</strong>
+  <strong>Made with care for the Agent community.</strong>
 </div>

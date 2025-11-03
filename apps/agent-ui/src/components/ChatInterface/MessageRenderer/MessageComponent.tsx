@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo } from 'react';
-import ClaudeLogo from '../../ClaudeLogo.jsx';
+import AgentLogo from '../../AgentLogo.jsx';
 import TodoList from '../../TodoList';
 import ToolUseDisplay from './ToolUseDisplay';
 import { Markdown, formatUsageLimitText } from './index';
@@ -103,7 +103,7 @@ const MessageComponent = memo(({
           )}
         </div>
       ) : (
-        /* Claude/Error/Tool messages on the left */
+        /* Agent/Error/Tool messages on the left */
         <div className="w-full">
           {!isGrouped && (
             <div className="flex items-center space-x-3 mb-2">
@@ -117,11 +117,11 @@ const MessageComponent = memo(({
                 </div>
               ) : (
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1">
-                  <ClaudeLogo className="w-full h-full" />
+                  <AgentLogo className="w-full h-full" />
                 </div>
               )}
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {message.type === 'error' ? 'Error' : message.type === 'tool' ? 'Tool' : 'Claude'}
+                {message.type === 'error' ? 'Error' : message.type === 'tool' ? 'Tool' : 'Agent'}
               </div>
             </div>
           )}

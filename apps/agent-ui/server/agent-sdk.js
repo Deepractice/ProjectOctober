@@ -1,7 +1,7 @@
 /**
- * Claude SDK Integration
+ * Agent SDK Integration
  *
- * This module provides SDK-based integration with Claude using the @anthropic-ai/claude-agent-sdk.
+ * This module provides SDK-based integration with Agent using the @anthropic-ai/claude-agent-sdk.
  * It mirrors the interface of claude-cli.js but uses the SDK internally for better performance
  * and maintainability.
  *
@@ -136,7 +136,7 @@ function getAllSessions() {
  */
 function transformMessage(sdkMessage) {
   // SDK messages are already in a format compatible with the frontend
-  // The CLI sends them wrapped in {type: 'claude-response', data: message}
+  // The CLI sends them wrapped in {type: 'agent-response', data: message}
   // We'll do the same here to maintain compatibility
   return sdkMessage;
 }
@@ -329,13 +329,13 @@ async function loadMcpConfig(cwd) {
 }
 
 /**
- * Executes a Claude query using the SDK
+ * Executes a Agent query using the SDK
  * @param {string} command - User prompt/command
  * @param {Object} options - Query options
  * @param {Object} ws - WebSocket connection
  * @returns {Promise<void>}
  */
-async function queryClaudeSDK(command, options = {}, ws) {
+async function queryAgentSDK(command, options = {}, ws) {
   const { sessionId } = options;
   let capturedSessionId = sessionId;
   let sessionCreatedSent = false;
@@ -400,7 +400,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
       // Transform and send message to WebSocket
       const transformedMessage = transformMessage(message);
       ws.send(JSON.stringify({
-        type: 'claude-response',
+        type: 'agent-response',
         sessionId: capturedSessionId,
         data: transformedMessage
       }));
@@ -428,14 +428,14 @@ async function queryClaudeSDK(command, options = {}, ws) {
     await cleanupTempFiles(tempImagePaths, tempDir);
 
     // Send completion event
-    console.log('✅ Streaming complete, sending claude-complete event');
+    console.log('✅ Streaming complete, sending agent-complete event');
     ws.send(JSON.stringify({
-      type: 'claude-complete',
+      type: 'agent-complete',
       sessionId: capturedSessionId,
       exitCode: 0,
       isNewSession: !sessionId && !!command
     }));
-    console.log('📤 claude-complete event sent');
+    console.log('📤 agent-complete event sent');
 
   } catch (error) {
     console.error('SDK query error:', error);
@@ -464,7 +464,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
  * @param {string} sessionId - Session identifier
  * @returns {boolean} True if session was aborted, false if not found
  */
-async function abortClaudeSDKSession(sessionId) {
+async function abortAgentSDKSession(sessionId) {
   const session = getSession(sessionId);
 
   if (!session) {
@@ -499,7 +499,7 @@ async function abortClaudeSDKSession(sessionId) {
  * @param {string} sessionId - Session identifier
  * @returns {boolean} True if session is active
  */
-function isClaudeSDKSessionActive(sessionId) {
+function isAgentSDKSessionActive(sessionId) {
   const session = getSession(sessionId);
   return session && session.status === 'active';
 }
@@ -508,7 +508,7 @@ function isClaudeSDKSessionActive(sessionId) {
  * Gets all active SDK session IDs
  * @returns {Array<string>} Array of active session IDs
  */
-function getActiveClaudeSDKSessions() {
+function getActiveAgentSDKSessions() {
   return getAllSessions();
 }
 
@@ -572,9 +572,9 @@ async function warmupSession(projectPath) {
 
 // Export public API
 export {
-  queryClaudeSDK,
-  abortClaudeSDKSession,
-  isClaudeSDKSessionActive,
-  getActiveClaudeSDKSessions,
+  queryAgentSDK,
+  abortAgentSDKSession,
+  isAgentSDKSessionActive,
+  getActiveAgentSDKSessions,
   warmupSession
 };

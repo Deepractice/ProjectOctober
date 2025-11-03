@@ -1,8 +1,8 @@
-# Claude Code UI - Backend API Documentation
+# Agent UI - Backend API Documentation
 
 ## Overview
 
-This document provides comprehensive documentation for all backend API endpoints in Claude Code UI. The backend is built with Express.js and provides RESTful APIs for managing projects, sessions, git operations, MCP servers, and more.
+This document provides comprehensive documentation for all backend API endpoints in Agent UI. The backend is built with Express.js and provides RESTful APIs for managing projects, sessions, git operations, MCP servers, and more.
 
 **Base URL**: `http://localhost:3001` (default)
 
@@ -155,7 +155,7 @@ Authorization: Bearer <token>
 
 **Notes**:
 - Automatically discovers projects from `~/.claude/projects/`
-- Includes Claude Code sessions
+- Includes Agent sessions
 
 #### 2.2 Get Project Sessions
 ```http
@@ -582,7 +582,7 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
-- Uses Claude SDK to generate conventional commit messages
+- Uses Agent SDK to generate conventional commit messages
 - Analyzes git diffs to understand changes
 - Format: `type(scope): subject\n\nbody`
 
@@ -1381,10 +1381,10 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 
 **Client → Server Messages**:
 
-1. **Claude Command**:
+1. **Agent Command**:
 ```json
 {
-  "type": "claude-command",
+  "type": "agent-command",
   "command": "Help me write a function",
   "options": {
     "projectPath": "/path/to/project",
@@ -1420,10 +1420,10 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 
 **Server → Client Messages**:
 
-1. **Claude Response**:
+1. **Agent Response**:
 ```json
 {
-  "type": "claude-response",
+  "type": "agent-response",
   "data": {
     "message": {
       "content": [
@@ -1584,7 +1584,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 - `JWT_SECRET` - JWT signing secret (default: "claude-ui-dev-secret-change-in-production")
 - `API_KEY` - Optional API key for additional security
 - `DATABASE_PATH` - Path to SQLite database (default: server/database/auth.db)
-- `CLAUDE_CLI_PATH` - Custom Claude CLI path (default: "claude")
+- `CLAUDE_CLI_PATH` - Custom Agent CLI path (default: "claude")
 - `CONTEXT_WINDOW` - Token context window (default: 160000)
 - `VITE_CONTEXT_WINDOW` - Frontend context window (default: 160000)
 - `OPENAI_API_KEY` - Required for audio transcription feature

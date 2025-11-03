@@ -171,7 +171,7 @@ export const useCommands = ({
         // Show model information
         setChatMessages(prev => [...prev, {
           role: 'assistant',
-          content: `**Current Model**: ${data.current.model}\n\n**Available Models**:\n\nClaude: ${data.available.claude.join(', ')}\n\nCursor: ${data.available.cursor.join(', ')}`,
+          content: `**Current Model**: ${data.current.model}\n\n**Available Models**:\n\nAgent: ${data.available.claude.join(', ')}\n\nCursor: ${data.available.cursor.join(', ')}`,
           timestamp: Date.now()
         }]);
         break;
@@ -392,7 +392,7 @@ export const useCommands = ({
       clearTimeout(commandQueryTimerRef.current);
     }
 
-    // Execute the command (which will load its content and send to Claude)
+    // Execute the command (which will load its content and send to Agent)
     executeCommand(command);
   }, [input, slashPosition, setInput, executeCommand]);
 
