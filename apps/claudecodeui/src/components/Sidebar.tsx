@@ -56,6 +56,7 @@ function Sidebar({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
+  const [deletingSessionId, setDeletingSessionId] = useState(null);
 
   // Touch handler to prevent double-tap issues on iPad (only for buttons, not scroll areas)
   const handleTouchClick = (callback) => {
@@ -80,9 +81,18 @@ function Sidebar({
   }, []);
 
   const deleteSession = async (sessionId) => {
+    // Prevent duplicate calls
+    if (deletingSessionId === sessionId) {
+      console.log('⚠️ Delete already in progress for session:', sessionId);
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
       return;
     }
+
+    // Mark as deleting
+    setDeletingSessionId(sessionId);
 
     try {
       const response = await api.deleteSession(sessionId);
@@ -99,6 +109,9 @@ function Sidebar({
     } catch (error) {
       console.error('Error deleting session:', error);
       alert('Error deleting session. Please try again.');
+    } finally {
+      // Clear deleting state
+      setDeletingSessionId(null);
     }
   };
 
@@ -336,8 +349,13 @@ function Sidebar({
                               deleteSession(session.id);
                             }}
                             onTouchEnd={handleTouchClick(() => deleteSession(session.id))}
+                            disabled={deletingSessionId === session.id}
                           >
-                            <Trash2 className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
+                            {deletingSessionId === session.id ? (
+                              <div className="w-2.5 h-2.5 animate-spin rounded-full border border-red-600 dark:border-red-400 border-t-transparent" />
+                            ) : (
+                              <Trash2 className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -381,9 +399,14 @@ function Sidebar({
                             e.stopPropagation();
                             deleteSession(session.id);
                           }}
+                          disabled={deletingSessionId === session.id}
                           title="Delete this session permanently"
                         >
-                          <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
+                          {deletingSessionId === session.id ? (
+                            <div className="w-3 h-3 animate-spin rounded-full border border-red-600 dark:border-red-400 border-t-transparent" />
+                          ) : (
+                            <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
+                          )}
                         </button>
                       </div>
                     </div>

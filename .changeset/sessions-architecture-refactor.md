@@ -85,11 +85,19 @@ server/
 - Image uploads
 - GPT enhancement modes
 
+**`messages.js`** (Message business logic - NEW)
+- Filter system messages (constants + functions)
+- Extract message text content
+- Process message entries
+- Generate summaries
+- Sort messages by timestamp
+- Validate message types
+
 **`sessions.js`** (Session data operations)
 - Parse JSONL session files
-- Extract session messages
-- Filter system messages
-- Session deletion logic
+- Get session messages with pagination
+- Delete sessions
+- Uses messages.js for all message processing
 
 ## Benefits of This Refactoring
 

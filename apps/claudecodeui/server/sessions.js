@@ -1,41 +1,15 @@
 /**
- * SESSION MESSAGE MANAGEMENT
- * ==========================
+ * SESSION MANAGEMENT MODULE
+ * =========================
  *
- * This module manages session messages and operations.
- * Sessions belong to a project (managed by projects.js).
+ * This module manages session CRUD operations.
+ * Message processing logic is handled by messages.js.
  *
- * ## Architecture
- *
- * **Backend Responsibility**:
- *    - Filter system messages (Warmup, command output, etc)
- *    - Calculate messageCount excluding system messages
- *    - Generate summary based on real user messages only
- *    - Return clean message lists
- *
- * **Frontend Responsibility**:
- *    - Display what backend provides
- *    - No knowledge of technical implementation details (Warmup)
- *    - Trust backend-calculated metrics
- *
- * ## System Message Filtering
- *
- * The following are considered system messages and excluded from:
- * - messageCount calculation
- * - summary generation
- * - message lists returned to frontend
- *
- * **User message patterns**:
- * - `<command-name>`, `<command-message>`, `<command-args>`, `<local-command-stdout>`
- * - `<system-reminder>`, `Caveat:`
- * - `This session is being continued from a previous`
- * - `Invalid API key`
- * - `{"subtasks":`, `CRITICAL: You MUST respond with ONLY a JSON`
- * - `Warmup` (session initialization message)
- *
- * **Assistant message patterns**:
- * - API error messages (flagged with isApiErrorMessage)
- * - Messages containing Task Master JSON responses
+ * ## Responsibilities
+ * - Parse JSONL session files
+ * - Get session messages with pagination
+ * - Delete sessions
+ * - Calculate session metadata (using messages.js)
  */
 
 import { promises as fs } from 'fs';
@@ -43,52 +17,13 @@ import fsSync from 'fs';
 import path from 'path';
 import readline from 'readline';
 import { getCurrentProject } from './projects.js';
-
-/**
- * Check if a user message is a system message that should be filtered
- */
-function isSystemUserMessage(content) {
-  let textContent = content;
-  if (Array.isArray(content) && content.length > 0 && content[0].type === 'text') {
-    textContent = content[0].text;
-  }
-
-  return typeof textContent === 'string' && (
-    textContent.startsWith('<command-name>') ||
-    textContent.startsWith('<command-message>') ||
-    textContent.startsWith('<command-args>') ||
-    textContent.startsWith('<local-command-stdout>') ||
-    textContent.startsWith('<system-reminder>') ||
-    textContent.startsWith('Caveat:') ||
-    textContent.startsWith('This session is being continued from a previous') ||
-    textContent.startsWith('Invalid API key') ||
-    textContent.includes('{"subtasks":') ||
-    textContent.includes('CRITICAL: You MUST respond with ONLY a JSON') ||
-    textContent === 'Warmup'
-  );
-}
-
-/**
- * Check if an assistant message is a system message that should be filtered
- */
-function isSystemAssistantMessage(content) {
-  let textContent = content;
-
-  if (Array.isArray(content)) {
-    for (const part of content) {
-      if (part.type === 'text' && part.text) {
-        textContent = part.text;
-        break;
-      }
-    }
-  }
-
-  return typeof textContent === 'string' && (
-    textContent.startsWith('Invalid API key') ||
-    textContent.includes('{"subtasks":') ||
-    textContent.includes('CRITICAL: You MUST respond with ONLY a JSON')
-  );
-}
+import {
+  shouldFilterMessage,
+  processMessageEntry,
+  generateSummary,
+  sortMessagesByTimestamp,
+  isInvalidSummary
+} from './messages.js';
 
 /**
  * Parse JSONL file and extract sessions with metadata
@@ -118,6 +53,7 @@ async function parseJsonlSessions(filePath) {
           }
 
           if (entry.sessionId) {
+            // Initialize session if not exists
             if (!sessions.has(entry.sessionId)) {
               sessions.set(entry.sessionId, {
                 id: entry.sessionId,
@@ -132,67 +68,22 @@ async function parseJsonlSessions(filePath) {
 
             const session = sessions.get(entry.sessionId);
 
-            // Apply pending summary if this entry has a parentUuid that matches a pending summary
+            // Apply pending summary
             if (session.summary === 'New Session' && entry.parentUuid && pendingSummaries.has(entry.parentUuid)) {
               session.summary = pendingSummaries.get(entry.parentUuid);
             }
 
-            // Update summary from summary entries with sessionId
+            // Update summary from summary entries
             if (entry.type === 'summary' && entry.summary) {
               session.summary = entry.summary;
             }
 
-            // Track last user and assistant messages (skip system messages)
-            let shouldCountMessage = true;
+            // Process message entry (updates session metadata)
+            const shouldCount = processMessageEntry(entry, session);
 
-            if (entry.message?.role === 'user' && entry.message?.content) {
-              const content = entry.message.content;
-
-              if (isSystemUserMessage(content)) {
-                shouldCountMessage = false;
-              } else {
-                // Extract text for lastUserMessage
-                let textContent = content;
-                if (Array.isArray(content) && content.length > 0 && content[0].type === 'text') {
-                  textContent = content[0].text;
-                }
-                if (typeof textContent === 'string' && textContent.length > 0) {
-                  session.lastUserMessage = textContent;
-                }
-              }
-            } else if (entry.message?.role === 'assistant' && entry.message?.content) {
-              // Skip API error messages
-              if (entry.isApiErrorMessage === true) {
-                shouldCountMessage = false;
-              } else if (isSystemAssistantMessage(entry.message.content)) {
-                shouldCountMessage = false;
-              } else {
-                // Extract text for lastAssistantMessage
-                let assistantText = null;
-                if (Array.isArray(entry.message.content)) {
-                  for (const part of entry.message.content) {
-                    if (part.type === 'text' && part.text) {
-                      assistantText = part.text;
-                      break;
-                    }
-                  }
-                } else if (typeof entry.message.content === 'string') {
-                  assistantText = entry.message.content;
-                }
-
-                if (assistantText) {
-                  session.lastAssistantMessage = assistantText;
-                }
-              }
-            }
-
-            // Only count non-system messages
-            if (shouldCountMessage) {
+            // Count non-system messages
+            if (shouldCount) {
               session.messageCount++;
-            }
-
-            if (entry.timestamp) {
-              session.lastActivity = new Date(entry.timestamp);
             }
           }
         } catch (parseError) {
@@ -206,14 +97,14 @@ async function parseJsonlSessions(filePath) {
       if (session.summary === 'New Session') {
         const lastMessage = session.lastUserMessage || session.lastAssistantMessage;
         if (lastMessage) {
-          session.summary = lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+          session.summary = generateSummary(lastMessage);
         }
       }
     }
 
-    // Filter out sessions with JSON responses (Task Master errors)
+    // Filter out sessions with invalid summaries (Task Master errors)
     const allSessions = Array.from(sessions.values());
-    const filteredSessions = allSessions.filter(session => !session.summary.startsWith('{ "'));
+    const filteredSessions = allSessions.filter(session => !isInvalidSummary(session.summary));
 
     return {
       sessions: filteredSessions,
@@ -257,22 +148,8 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
           try {
             const entry = JSON.parse(line);
             if (entry.sessionId === sessionId) {
-              // Filter out system messages
-              let isSystemMessage = false;
-
-              if (entry.message?.role === 'user' && entry.message?.content) {
-                isSystemMessage = isSystemUserMessage(entry.message.content);
-              } else if (entry.message?.role === 'assistant' && entry.message?.content) {
-                // Skip API error messages
-                if (entry.isApiErrorMessage === true) {
-                  isSystemMessage = true;
-                } else {
-                  isSystemMessage = isSystemAssistantMessage(entry.message.content);
-                }
-              }
-
-              // Only include non-system messages
-              if (!isSystemMessage) {
+              // Filter out system messages using centralized logic
+              if (!shouldFilterMessage(entry)) {
                 messages.push(entry);
               }
             }
@@ -284,10 +161,7 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
     }
 
     // Sort messages by timestamp
-    const sortedMessages = messages.sort((a, b) =>
-      new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
-    );
-
+    const sortedMessages = sortMessagesByTimestamp(messages);
     const total = sortedMessages.length;
 
     // If no limit is specified, return all messages (backward compatibility)
@@ -372,7 +246,5 @@ async function deleteSession(sessionId) {
 export {
   parseJsonlSessions,
   getSessionMessages,
-  deleteSession,
-  isSystemUserMessage,
-  isSystemAssistantMessage
+  deleteSession
 };
