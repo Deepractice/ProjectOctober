@@ -24,12 +24,21 @@ import {
   sortMessagesByTimestamp,
   isInvalidSummary
 } from './messages.js';
+import sessionManager from './core/SessionManager.js';
 
 /**
  * Parse JSONL file and extract sessions with metadata
  * Filters out system messages from messageCount and summary
  */
 async function parseJsonlSessions(filePath) {
+  // 🆕 Try cache first
+  const cached = await sessionManager.getCachedSession(filePath);
+  if (cached) {
+    return cached;
+  }
+
+  console.log(`📖 Parsing JSONL file: ${path.basename(filePath)}`);
+
   const sessions = new Map();
   const entries = [];
   const pendingSummaries = new Map();
@@ -106,13 +115,19 @@ async function parseJsonlSessions(filePath) {
     const allSessions = Array.from(sessions.values());
     const filteredSessions = allSessions.filter(session => !isInvalidSummary(session.summary));
 
-    return {
+    const result = {
       sessions: filteredSessions,
-      entries: entries
+      entries: entries,
+      filePath // 🆕 Include file path for cache tracking
     };
+
+    // 🆕 Cache the result
+    await sessionManager.setCachedSession(filePath, result);
+
+    return result;
   } catch (error) {
     console.error('Error reading JSONL file:', error);
-    return { sessions: [], entries: [] };
+    return { sessions: [], entries: [], filePath };
   }
 }
 

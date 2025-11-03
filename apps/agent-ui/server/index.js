@@ -15,6 +15,8 @@ import { createApp } from './app.js';
 import { handleChatConnection } from './websocket/chat.js';
 import { handleShellConnection } from './websocket/shell.js';
 import { setupSessionsWatcher } from './watchers/sessions.js';
+import sessionManager from './core/SessionManager.js';
+import { getCurrentProject } from './projects.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,6 +77,10 @@ async function startServer() {
 
     server.listen(PORT, '0.0.0.0', async () => {
       console.log(`✅ Agent UI server running on http://0.0.0.0:${PORT}`);
+
+      // 🆕 Initialize SessionManager
+      const project = getCurrentProject();
+      await sessionManager.initialize(project.claudeProjectDir);
 
       // Start watching the sessions folder for changes
       await setupSessionsWatcher(connectedClients);

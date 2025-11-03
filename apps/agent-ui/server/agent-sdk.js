@@ -16,6 +16,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { logger } from './utils/logger.js';
 
 // Session tracking: Map of session IDs to active query instances
 const activeSessions = new Map();
@@ -173,7 +174,7 @@ function extractTokenBudget(resultMessage) {
   // This is the user's budget limit, not the model's context window
   const contextWindow = parseInt(process.env.CONTEXT_WINDOW) || 160000;
 
-  console.log(`📊 Token calculation: input=${inputTokens}, output=${outputTokens}, cache=${cacheReadTokens + cacheCreationTokens}, total=${totalUsed}/${contextWindow}`);
+  logger.info(`📊 Token calculation: input=${inputTokens}, output=${outputTokens}, cache=${cacheReadTokens + cacheCreationTokens}, total=${totalUsed}/${contextWindow}`);
 
   return {
     used: totalUsed,
@@ -208,7 +209,7 @@ async function handleImages(command, images, cwd) {
       // Extract base64 data and mime type
       const matches = image.data.match(/^data:([^;]+);base64,(.+)$/);
       if (!matches) {
-        console.error('Invalid image data format');
+        logger.error('Invalid image data format');
         continue;
       }
 
@@ -229,10 +230,10 @@ async function handleImages(command, images, cwd) {
       modifiedCommand = command + imageNote;
     }
 
-    console.log(`📸 Processed ${tempImagePaths.length} images to temp directory: ${tempDir}`);
+    logger.info(`📸 Processed ${tempImagePaths.length} images to temp directory: ${tempDir}`);
     return { modifiedCommand, tempImagePaths, tempDir };
   } catch (error) {
-    console.error('Error processing images for SDK:', error);
+    logger.error('Error processing images for SDK:', error);
     return { modifiedCommand: command, tempImagePaths, tempDir };
   }
 }
@@ -251,20 +252,20 @@ async function cleanupTempFiles(tempImagePaths, tempDir) {
     // Delete individual temp files
     for (const imagePath of tempImagePaths) {
       await fs.unlink(imagePath).catch(err =>
-        console.error(`Failed to delete temp image ${imagePath}:`, err)
+        logger.error(`Failed to delete temp image ${imagePath}:`, err)
       );
     }
 
     // Delete temp directory
     if (tempDir) {
       await fs.rm(tempDir, { recursive: true, force: true }).catch(err =>
-        console.error(`Failed to delete temp directory ${tempDir}:`, err)
+        logger.error(`Failed to delete temp directory ${tempDir}:`, err)
       );
     }
 
-    console.log(`🧹 Cleaned up ${tempImagePaths.length} temp image files`);
+    logger.info(`🧹 Cleaned up ${tempImagePaths.length} temp image files`);
   } catch (error) {
-    console.error('Error during temp file cleanup:', error);
+    logger.error('Error during temp file cleanup:', error);
   }
 }
 
@@ -282,7 +283,7 @@ async function loadMcpConfig(cwd) {
       await fs.access(claudeConfigPath);
     } catch (error) {
       // File doesn't exist, return null
-      console.log('📡 No ~/.claude.json found, proceeding without MCP servers');
+      logger.info('📡 No ~/.claude.json found, proceeding without MCP servers');
       return null;
     }
 
@@ -292,7 +293,7 @@ async function loadMcpConfig(cwd) {
       const configContent = await fs.readFile(claudeConfigPath, 'utf8');
       claudeConfig = JSON.parse(configContent);
     } catch (error) {
-      console.error('❌ Failed to parse ~/.claude.json:', error.message);
+      logger.error('❌ Failed to parse ~/.claude.json:', error.message);
       return null;
     }
 
@@ -302,7 +303,7 @@ async function loadMcpConfig(cwd) {
     // Add global MCP servers
     if (claudeConfig.mcpServers && typeof claudeConfig.mcpServers === 'object') {
       mcpServers = { ...claudeConfig.mcpServers };
-      console.log(`📡 Loaded ${Object.keys(mcpServers).length} global MCP servers`);
+      logger.info(`📡 Loaded ${Object.keys(mcpServers).length} global MCP servers`);
     }
 
     // Add/override with project-specific MCP servers
@@ -310,20 +311,20 @@ async function loadMcpConfig(cwd) {
       const projectConfig = claudeConfig.claudeProjects[cwd];
       if (projectConfig && projectConfig.mcpServers && typeof projectConfig.mcpServers === 'object') {
         mcpServers = { ...mcpServers, ...projectConfig.mcpServers };
-        console.log(`📡 Loaded ${Object.keys(projectConfig.mcpServers).length} project-specific MCP servers`);
+        logger.info(`📡 Loaded ${Object.keys(projectConfig.mcpServers).length} project-specific MCP servers`);
       }
     }
 
     // Return null if no servers found
     if (Object.keys(mcpServers).length === 0) {
-      console.log('📡 No MCP servers configured');
+      logger.info('📡 No MCP servers configured');
       return null;
     }
 
-    console.log(`✅ Total MCP servers loaded: ${Object.keys(mcpServers).length}`);
+    logger.info(`✅ Total MCP servers loaded: ${Object.keys(mcpServers).length}`);
     return mcpServers;
   } catch (error) {
-    console.error('❌ Error loading MCP config:', error.message);
+    logger.error('❌ Error loading MCP config:', error.message);
     return null;
   }
 }
@@ -370,12 +371,25 @@ async function queryAgentSDK(command, options = {}, ws) {
     }
 
     // Process streaming messages
-    console.log('🔄 Starting async generator loop for session:', capturedSessionId || 'NEW');
+    logger.info(`🔄 Starting async generator loop for session: ${capturedSessionId || 'NEW'}`);
+
+    let messageCount = 0;
     for await (const message of queryInstance) {
-      // Capture session ID from first message
-      if (message.session_id && !capturedSessionId) {
-        console.log('📝 Captured session ID:', message.session_id);
-        capturedSessionId = message.session_id;
+      messageCount++;
+
+      // Debug: Log first few messages structure
+      if (messageCount <= 3) {
+        logger.info(`🔍 Message #${messageCount} keys: ${Object.keys(message).join(', ')}`);
+        logger.info(`🔍 Message #${messageCount} type: ${message.type}`);
+        if (message.sessionId) logger.info(`🔍 Has sessionId: ${message.sessionId}`);
+        if (message.session_id) logger.info(`🔍 Has session_id: ${message.session_id}`);
+      }
+
+      // Capture session ID from first message (try both formats)
+      const msgSessionId = message.session_id || message.sessionId;
+      if (msgSessionId && !capturedSessionId) {
+        logger.info(`📝 Captured session ID: ${msgSessionId}`);
+        capturedSessionId = msgSessionId;
         addSession(capturedSessionId, queryInstance, tempImagePaths, tempDir);
 
         // Set session ID on writer
@@ -391,10 +405,10 @@ async function queryAgentSDK(command, options = {}, ws) {
             sessionId: capturedSessionId
           }));
         } else {
-          console.log('⚠️ Not sending session-created. sessionId:', sessionId, 'sessionCreatedSent:', sessionCreatedSent);
+          logger.info(`⚠️ Not sending session-created. sessionId: ${sessionId}, sessionCreatedSent: ${sessionCreatedSent}`);
         }
       } else {
-        console.log('⚠️ No session_id in message or already captured. message.session_id:', message.session_id, 'capturedSessionId:', capturedSessionId);
+        logger.info(`⚠️ No session_id in message or already captured. msgSessionId: ${msgSessionId}, capturedSessionId: ${capturedSessionId}`);
       }
 
       // Transform and send message to WebSocket
@@ -409,7 +423,7 @@ async function queryAgentSDK(command, options = {}, ws) {
       if (message.type === 'result') {
         const tokenBudget = extractTokenBudget(message);
         if (tokenBudget) {
-          console.log('📊 Token budget from modelUsage:', tokenBudget);
+          logger.info('📊 Token budget from modelUsage:', tokenBudget);
           ws.send(JSON.stringify({
             type: 'token-budget',
             sessionId: capturedSessionId,
@@ -428,17 +442,17 @@ async function queryAgentSDK(command, options = {}, ws) {
     await cleanupTempFiles(tempImagePaths, tempDir);
 
     // Send completion event
-    console.log('✅ Streaming complete, sending agent-complete event');
+    logger.info('✅ Streaming complete, sending agent-complete event');
     ws.send(JSON.stringify({
       type: 'agent-complete',
       sessionId: capturedSessionId,
       exitCode: 0,
       isNewSession: !sessionId && !!command
     }));
-    console.log('📤 agent-complete event sent');
+    logger.info('📤 agent-complete event sent');
 
   } catch (error) {
-    console.error('SDK query error:', error);
+    logger.error('SDK query error:', error);
 
     // Clean up session on error
     if (capturedSessionId) {
@@ -468,12 +482,12 @@ async function abortAgentSDKSession(sessionId) {
   const session = getSession(sessionId);
 
   if (!session) {
-    console.log(`Session ${sessionId} not found`);
+    logger.info(`Session ${sessionId} not found`);
     return false;
   }
 
   try {
-    console.log(`🛑 Aborting SDK session: ${sessionId}`);
+    logger.info(`🛑 Aborting SDK session: ${sessionId}`);
 
     // Call interrupt() on the query instance
     await session.instance.interrupt();
@@ -489,7 +503,7 @@ async function abortAgentSDKSession(sessionId) {
 
     return true;
   } catch (error) {
-    console.error(`Error aborting session ${sessionId}:`, error);
+    logger.error(`Error aborting session ${sessionId}:`, error);
     return false;
   }
 }
@@ -519,7 +533,7 @@ function getActiveAgentSDKSessions() {
  * @returns {Promise<string>} The created session ID
  */
 async function warmupSession(projectPath) {
-  console.log('🔥 Starting warmup session for project:', projectPath);
+  logger.info('🔥 Starting warmup session for project:', projectPath);
 
   try {
     // Map options for warmup query
@@ -547,10 +561,10 @@ async function warmupSession(projectPath) {
       // Capture session ID from first message
       if (message.session_id && !capturedSessionId) {
         capturedSessionId = message.session_id;
-        console.log('✅ Warmup session created:', capturedSessionId);
+        logger.info(`✅ Warmup session created: ${capturedSessionId}`);
 
         // Immediately interrupt the session
-        console.log('🛑 Interrupting warmup session...');
+        logger.info('🛑 Interrupting warmup session...');
         await queryInstance.interrupt();
 
         break;
@@ -561,11 +575,11 @@ async function warmupSession(projectPath) {
       throw new Error('Failed to capture session ID during warmup');
     }
 
-    console.log('🎉 Warmup session ready:', capturedSessionId);
+    logger.info('🎉 Warmup session ready:', capturedSessionId);
     return capturedSessionId;
 
   } catch (error) {
-    console.error('❌ Warmup session error:', error);
+    logger.error('❌ Warmup session error:', error);
     throw error;
   }
 }

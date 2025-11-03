@@ -10,6 +10,7 @@ import { promises as fs } from 'fs';
 import { getCurrentProject, getSessions } from '../projects.js';
 import { getSessionMessages, deleteSession } from '../sessions.js';
 import { warmupSession } from '../agent-sdk.js';
+import sessionManager from '../core/SessionManager.js';
 
 const router = express.Router();
 
@@ -36,6 +37,15 @@ router.post('/create', async (req, res) => {
     const sessionId = await warmupSession(projectPath);
 
     console.log('✅ Session created successfully:', sessionId);
+
+    // Register warmup session with SessionManager
+    sessionManager.createSession(sessionId, {
+      cwd: projectPath,
+      command: 'Warmup',
+      timestamp: new Date().toISOString(),
+      isWarmup: true
+    });
+    console.log('📝 Warmup session registered with SessionManager:', sessionId);
 
     res.json({
       success: true,
