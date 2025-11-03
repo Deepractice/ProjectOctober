@@ -139,11 +139,11 @@ services/**/CLAUDE.md
 # App-Specific Ignores
 # ============================================
 
-# Claude Code UI
-apps/claudecodeui/server/database/*.db
-apps/claudecodeui/server/database/*.db-shm
-apps/claudecodeui/server/database/*.db-wal
-apps/claudecodeui/.playwright-mcp/cache/
+# Agent UI
+apps/agent-ui/server/database/*.db
+apps/agent-ui/server/database/*.db-shm
+apps/agent-ui/server/database/*.db-wal
+apps/agent-ui/.playwright-mcp/cache/
 
 # Backend Service (if exists)
 services/backend-service/uploads/

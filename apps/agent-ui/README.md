@@ -1,10 +1,10 @@
-<div align="center">
-  <img src="public/logo.svg" alt="Agent UI" width="64" height="64">
-  <h1>Agent UI</h1>
-</div>
+# Agent UI
 
+A web-based UI for Agent CLI that enables desktop and mobile access to your AI coding sessions.
 
-A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-code), and [Cursor CLI](https://docs.cursor.com/en/cli/overview). You can use it locally or remotely to view your active projects and sessions in Agent or Cursor and make changes to them from everywhere (mobile or desktop). This gives you a proper interface that works everywhere. Supports models including **Agent Sonnet 4**, **Opus 4.1**, and **GPT-5**
+**Part of Project October Monorepo**
+
+A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-code). You can use it locally or remotely to view your active projects and sessions in Agent and make changes to them from everywhere (mobile or desktop). Supports Agent models including **Sonnet 4** and **Opus 4.1**
 
 ## Screenshots
 
@@ -25,14 +25,6 @@ A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-co
 <em>Responsive mobile design with touch navigation</em>
 </td>
 </tr>
-<tr>
-<td align="center" colspan="2">
-<h3>CLI Selection</h3>
-<img src="public/screenshots/cli-selection.png" alt="CLI Selection" width="400">
-<br>
-<em>Select between Agent and Cursor CLI</em>
-</td>
-</tr>
 </table>
 
 
@@ -41,14 +33,14 @@ A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-co
 
 ## Features
 
-- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agent from mobile 
-- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Agent or Cursor
-- **Integrated Shell Terminal** - Direct access to Agent or Cursor CLI through built-in shell functionality
+- **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agent from mobile
+- **Interactive Chat Interface** - Built-in chat interface for seamless communication with Agent
+- **Integrated Shell Terminal** - Direct access to Agent CLI through built-in shell functionality
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
-- **Git Explorer** - View, stage and commit your changes. You can also switch branches 
+- **Git Explorer** - View, stage and commit your changes. You can also switch branches
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
 - **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
-- **Model Compatibility** - Works with Agent Sonnet 4, Opus 4.1, and GPT-5
+- **Model Compatibility** - Works with Agent Sonnet 4 and Opus 4.1
 
 
 ## Quick Start
@@ -56,8 +48,7 @@ A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-co
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v20 or higher
-- [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured, and/or
-- [Cursor CLI](https://docs.cursor.com/en/cli/overview) installed and configured
+- [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) installed and configured
 
 ### One-click Operation (Recommended)
 
@@ -67,7 +58,49 @@ No installation required, direct operation:
 npx @siteboon/claude-code-ui
 ```
 
-Your default browser will automatically open the Agent UI interface.
+The server will start and be accessible at `http://localhost:3001` (or your configured PORT).
+
+**To restart**: Simply run the same `npx` command again after stopping the server (Ctrl+C or Cmd+C).
+
+### Global Installation (For Regular Use)
+
+For frequent use, install globally once:
+
+```bash
+npm install -g @siteboon/claude-code-ui
+```
+
+Then start with a simple command:
+
+```bash
+claude-code-ui
+```
+
+**Benefits**:
+- Faster startup (no download/cache check)
+- Simple command to remember
+- Same experience every time
+
+**To restart**: Stop with Ctrl+C and run `claude-code-ui` again.
+
+### Run as Background Service (Optional)
+
+To keep the server running in the background, use PM2:
+
+```bash
+# Install PM2 globally (one-time)
+npm install -g pm2
+
+# Start the server
+pm2 start claude-code-ui --name "claude-ui"
+
+# Manage the service
+pm2 list             # View status
+pm2 restart claude-ui # Restart
+pm2 stop claude-ui   # Stop
+pm2 logs claude-ui   # View logs
+pm2 startup          # Auto-start on system boot
+```
 
 ### Local Development Installation
 
@@ -145,7 +178,7 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 - **MCP support** - Add your own MCP servers through the UI 
 
 #### Chat Interface
-- **Use responsive chat or Agent/Cursor CLI** - You can either use the adapted chat interface or use the shell button to connect to your selected CLI. 
+- **Use responsive chat or Agent CLI** - You can either use the adapted chat interface or use the shell button to connect to Agent CLI
 - **Real-time Communication** - Stream responses from Agent with WebSocket connection
 - **Session Management** - Resume previous conversations or start fresh sessions
 - **Message History** - Complete conversation history with timestamps and metadata
@@ -192,7 +225,7 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 ### Backend (Node.js + Express)
 - **Express Server** - RESTful API with static file serving
 - **WebSocket Server** - Communication for chats and project refresh
-- **CLI Integration (Agent / Cursor)** - Process spawning and management
+- **CLI Integration** - Agent process spawning and management
 - **Session Management** - JSONL parsing and conversation persistence
 - **File System API** - Exposing file browser for projects
 
@@ -236,13 +269,13 @@ We welcome contributions! Please follow these guidelines:
 
 ### Common Issues & Solutions
 
+
 #### "No Agent projects found"
 **Problem**: The UI shows no projects or empty project list
 **Solutions**:
 - Ensure [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) is properly installed
 - Run `claude` command in at least one project directory to initialize
 - Verify `~/.claude/projects/` directory exists and has proper permissions
-d
 
 #### File Explorer Issues
 **Problem**: Files not loading, permission errors, empty directories
@@ -255,9 +288,9 @@ d
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GNU General Public License v3.0 - see [LICENSE](LICENSE) file for details.
 
-This project is open source and free to use, modify, and distribute under the MIT license.
+This project is open source and free to use, modify, and distribute under the GPL v3 license.
 
 ## Acknowledgments
 

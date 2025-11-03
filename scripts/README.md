@@ -65,7 +65,7 @@ Shell script that filters all output except errors using grep patterns.
 - Added `"outputLogs": "errors-only"` for dev task
 - Reduces unnecessary build logs
 
-### apps/claudecodeui/package.json
+### apps/agent-ui/package.json
 
 - Updated concurrently flags: `--raw --prefix none`
 - Added `NODE_ENV=production` to reduce server logs

@@ -1,0 +1,88 @@
+#!/usr/bin/env node
+/**
+ * Server Entry Point
+ * Loads configuration and starts the Express + WebSocket server
+ */
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { WebSocketServer } from 'ws';
+
+import { loadEnv } from './config/env.js';
+import { createApp } from './app.js';
+import { handleChatConnection } from './websocket/chat.js';
+import { handleShellConnection } from './websocket/shell.js';
+import { setupSessionsWatcher } from './watchers/sessions.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables
+loadEnv();
+
+const PORT = process.env.PORT || 3001;
+
+// Track connected WebSocket clients for session updates
+const connectedClients = new Set();
+
+// Create HTTP server
+const server = http.createServer();
+
+// Create WebSocket server
+const wss = new WebSocketServer({ server });
+
+// Create Express app
+const app = createApp(wss);
+
+// Attach Express app to HTTP server
+server.on('request', app);
+
+// WebSocket connection handler that routes based on URL path
+wss.on('connection', (ws, request) => {
+  const url = request.url;
+  console.log('🔗 Client connected to:', url);
+
+  // Parse URL to get pathname without query parameters
+  const urlObj = new URL(url, 'http://localhost');
+  const pathname = urlObj.pathname;
+
+  if (pathname === '/shell') {
+    handleShellConnection(ws);
+  } else if (pathname === '/ws') {
+    handleChatConnection(ws, connectedClients);
+  } else {
+    console.log('❌ Unknown WebSocket path:', pathname);
+    ws.close();
+  }
+});
+
+// Start server
+async function startServer() {
+  try {
+    // Check if running in production mode (dist folder exists)
+    const distIndexPath = path.join(__dirname, '../dist/index.html');
+    const isProduction = fs.existsSync(distIndexPath);
+
+    // Log Agent implementation mode
+    console.log('🚀 Using Agent Agents SDK for Agent integration');
+    console.log(`📦 Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+
+    if (!isProduction) {
+      console.log(`⚠️  Note: Requests will be proxied to Vite dev server at http://localhost:${process.env.VITE_PORT || 5173}`);
+    }
+
+    server.listen(PORT, '0.0.0.0', async () => {
+      console.log(`✅ Agent UI server running on http://0.0.0.0:${PORT}`);
+
+      // Start watching the sessions folder for changes
+      await setupSessionsWatcher(connectedClients);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

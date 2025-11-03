@@ -1,0 +1,250 @@
+/**
+ * SESSION MANAGEMENT MODULE
+ * =========================
+ *
+ * This module manages session CRUD operations.
+ * Message processing logic is handled by messages.js.
+ *
+ * ## Responsibilities
+ * - Parse JSONL session files
+ * - Get session messages with pagination
+ * - Delete sessions
+ * - Calculate session metadata (using messages.js)
+ */
+
+import { promises as fs } from 'fs';
+import fsSync from 'fs';
+import path from 'path';
+import readline from 'readline';
+import { getCurrentProject } from './projects.js';
+import {
+  shouldFilterMessage,
+  processMessageEntry,
+  generateSummary,
+  sortMessagesByTimestamp,
+  isInvalidSummary
+} from './messages.js';
+
+/**
+ * Parse JSONL file and extract sessions with metadata
+ * Filters out system messages from messageCount and summary
+ */
+async function parseJsonlSessions(filePath) {
+  const sessions = new Map();
+  const entries = [];
+  const pendingSummaries = new Map();
+
+  try {
+    const fileStream = fsSync.createReadStream(filePath);
+    const rl = readline.createInterface({
+      input: fileStream,
+      crlfDelay: Infinity
+    });
+
+    for await (const line of rl) {
+      if (line.trim()) {
+        try {
+          const entry = JSON.parse(line);
+          entries.push(entry);
+
+          // Handle summary entries that don't have sessionId yet
+          if (entry.type === 'summary' && entry.summary && !entry.sessionId && entry.leafUuid) {
+            pendingSummaries.set(entry.leafUuid, entry.summary);
+          }
+
+          if (entry.sessionId) {
+            // Initialize session if not exists
+            if (!sessions.has(entry.sessionId)) {
+              sessions.set(entry.sessionId, {
+                id: entry.sessionId,
+                summary: 'New Session',
+                messageCount: 0,
+                lastActivity: new Date(),
+                cwd: entry.cwd || '',
+                lastUserMessage: null,
+                lastAssistantMessage: null
+              });
+            }
+
+            const session = sessions.get(entry.sessionId);
+
+            // Apply pending summary
+            if (session.summary === 'New Session' && entry.parentUuid && pendingSummaries.has(entry.parentUuid)) {
+              session.summary = pendingSummaries.get(entry.parentUuid);
+            }
+
+            // Update summary from summary entries
+            if (entry.type === 'summary' && entry.summary) {
+              session.summary = entry.summary;
+            }
+
+            // Process message entry (updates session metadata)
+            const shouldCount = processMessageEntry(entry, session);
+
+            // Count non-system messages
+            if (shouldCount) {
+              session.messageCount++;
+            }
+          }
+        } catch (parseError) {
+          // Skip malformed lines silently
+        }
+      }
+    }
+
+    // Set final summary based on last message if no summary exists
+    for (const session of sessions.values()) {
+      if (session.summary === 'New Session') {
+        const lastMessage = session.lastUserMessage || session.lastAssistantMessage;
+        if (lastMessage) {
+          session.summary = generateSummary(lastMessage);
+        }
+      }
+    }
+
+    // Filter out sessions with invalid summaries (Task Master errors)
+    const allSessions = Array.from(sessions.values());
+    const filteredSessions = allSessions.filter(session => !isInvalidSummary(session.summary));
+
+    return {
+      sessions: filteredSessions,
+      entries: entries
+    };
+  } catch (error) {
+    console.error('Error reading JSONL file:', error);
+    return { sessions: [], entries: [] };
+  }
+}
+
+/**
+ * Get messages for a specific session with pagination support
+ * Filters out system messages before returning to frontend
+ */
+async function getSessionMessages(sessionId, limit = null, offset = 0) {
+  const project = getCurrentProject();
+  const projectDir = project.claudeProjectDir;
+
+  try {
+    const files = await fs.readdir(projectDir);
+    const jsonlFiles = files.filter(file => file.endsWith('.jsonl') && !file.startsWith('agent-'));
+
+    if (jsonlFiles.length === 0) {
+      return { messages: [], total: 0, hasMore: false };
+    }
+
+    const messages = [];
+
+    // Process all JSONL files to find messages for this session
+    for (const file of jsonlFiles) {
+      const jsonlFile = path.join(projectDir, file);
+      const fileStream = fsSync.createReadStream(jsonlFile);
+      const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+      });
+
+      for await (const line of rl) {
+        if (line.trim()) {
+          try {
+            const entry = JSON.parse(line);
+            if (entry.sessionId === sessionId) {
+              // Filter out system messages using centralized logic
+              if (!shouldFilterMessage(entry)) {
+                messages.push(entry);
+              }
+            }
+          } catch (parseError) {
+            console.warn('Error parsing line:', parseError.message);
+          }
+        }
+      }
+    }
+
+    // Sort messages by timestamp
+    const sortedMessages = sortMessagesByTimestamp(messages);
+    const total = sortedMessages.length;
+
+    // If no limit is specified, return all messages (backward compatibility)
+    if (limit === null) {
+      return sortedMessages;
+    }
+
+    // Apply pagination - for recent messages, we need to slice from the end
+    const startIndex = Math.max(0, total - offset - limit);
+    const endIndex = total - offset;
+    const paginatedMessages = sortedMessages.slice(startIndex, endIndex);
+    const hasMore = startIndex > 0;
+
+    return {
+      messages: paginatedMessages,
+      total,
+      hasMore,
+      offset,
+      limit
+    };
+  } catch (error) {
+    console.error(`Error reading messages for session ${sessionId}:`, error);
+    return limit === null ? [] : { messages: [], total: 0, hasMore: false };
+  }
+}
+
+/**
+ * Delete a session and all its messages
+ */
+async function deleteSession(sessionId) {
+  const project = getCurrentProject();
+  const projectDir = project.claudeProjectDir;
+
+  try {
+    const files = await fs.readdir(projectDir);
+    const jsonlFiles = files.filter(file => file.endsWith('.jsonl'));
+
+    if (jsonlFiles.length === 0) {
+      throw new Error('No session files found for this project');
+    }
+
+    // Check all JSONL files to find which one contains the session
+    for (const file of jsonlFiles) {
+      const jsonlFile = path.join(projectDir, file);
+      const content = await fs.readFile(jsonlFile, 'utf8');
+      const lines = content.split('\n').filter(line => line.trim());
+
+      // Check if this file contains the session
+      const hasSession = lines.some(line => {
+        try {
+          const data = JSON.parse(line);
+          return data.sessionId === sessionId;
+        } catch {
+          return false;
+        }
+      });
+
+      if (hasSession) {
+        // Filter out all entries for this session
+        const filteredLines = lines.filter(line => {
+          try {
+            const data = JSON.parse(line);
+            return data.sessionId !== sessionId;
+          } catch {
+            return true; // Keep malformed lines
+          }
+        });
+
+        // Write back the filtered content
+        await fs.writeFile(jsonlFile, filteredLines.join('\n') + (filteredLines.length > 0 ? '\n' : ''));
+        return true;
+      }
+    }
+
+    throw new Error(`Session ${sessionId} not found in any files`);
+  } catch (error) {
+    console.error(`Error deleting session ${sessionId}:`, error);
+    throw error;
+  }
+}
+
+export {
+  parseJsonlSessions,
+  getSessionMessages,
+  deleteSession
+};
