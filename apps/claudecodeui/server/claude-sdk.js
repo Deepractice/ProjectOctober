@@ -512,10 +512,69 @@ function getActiveClaudeSDKSessions() {
   return getAllSessions();
 }
 
+/**
+ * Warmup: Creates a new session by sending a "Warmup" message and immediately interrupting
+ * This pre-creates a session that can be resumed later for instant user experience
+ * @param {string} projectPath - Project working directory
+ * @returns {Promise<string>} The created session ID
+ */
+async function warmupSession(projectPath) {
+  console.log('🔥 Starting warmup session for project:', projectPath);
+
+  try {
+    // Map options for warmup query
+    const sdkOptions = {
+      cwd: projectPath,
+      model: 'sonnet'
+    };
+
+    // Load MCP configuration
+    const mcpServers = await loadMcpConfig(projectPath);
+    if (mcpServers) {
+      sdkOptions.mcpServers = mcpServers;
+    }
+
+    // Create SDK query with "Warmup" prompt
+    const queryInstance = query({
+      prompt: "Warmup",
+      options: sdkOptions
+    });
+
+    let capturedSessionId = null;
+
+    // Process messages until we get the session ID
+    for await (const message of queryInstance) {
+      // Capture session ID from first message
+      if (message.session_id && !capturedSessionId) {
+        capturedSessionId = message.session_id;
+        console.log('✅ Warmup session created:', capturedSessionId);
+
+        // Immediately interrupt the session
+        console.log('🛑 Interrupting warmup session...');
+        await queryInstance.interrupt();
+
+        break;
+      }
+    }
+
+    if (!capturedSessionId) {
+      throw new Error('Failed to capture session ID during warmup');
+    }
+
+    console.log('🎉 Warmup session ready:', capturedSessionId);
+    return capturedSessionId;
+
+  } catch (error) {
+    console.error('❌ Warmup session error:', error);
+    throw error;
+  }
+}
+
 // Export public API
 export {
   queryClaudeSDK,
   abortClaudeSDKSession,
   isClaudeSDKSessionActive,
-  getActiveClaudeSDKSessions
+  getActiveClaudeSDKSessions,
+  warmupSession
 };

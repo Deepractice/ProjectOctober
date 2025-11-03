@@ -49,12 +49,10 @@ function MessagesArea({
         <div className="flex items-center justify-center h-full">
           <div className="text-center px-6 sm:px-4 py-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-              {selectedSession ? 'Continue Your Conversation' : 'Start a New Conversation'}
+              Start a New Conversation
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              {selectedSession
-                ? 'Ask questions about your code, request changes, or get help with development tasks'
-                : 'Start typing your message below to chat with Claude'}
+              Type your message below to start chatting with Claude
             </p>
           </div>
         </div>

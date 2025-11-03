@@ -40,10 +40,9 @@ import { useMessageStore } from '../../stores';
 // Session Protection System prevents automatic project updates from interrupting active conversations:
 // - onSessionActive: Called when user sends message to mark session as protected
 // - onSessionInactive: Called when conversation completes/aborts to re-enable updates
-// - onReplaceTemporarySession: Called to replace temporary session ID with real WebSocket session ID
 //
 // This ensures uninterrupted chat experience by pausing sidebar refreshes during conversations.
-function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onReplaceTemporarySession, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
+function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
 
   // Debug: Track component mount/unmount
   useEffect(() => {
@@ -186,6 +185,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   }, [currentSessionId, selectedSession?.id, sessionMessagesMap]);
 
   // Extract messages for current session in component (memoized)
+  // Backend filters out system messages (Warmup, etc), so we just display what we receive
   const chatMessages = useMemo(() => {
     return sessionMessagesMap.get(activeSessionId) || [];
   }, [sessionMessagesMap, activeSessionId]);
@@ -518,9 +518,16 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     }
 
     // === Determine unified session ID for this submission ===
-    // Use existing session if available; otherwise create temporary ID until backend provides real ID
+    // Session must exist before sending messages (created via warmup)
     const effectiveSessionId = currentSessionId || selectedSession?.id || sessionStorage.getItem('cursorSessionId');
-    const sessionIdToUse = effectiveSessionId || `new-session-${Date.now()}`;
+
+    if (!effectiveSessionId) {
+      console.error('No session ID available - user must create a session first');
+      alert('Please create a new session before sending messages.');
+      return;
+    }
+
+    const sessionIdToUse = effectiveSessionId;
 
     // === Add user message using unified API ===
     useMessageStore.getState().addUserMessage(sessionIdToUse, input, uploadedImages);

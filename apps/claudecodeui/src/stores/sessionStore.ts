@@ -27,9 +27,6 @@ export const useSessionStore = create<SessionState>()(
       activeSessions: new Set(), // Sessions with active conversations (prevents updates)
       processingSessions: new Set(), // Sessions currently processing (thinking)
 
-      // Navigation
-      pendingNavigation: null, // SessionId to navigate to after session-created
-
       // Tracking
       lastFetchTime: 0,
       pendingOperations: new Set(),
@@ -97,26 +94,6 @@ export const useSessionStore = create<SessionState>()(
       },
 
       isSessionProcessing: (sessionId) => get().processingSessions.has(sessionId),
-
-      // Replace temporary session ID with real one
-      replaceTemporarySession: (realSessionId) => {
-        if (!realSessionId) return;
-        set((state) => {
-          const newSet = new Set<string>();
-          for (const sessionId of state.activeSessions) {
-            if (!sessionId.startsWith('new-session-')) {
-              newSet.add(sessionId);
-            }
-          }
-          newSet.add(realSessionId);
-          return { activeSessions: newSet };
-        });
-        console.log('🔄 Replaced temporary session with real ID:', realSessionId);
-      },
-
-      // Navigation management
-      setPendingNavigation: (sessionId) => set({ pendingNavigation: sessionId }),
-      clearPendingNavigation: () => set({ pendingNavigation: null }),
 
       // API Operations
       refreshSessions: async (force = false) => {
@@ -216,34 +193,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // WebSocket Message Handlers
-      handleSessionCreated: (sessionId, tempData = null) => {
-        console.log('📝 Session created:', sessionId);
-
-        // Find and migrate temporary session to real session
-        const activeSessions = get().activeSessions;
-        const tempSessionId = Array.from(activeSessions).find(id =>
-          id.startsWith('new-session-')
-        );
-
-        if (tempSessionId) {
-          console.log('🔄 Found temporary session:', tempSessionId);
-          // Migrate messages from temp ID to real ID
-          useMessageStore.getState().migrateSession(tempSessionId, sessionId);
-          // Migrate session protection state
-          get().replaceTemporarySession(sessionId);
-        }
-
-        console.log('⏭️ Skipping refreshSessions - sessions_updated will handle it');
-
-        // Note: We don't call refreshSessions here because:
-        // 1. Backend always sends sessions_updated after session-created
-        // 2. sessions_updated already contains the complete updated list
-        // 3. Calling refreshSessions causes unnecessary API call + NEW ARRAY REF
-        // 4. NEW ARRAY REF triggers App re-render → ChatInterface unmount/remount
-
-        // Set pending navigation - App.tsx will pick this up and navigate
-        console.log('📍 Setting pendingNavigation to:', sessionId);
-        set({ pendingNavigation: sessionId });
+      handleSessionCreated: (sessionId) => {
+        console.log('📝 Session created via WebSocket:', sessionId);
+        // In new warmup architecture, session is already created via HTTP API
+        // This WebSocket message is just a confirmation
+        // No migration needed - session was pre-created with real ID
       },
 
       handleSessionsUpdated: (updatedSessions) => {

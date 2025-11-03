@@ -244,34 +244,6 @@ export const useMessageStore = create<MessageState>()(
 
       // ====== Session Lifecycle ======
 
-      // Migrate session messages from old ID to new ID
-      migrateSession: (oldSessionId: string, newSessionId: string) => {
-        set(state => {
-          const newMap = new Map(state.sessionMessages);
-          const newMetadataMap = new Map(state.messageMetadata);
-
-          // Migrate messages
-          const messages = newMap.get(oldSessionId);
-          if (messages) {
-            newMap.set(newSessionId, messages);
-            newMap.delete(oldSessionId);
-          }
-
-          // Migrate metadata
-          const metadata = newMetadataMap.get(oldSessionId);
-          if (metadata) {
-            newMetadataMap.set(newSessionId, metadata);
-            newMetadataMap.delete(oldSessionId);
-          }
-
-          return {
-            sessionMessages: newMap,
-            messageMetadata: newMetadataMap
-          };
-        });
-        console.log('🔄 Migrated session messages:', oldSessionId, '→', newSessionId);
-      },
-
       // Clear session messages
       clearSessionMessages: (sessionId: string) => {
         set(state => {

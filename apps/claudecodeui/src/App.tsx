@@ -64,10 +64,7 @@ function AppContent() {
     markSessionInactive,
     markSessionProcessing,
     markSessionNotProcessing,
-    replaceTemporarySession,
     processingSessions,
-    pendingNavigation,
-    clearPendingNavigation,
   } = useSessionStore();
 
   const {
@@ -83,6 +80,7 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [externalMessageUpdate, setExternalMessageUpdate] = useState(0);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Initialize WebSocket connection and fetch sessions
   useEffect(() => {
@@ -155,20 +153,6 @@ function AppContent() {
     sessionsRef.current = sessions;
   }, [sessions]);
 
-  // Auto-navigate when pendingNavigation is set (after session-created)
-  useEffect(() => {
-    if (pendingNavigation && sessions.length > 0) {
-      const session = sessions.find(s => s.id === pendingNavigation);
-      if (session) {
-        console.log('🚀 [App] Auto-navigating to new session:', pendingNavigation);
-        setSelectedSession(session);
-        setActiveTab('chat');
-        navigate(`/session/${pendingNavigation}`);
-        clearPendingNavigation();
-      }
-    }
-  }, [pendingNavigation, sessions, setSelectedSession, navigate, clearPendingNavigation]);
-
   const handleSessionSelect = (session) => {
     setSelectedSession(session);
     if (activeTab !== 'preview') {
@@ -181,12 +165,39 @@ function AppContent() {
     navigate(`/session/${session.id}`);
   };
 
-  const handleNewSession = () => {
-    setSelectedSession(null);
-    setActiveTab('chat');
-    navigate('/');
-    if (isMobile) {
-      setSidebarOpen(false);
+  const handleNewSession = async () => {
+    try {
+      setIsCreatingSession(true);
+
+      // Call backend to create warmup session
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch('/api/sessions/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create session: ${response.statusText}`);
+      }
+
+      const { sessionId } = await response.json();
+      console.log('✅ Warmup session created:', sessionId);
+
+      // Navigate to new session
+      navigate(`/session/${sessionId}`);
+      setActiveTab('chat');
+
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+    } catch (error) {
+      console.error('❌ Error creating session:', error);
+      alert('Failed to create new session. Please try again.');
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
@@ -275,7 +286,6 @@ function AppContent() {
           onSessionProcessing={markSessionProcessing}
           onSessionNotProcessing={markSessionNotProcessing}
           processingSessions={processingSessions}
-          onReplaceTemporarySession={replaceTemporarySession}
           onNavigateToSession={(sessionId) => navigate(`/session/${sessionId}`)}
           onShowSettings={() => setShowSettings(true)}
           autoExpandTools={autoExpandTools}
