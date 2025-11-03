@@ -7,7 +7,6 @@ import { Input } from './ui/input';
 import { MessageSquare, Clock, Trash2, Settings, RefreshCw, Search, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import AgentLogo from './AgentLogo';
-import { api } from '../utils/api';
 
 // Move formatTimeAgo outside component to avoid recreation on every render
 const formatTimeAgo = (dateString, currentTime) => {
@@ -87,24 +86,21 @@ function Sidebar({
       return;
     }
 
+    console.log('🗑️ Delete button clicked for session:', sessionId);
+
     if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+      console.log('❌ Delete cancelled by user');
       return;
     }
 
     // Mark as deleting
+    console.log('✅ Delete confirmed, delegating to parent...');
     setDeletingSessionId(sessionId);
 
     try {
-      const response = await api.deleteSession(sessionId);
-
-      if (response.ok) {
-        // Call parent callback if provided
-        if (onSessionDelete) {
-          onSessionDelete(sessionId);
-        }
-      } else {
-        console.error('Failed to delete session');
-        alert('Failed to delete session. Please try again.');
+      // Delegate to parent component to handle the actual deletion
+      if (onSessionDelete) {
+        await onSessionDelete(sessionId);
       }
     } catch (error) {
       console.error('Error deleting session:', error);
@@ -315,7 +311,6 @@ function Sidebar({
                           selectedSession?.id === session.id && "bg-primary/5 border-primary/20",
                           isActive && selectedSession?.id !== session.id && "border-green-500/30 bg-green-50/5 dark:bg-green-900/5"
                         )}
-                        onClick={() => onSessionSelect(session)}
                         onTouchEnd={handleTouchClick(() => onSessionSelect(session))}
                       >
                         <div className="flex items-center gap-2">
@@ -344,11 +339,15 @@ function Sidebar({
                           {/* Mobile delete button */}
                           <button
                             className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-900/20 flex items-center justify-center active:scale-95 transition-transform opacity-70 ml-1"
-                            onClick={(e) => {
+                            onTouchStart={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
+                            }}
+                            onTouchEnd={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
                               deleteSession(session.id);
                             }}
-                            onTouchEnd={handleTouchClick(() => deleteSession(session.id))}
                             disabled={deletingSessionId === session.id}
                           >
                             {deletingSessionId === session.id ? (
