@@ -24,7 +24,7 @@ const __dirname = dirname(__filename);
 // Load environment variables
 loadEnv();
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5200;
 
 // Track connected WebSocket clients for session updates
 const connectedClients = new Set();

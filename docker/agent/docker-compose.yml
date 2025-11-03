@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  agent:
+    image: deepracticexs/agent:latest
+    container_name: agent
+    ports:
+      - "5200:5200"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      - NODE_ENV=production
+      - PORT=5200
+    volumes:
+      # Project directory
+      - ${PROJECT_PATH:-.}:/project
+      # Optional: SSH and Git config
+      - ~/.ssh:/home/node/.ssh:ro
+      - ~/.gitconfig:/home/node/.gitconfig:ro
+      # Agent data
+      - agent-data:/opt/claude-config
+    restart: unless-stopped
+
+volumes:
+  agent-data:
+    driver: local

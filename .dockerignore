@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build outputs
+dist
+**/dist
+build
+**/build
+.turbo
+
+# Development files
+.env
+.env.local
+*.log
+logs
+*.pid
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+temp
+tmp
+*.tmp
+
+# Test files
+coverage
+.nyc_output
+
+# Documentation (exclude from build context)
+docs
+*.md
+!README.md
+
+# CI/CD
+.github
+.changeset

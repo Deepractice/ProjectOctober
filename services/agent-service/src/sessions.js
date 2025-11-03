@@ -219,7 +219,12 @@ async function deleteSession(sessionId) {
       throw new Error('No session files found for this project');
     }
 
-    // Check all JSONL files to find which one contains the session
+    let deletedFromAnyFile = false;
+    let totalEntriesRemoved = 0;
+    let filesModified = 0;
+    let filesDeleted = 0;
+
+    // Check ALL JSONL files (not just the first one) to ensure complete deletion
     for (const file of jsonlFiles) {
       const jsonlFile = path.join(projectDir, file);
       const content = await fs.readFile(jsonlFile, 'utf8');
@@ -269,24 +274,38 @@ async function deleteSession(sessionId) {
           }
         });
 
-        logger.info(`🗑️ Deleting session ${sessionId}: ${lines.length - filteredLines.length} entries removed`);
+        const entriesRemovedFromFile = lines.length - filteredLines.length;
+        totalEntriesRemoved += entriesRemovedFromFile;
+
+        logger.info(`🗑️ Deleting from ${path.basename(jsonlFile)}: ${entriesRemovedFromFile} entries removed`);
 
         // If file is empty after deletion, delete the file itself
         if (filteredLines.length === 0) {
           await fs.unlink(jsonlFile);
           logger.info(`🗑️ File deleted (was empty): ${path.basename(jsonlFile)}`);
+          filesDeleted++;
         } else {
           // Write back the filtered content
           await fs.writeFile(jsonlFile, filteredLines.join('\n') + '\n');
           logger.info(`💾 File updated with ${filteredLines.length} remaining entries`);
+          filesModified++;
         }
 
         // Invalidate cache for this file
         sessionManager.invalidateCacheForFile(jsonlFile);
-        logger.info(`✅ Session ${sessionId} deleted and cache invalidated`);
+        deletedFromAnyFile = true;
 
-        return true;
+        // Continue checking other files instead of returning early
       }
+    }
+
+    if (deletedFromAnyFile) {
+      logger.info(`✅ Session ${sessionId} deleted completely`);
+      logger.info(`   Total entries removed: ${totalEntriesRemoved}`);
+      logger.info(`   Files modified: ${filesModified}`);
+      logger.info(`   Files deleted: ${filesDeleted}`);
+      logger.info(`   Cache invalidated for all affected files`);
+      return true;
     }
 
     throw new Error(`Session ${sessionId} not found in any files`);
