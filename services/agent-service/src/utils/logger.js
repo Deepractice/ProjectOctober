@@ -22,7 +22,7 @@ export const logger = createLogger({
   level: process.env.LOG_LEVEL || 'info',
 
   // Service name
-  name: '@project-october/agent-ui',
+  name: '@deepractice-ai/agent-service',
 
   // Enable console output (for development)
   console: true,

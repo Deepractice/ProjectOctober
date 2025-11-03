@@ -1,0 +1,39 @@
+{
+  "name": "@deepractice-ai/agent-service",
+  "version": "1.0.0",
+  "description": "Agent UI Backend API Service",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "NODE_ENV=development node src/index.js",
+    "start": "NODE_ENV=production node src/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.29",
+    "@deepracticex/logger": "^1.1.1",
+    "bcrypt": "^6.0.0",
+    "chokidar": "^4.0.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "gray-matter": "^4.0.3",
+    "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
+    "multer": "^2.0.1",
+    "node-fetch": "^2.7.0",
+    "node-pty": "^1.1.0-beta34",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mime-types": "^3.0.1",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.9.2",
+    "@types/ws": "^8.18.1"
+  }
+}
