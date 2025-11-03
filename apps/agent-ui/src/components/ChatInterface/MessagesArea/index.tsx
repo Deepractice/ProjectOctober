@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AgentLogo from '../../AgentLogo.jsx';
 import MessageComponent from '../MessageRenderer';
 
@@ -93,49 +94,69 @@ function MessagesArea({
             </div>
           )}
 
-          {visibleMessages.map((message, index) => {
-            const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
+          <AnimatePresence mode="popLayout">
+            {visibleMessages.map((message, index) => {
+              const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
 
-            return (
-              <MessageComponent
-                key={index}
-                message={message}
-                index={index}
-                prevMessage={prevMessage}
-                createDiff={createDiff}
-                onFileOpen={onFileOpen}
-                onShowSettings={onShowSettings}
-                autoExpandTools={autoExpandTools}
-                showRawParameters={showRawParameters}
-                showThinking={showThinking}
-                selectedProject={selectedProject}
-              />
-            );
-          })}
+              return (
+                <motion.div
+                  key={`message-${index}-${message.timestamp || ''}`}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1]
+                  }}
+                >
+                  <MessageComponent
+                    message={message}
+                    index={index}
+                    prevMessage={prevMessage}
+                    createDiff={createDiff}
+                    onFileOpen={onFileOpen}
+                    onShowSettings={onShowSettings}
+                    autoExpandTools={autoExpandTools}
+                    showRawParameters={showRawParameters}
+                    showThinking={showThinking}
+                    selectedProject={selectedProject}
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </>
       )}
 
-      {isLoading && (
-        <div className="chat-message assistant">
-          <div className="w-full">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1 bg-transparent">
-                <AgentLogo className="w-full h-full" />
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="chat-message assistant"
+          >
+            <div className="w-full">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1 bg-transparent">
+                  <AgentLogo className="w-full h-full" />
+                </div>
+                <div className="text-sm font-medium text-gray-900 dark:text-white">Agent</div>
+                {/* Abort button removed - functionality not yet implemented at backend */}
               </div>
-              <div className="text-sm font-medium text-gray-900 dark:text-white">Agent</div>
-              {/* Abort button removed - functionality not yet implemented at backend */}
-            </div>
-            <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">
-              <div className="flex items-center space-x-1">
-                <div className="animate-pulse">●</div>
-                <div className="animate-pulse" style={{ animationDelay: '0.2s' }}>●</div>
-                <div className="animate-pulse" style={{ animationDelay: '0.4s' }}>●</div>
-                <span className="ml-2">Thinking...</span>
+              <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">
+                <div className="flex items-center space-x-1">
+                  <div className="animate-pulse">●</div>
+                  <div className="animate-pulse" style={{ animationDelay: '0.2s' }}>●</div>
+                  <div className="animate-pulse" style={{ animationDelay: '0.4s' }}>●</div>
+                  <span className="ml-2">Thinking...</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div ref={messagesEndRef} />
     </div>

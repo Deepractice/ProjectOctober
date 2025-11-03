@@ -25,6 +25,7 @@ import {
   isInvalidSummary
 } from './messages.js';
 import sessionManager from './core/SessionManager.js';
+import { logger } from './utils/logger.js';
 
 /**
  * Parse JSONL file and extract sessions with metadata
@@ -235,18 +236,55 @@ async function deleteSession(sessionId) {
       });
 
       if (hasSession) {
-        // Filter out all entries for this session
+        // Collect all UUIDs related to this session
+        const sessionUUIDs = new Set();
+        lines.forEach(line => {
+          try {
+            const data = JSON.parse(line);
+            if (data.sessionId === sessionId) {
+              if (data.leafUuid) sessionUUIDs.add(data.leafUuid);
+              if (data.parentUuid) sessionUUIDs.add(data.parentUuid);
+            }
+          } catch {
+            // Skip malformed lines
+          }
+        });
+
+        // Filter out all entries for this session and related summary entries
         const filteredLines = lines.filter(line => {
           try {
             const data = JSON.parse(line);
-            return data.sessionId !== sessionId;
+            // Remove if:
+            // 1. Has matching sessionId
+            // 2. Or is a summary entry with matching leafUuid
+            if (data.sessionId === sessionId) {
+              return false;
+            }
+            if (data.type === 'summary' && data.leafUuid && sessionUUIDs.has(data.leafUuid)) {
+              return false;
+            }
+            return true;
           } catch {
             return true; // Keep malformed lines
           }
         });
 
-        // Write back the filtered content
-        await fs.writeFile(jsonlFile, filteredLines.join('\n') + (filteredLines.length > 0 ? '\n' : ''));
+        logger.info(`🗑️ Deleting session ${sessionId}: ${lines.length - filteredLines.length} entries removed`);
+
+        // If file is empty after deletion, delete the file itself
+        if (filteredLines.length === 0) {
+          await fs.unlink(jsonlFile);
+          logger.info(`🗑️ File deleted (was empty): ${path.basename(jsonlFile)}`);
+        } else {
+          // Write back the filtered content
+          await fs.writeFile(jsonlFile, filteredLines.join('\n') + '\n');
+          logger.info(`💾 File updated with ${filteredLines.length} remaining entries`);
+        }
+
+        // Invalidate cache for this file
+        sessionManager.invalidateCacheForFile(jsonlFile);
+        logger.info(`✅ Session ${sessionId} deleted and cache invalidated`);
+
         return true;
       }
     }

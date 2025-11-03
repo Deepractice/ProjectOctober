@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 
 function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
@@ -39,35 +40,50 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
     return () => clearInterval(timer);
   }, [isLoading]);
 
-  // Don't show if loading is false
-  // Note: showThinking only controls the reasoning accordion in messages, not this processing indicator
-  if (!isLoading) return null;
-  
   // Clever action words that cycle
   const actionWords = ['Thinking', 'Processing', 'Analyzing', 'Working', 'Computing', 'Reasoning'];
   const actionIndex = Math.floor(elapsedTime / 3) % actionWords.length;
-  
+
   // Parse status data
   const statusText = status?.text || actionWords[actionIndex];
   const tokens = status?.tokens || fakeTokens;
   const canInterrupt = status?.can_interrupt !== false;
-  
+
   // Animation characters
   const spinners = ['✻', '✹', '✸', '✶'];
   const currentSpinner = spinners[animationPhase];
-  
+
   return (
-    <div className="w-full mb-6 animate-in slide-in-from-bottom duration-300">
-      <div className="flex items-center justify-between max-w-4xl mx-auto bg-gray-900 dark:bg-gray-950 text-white rounded-lg shadow-lg px-4 py-3">
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{
+            duration: 0.3,
+            ease: [0.4, 0, 0.2, 1]
+          }}
+          className="w-full mb-6"
+        >
+          <div className="flex items-center justify-between max-w-4xl mx-auto bg-gray-900 dark:bg-gray-950 text-white rounded-lg shadow-lg px-4 py-3">
         <div className="flex-1">
           <div className="flex items-center gap-3">
             {/* Animated spinner */}
-            <span className={cn(
-              "text-xl transition-all duration-500",
-              animationPhase % 2 === 0 ? "text-blue-400 scale-110" : "text-blue-300"
-            )}>
+            <motion.span
+              animate={{
+                rotate: [0, 90, 180, 270, 360],
+                scale: [1, 1.1, 1, 1.1, 1]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="text-xl text-blue-400"
+            >
               {currentSpinner}
-            </span>
+            </motion.span>
             
             {/* Status text - first line */}
             <div className="flex-1">
@@ -94,7 +110,9 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
         
         {/* Interrupt button */}
         {canInterrupt && onAbort && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onAbort}
             className="ml-3 text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 flex-shrink-0"
           >
@@ -102,10 +120,12 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
             <span className="hidden sm:inline">Stop</span>
-          </button>
+          </motion.button>
         )}
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from './ui/badge';
 import { CheckCircle2, Clock, Circle } from 'lucide-react';
 
@@ -46,44 +47,60 @@ const TodoList = ({ todos, isResult = false }) => {
   return (
     <div className="space-y-3">
       {isResult && (
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          Todo List ({todos.length} {todos.length === 1 ? 'item' : 'items'})
-        </div>
-      )}
-      
-      {todos.map((todo, index) => (
-        <div
-          key={todo.id || `todo-${index}`}
-          className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md dark:shadow-gray-900/50 transition-shadow"
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
         >
-          <div className="flex-shrink-0 mt-0.5">
-            {getStatusIcon(todo.status)}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className={`text-sm font-medium ${todo.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                {todo.content}
-              </p>
-              
-              <div className="flex gap-1 flex-shrink-0">
-                <Badge
-                  variant="outline"
-                  className={`text-xs px-2 py-0.5 ${getPriorityColor(todo.priority)}`}
-                >
-                  {todo.priority}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={`text-xs px-2 py-0.5 ${getStatusColor(todo.status)}`}
-                >
-                  {todo.status.replace('_', ' ')}
-                </Badge>
+          Todo List ({todos.length} {todos.length === 1 ? 'item' : 'items'})
+        </motion.div>
+      )}
+
+      <AnimatePresence mode="popLayout">
+        {todos.map((todo, index) => (
+          <motion.div
+            key={todo.id || `todo-${index}`}
+            layout
+            initial={{ opacity: 0, x: -20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.9 }}
+            transition={{
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1],
+              layout: { duration: 0.2 }
+            }}
+            className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md dark:shadow-gray-900/50 transition-shadow"
+          >
+            <div className="flex-shrink-0 mt-0.5">
+              {getStatusIcon(todo.status)}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className={`text-sm font-medium ${todo.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                  {todo.content}
+                </p>
+
+                <div className="flex gap-1 flex-shrink-0">
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2 py-0.5 ${getPriorityColor(todo.priority)}`}
+                  >
+                    {todo.priority}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2 py-0.5 ${getStatusColor(todo.status)}`}
+                  >
+                    {todo.status.replace('_', ' ')}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      ))}
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 };
