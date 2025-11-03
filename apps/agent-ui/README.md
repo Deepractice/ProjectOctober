@@ -106,8 +106,8 @@ pm2 startup          # Auto-start on system boot
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/siteboon/claudecodeui.git
-cd claudecodeui
+git clone https://github.com/siteboon/agent-ui.git
+cd agent-ui
 ```
 
 2. **Install dependencies:**

@@ -8,7 +8,7 @@
 
 ### 1. 前端发送消息
 
-**文件**: `apps/claudecodeui/src/components/ChatInterface.jsx`
+**文件**: `apps/agent-ui/src/components/ChatInterface.jsx`
 
 #### 1.1 用户触发 (Line 3670)
 ```javascript
@@ -36,7 +36,7 @@ sendMessage({
 ```
 
 #### 1.3 WebSocket 发送 (Line 94-100)
-**文件**: `apps/claudecodeui/src/utils/websocket.js`
+**文件**: `apps/agent-ui/src/utils/websocket.js`
 
 ```javascript
 const sendMessage = (message) => {
@@ -48,7 +48,7 @@ const sendMessage = (message) => {
 
 ### 2. 后端 WebSocket 接收
 
-**文件**: `apps/claudecodeui/server/index.js`
+**文件**: `apps/agent-ui/server/index.js`
 
 #### 2.1 接收消息 (Line 608-618)
 ```javascript
@@ -68,7 +68,7 @@ ws.on('message', async (message) => {
 
 ### 3. Claude SDK 执行
 
-**文件**: `apps/claudecodeui/server/claude-sdk.js`
+**文件**: `apps/agent-ui/server/claude-sdk.js`
 
 #### 3.1 主函数入口 (Line 338)
 ```javascript
@@ -225,7 +225,7 @@ ws.send(JSON.stringify({
 
 ### 4. 前端接收响应
 
-**文件**: `apps/claudecodeui/src/utils/websocket.js` (Line 66-72)
+**文件**: `apps/agent-ui/src/utils/websocket.js` (Line 66-72)
 
 ```javascript
 websocket.onmessage = (event) => {
@@ -234,7 +234,7 @@ websocket.onmessage = (event) => {
 };
 ```
 
-**文件**: `apps/claudecodeui/src/components/ChatInterface.jsx`
+**文件**: `apps/agent-ui/src/components/ChatInterface.jsx`
 
 监听 WebSocket 消息并更新 UI：
 ```javascript

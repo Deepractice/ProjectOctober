@@ -31,14 +31,14 @@ RUN npm install -g @anthropic-ai/claude-code
 WORKDIR /app
 
 # Copy package files first (for better layer caching)
-COPY apps/claudecodeui/package*.json ./
+COPY apps/agent-ui/package*.json ./
 
 # Install production dependencies (this layer will be cached if package.json doesn't change)
 RUN npm install --omit=dev --production
 
 # Copy application files
-COPY apps/claudecodeui/dist/ ./dist/
-COPY apps/claudecodeui/server/ ./server/
+COPY apps/agent-ui/dist/ ./dist/
+COPY apps/agent-ui/server/ ./server/
 
 # Copy entrypoint script
 COPY docker/entrypoint.js ./entrypoint.js

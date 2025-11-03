@@ -1,25 +1,25 @@
 {
-  "name": "@project-october/claudecodeui",
+  "name": "@project-october/agent-ui",
   "version": "1.10.4",
-  "description": "A web-based UI for Claude Code CLI",
+  "description": "A web-based UI for AI Agent",
   "private": true,
   "type": "module",
   "main": "server/index.js",
   "bin": {
-    "claude-code-ui": "server/index.js"
+    "agent-ui": "server/index.js"
   },
   "files": [
     "server/",
     "dist/",
     "README.md"
   ],
-  "homepage": "https://claudecodeui.siteboon.ai",
+  "homepage": "https://agent-ui.deepractice.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/siteboon/claudecodeui.git"
+    "url": "git+https://github.com/deepractice/ProjectOctober.git"
   },
   "bugs": {
-    "url": "https://github.com/siteboon/claudecodeui/issues"
+    "url": "https://github.com/deepractice/ProjectOctober/issues"
   },
   "scripts": {
     "dev": "concurrently --kill-others --raw --prefix none \"npm run server\" \"npm run client\"",

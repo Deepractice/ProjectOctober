@@ -1,5 +1,5 @@
 ---
-"claudecodeui": minor
+"agent-ui": minor
 ---
 
 Refactor to unified message management architecture

@@ -14,7 +14,7 @@ importers:
         specifier: ^2.5.8
         version: 2.5.8
 
-  apps/claudecodeui:
+  apps/agent-ui:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.29

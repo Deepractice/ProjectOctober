@@ -36,7 +36,7 @@ function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
 
-  const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck('siteboon', 'claudecodeui');
+  const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck('siteboon', 'agent-ui');
 
   // Custom hooks
   const { isMobile, isPWA } = useResponsive();

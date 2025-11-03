@@ -8,7 +8,7 @@ This document describes the configuration changes made to integrate Claude Code 
 ```
 ProjectOctober/
 ├── apps/
-│   └── claudecodeui/          # Claude Code UI application
+│   └── agent-ui/          # Claude Code UI application
 │       ├── src/               # Frontend source
 │       ├── server/            # Backend source
 │       ├── public/            # Static assets
@@ -92,14 +92,14 @@ ignoredBuiltDependencies:
 
 ### 3. App Configuration
 
-#### `apps/claudecodeui/package.json`
-- **Name**: `@project-october/claudecodeui` (changed from `@siteboon/claude-code-ui`)
+#### `apps/agent-ui/package.json`
+- **Name**: `@project-october/agent-ui` (changed from `@siteboon/claude-code-ui`)
 - **Private**: `true` (added to prevent accidental publishing)
 - **Version**: `1.10.4` (preserved from original)
 - **Scripts**: Unchanged (dev, build, server, client, start)
 - **Dependencies**: All preserved from original
 
-#### `apps/claudecodeui/turbo.json`
+#### `apps/agent-ui/turbo.json`
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
@@ -162,23 +162,23 @@ ignoredBuiltDependencies:
 # Install all dependencies
 pnpm install
 
-# Start claudecodeui in development mode
-pnpm --filter @project-october/claudecodeui dev
+# Start agent-ui in development mode
+pnpm --filter @project-october/agent-ui dev
 
-# Build claudecodeui
-pnpm --filter @project-october/claudecodeui build
+# Build agent-ui
+pnpm --filter @project-october/agent-ui build
 
 # Start production server
-pnpm --filter @project-october/claudecodeui start
+pnpm --filter @project-october/agent-ui start
 
 # Run specific script
-pnpm --filter @project-october/claudecodeui server
+pnpm --filter @project-october/agent-ui server
 ```
 
 ### From App Directory
 
 ```bash
-cd apps/claudecodeui
+cd apps/agent-ui
 
 # All scripts work as before
 pnpm dev
@@ -193,7 +193,7 @@ pnpm client
 Each app maintains its own `.env` file:
 
 ```
-apps/claudecodeui/.env
+apps/agent-ui/.env
 ```
 
 Copy from `.env.example` and configure:
@@ -239,7 +239,7 @@ VITE_CONTEXT_WINDOW=160000
 ```
 ProjectOctober/
 ├── apps/
-│   ├── claudecodeui/          # Current app
+│   ├── agent-ui/          # Current app
 │   ├── admin-panel/           # Future: Admin UI
 │   └── mobile-app/            # Future: Mobile app
 ├── services/
@@ -277,11 +277,11 @@ ProjectOctober/
 ## Migration Notes
 
 ### Breaking Changes
-- Package name changed: `@siteboon/claude-code-ui` → `@project-october/claudecodeui`
+- Package name changed: `@siteboon/claude-code-ui` → `@project-october/agent-ui`
 - Root scripts now use Turbo: `pnpm dev` → `turbo dev`
 
 ### Non-Breaking Changes
-- All app-level scripts work as before when run from `apps/claudecodeui/`
+- All app-level scripts work as before when run from `apps/agent-ui/`
 - Dependencies unchanged
 - Build output unchanged
 - Environment variables unchanged
@@ -295,10 +295,10 @@ ProjectOctober/
 **Solution**: Run `pnpm clean` and rebuild
 
 ### Issue: Environment variables not working
-**Solution**: Ensure `.env` file is in `apps/claudecodeui/`, not root
+**Solution**: Ensure `.env` file is in `apps/agent-ui/`, not root
 
 ### Issue: Port conflicts
-**Solution**: Update PORT and VITE_PORT in `apps/claudecodeui/.env`
+**Solution**: Update PORT and VITE_PORT in `apps/agent-ui/.env`
 
 ## Related Documentation
 

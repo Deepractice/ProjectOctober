@@ -73,8 +73,8 @@ Your default browser will automatically open the Claude Code UI interface.
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/siteboon/claudecodeui.git
-cd claudecodeui
+git clone https://github.com/siteboon/agent-ui.git
+cd agent-ui
 ```
 
 2. **Install dependencies:**

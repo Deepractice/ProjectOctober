@@ -1689,8 +1689,8 @@ curl "http://localhost:3001/api/git/status?project=my-project" \
 ## Support & Contributing
 
 For issues, feature requests, or contributions:
-- GitHub: https://github.com/siteboon/claudecodeui
-- Documentation: https://claudecodeui.siteboon.ai
+- GitHub: https://github.com/siteboon/agent-ui
+- Documentation: https://agent-ui.siteboon.ai
 
 ---
 

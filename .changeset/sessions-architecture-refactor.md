@@ -1,5 +1,5 @@
 ---
-"claudecodeui": patch
+"agent-ui": patch
 ---
 
 Complete server architecture refactoring with single responsibility principle

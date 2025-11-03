@@ -1,5 +1,5 @@
 ---
-'@deepracticex/claudecodeui': minor
+'@deepracticex/agent-ui': minor
 ---
 
 **BREAKING: Refactor to Warmup Session Architecture**
