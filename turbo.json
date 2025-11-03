@@ -14,9 +14,19 @@
     "lint": {
       "outputs": []
     },
+    "format": {
+      "outputs": []
+    },
+    "format:check": {
+      "outputs": []
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": ["outputs/test/**", "outputs/coverage/**"]
     },
     "clean": {
       "cache": false

@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-ui",
-  "version": "1.10.4",
+  "version": "0.0.1",
   "description": "A web-based UI for AI Agent",
   "private": true,
   "type": "module",

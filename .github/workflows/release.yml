@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create Release
+    # Only run if PR was merged and from a release branch
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+      tag: ${{ steps.extract_version.outputs.tag }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Extract Version Info
+        id: extract_version
+        run: |
+          # Get version from root package.json
+          ROOT_VERSION=$(jq -r '.version' "package.json")
+          ROOT_NAME=$(jq -r '.name' "package.json")
+
+          # Get versions from apps and services
+          VERSIONS="${ROOT_NAME}@${ROOT_VERSION}\n"
+
+          # Add agent-ui version
+          if [ -f "apps/agent-ui/package.json" ]; then
+            UI_NAME=$(jq -r '.name' "apps/agent-ui/package.json")
+            UI_VERSION=$(jq -r '.version' "apps/agent-ui/package.json")
+            VERSIONS="${VERSIONS}${UI_NAME}@${UI_VERSION}\n"
+          fi
+
+          # Add agent-service version
+          if [ -f "services/agent-service/package.json" ]; then
+            SERVICE_NAME=$(jq -r '.name' "services/agent-service/package.json")
+            SERVICE_VERSION=$(jq -r '.version' "services/agent-service/package.json")
+            VERSIONS="${VERSIONS}${SERVICE_NAME}@${SERVICE_VERSION}\n"
+          fi
+
+          # Use root version as the main release version
+          TAG="v${ROOT_VERSION}"
+
+          echo "version<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$VERSIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ steps.extract_version.outputs.tag }} -m "Release: ${{ steps.extract_version.outputs.tag }}"
+          git push origin ${{ steps.extract_version.outputs.tag }}
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Create release notes file to avoid shell escaping issues
+          cat > release-notes.md << 'NOTES_EOF'
+          # Release ${{ steps.extract_version.outputs.tag }}
+
+          ## Packages
+
+          ${{ steps.extract_version.outputs.version }}
+
+          ## Changes
+
+          NOTES_EOF
+
+          # Extract CHANGELOG from root (main changelog)
+          if [ -f "CHANGELOG.md" ]; then
+            echo "" >> release-notes.md
+            echo "### Main Changes" >> release-notes.md
+            echo "" >> release-notes.md
+            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "CHANGELOG.md" >> release-notes.md
+          fi
+
+          # Extract CHANGELOG from apps/agent-ui
+          if [ -f "apps/agent-ui/CHANGELOG.md" ]; then
+            echo "" >> release-notes.md
+            echo "### @deepractice-ai/agent-ui" >> release-notes.md
+            echo "" >> release-notes.md
+            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "apps/agent-ui/CHANGELOG.md" >> release-notes.md
+          fi
+
+          # Extract CHANGELOG from services/agent-service
+          if [ -f "services/agent-service/CHANGELOG.md" ]; then
+            echo "" >> release-notes.md
+            echo "### @deepractice-ai/agent-service" >> release-notes.md
+            echo "" >> release-notes.md
+            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "services/agent-service/CHANGELOG.md" >> release-notes.md
+          fi
+
+          # Write to GitHub output using file content
+          {
+            echo "notes<<EOF"
+            cat release-notes.md
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh release create ${{ steps.extract_version.outputs.tag }} \
+            --title "Release ${{ steps.extract_version.outputs.tag }}" \
+            --notes "${{ steps.release_notes.outputs.notes }}" \
+            --latest
+
+      - name: Delete Release Branch
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          git push origin --delete "$BRANCH_NAME" || echo "Branch already deleted"

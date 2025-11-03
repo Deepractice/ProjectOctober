@@ -1,6 +1,6 @@
 {
   "name": "deepractice-ai-agent",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Deepractice AI Agent - Monorepo",
   "private": true,
   "type": "module",
@@ -12,12 +12,27 @@
     "dev:original": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "clean": "turbo clean && rm -rf node_modules"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "prepare": "lefthook install"
   },
   "author": "Deepractice",
   "license": "MIT",
   "packageManager": "pnpm@10.15.1",
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/js": "^9.37.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "lefthook": "^1.13.6",
+    "prettier": "^3.6.2",
     "turbo": "^2.5.8"
   },
   "pnpm": {
