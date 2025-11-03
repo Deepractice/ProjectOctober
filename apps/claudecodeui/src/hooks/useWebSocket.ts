@@ -44,20 +44,11 @@ export function useWebSocket({
   // Initialize state management
   const state = useWebSocketState({
     initialSessionId: selectedSession?.id || null,
-    initialPermissionMode: 'default'
+    initialPermissionMode: 'bypassPermissions' // Fixed to bypass mode
   });
 
-  // Load permission mode from localStorage when session changes
-  useEffect(() => {
-    if (selectedSession?.id) {
-      const savedMode = localStorage.getItem(`permissionMode-${selectedSession.id}`);
-      if (savedMode) {
-        state.setPermissionMode(savedMode);
-      } else {
-        state.setPermissionMode('default');
-      }
-    }
-  }, [selectedSession?.id]);
+  // Permission mode is locked to bypassPermissions
+  // No localStorage loading or mode switching allowed
 
   // Setup WebSocket message handlers (now writes to messageStore)
   useWebSocketHandlers({

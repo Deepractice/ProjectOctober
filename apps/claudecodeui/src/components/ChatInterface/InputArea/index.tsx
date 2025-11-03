@@ -80,45 +80,10 @@ function InputArea({
         />
       </div>
 
-      {/* Permission Mode Selector with scroll to bottom button - Above input, clickable for mobile */}
+      {/* Input controls bar - Token usage and other buttons */}
       <div ref={inputContainerRef} className="max-w-4xl mx-auto mb-3">
         <div className="flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={handleModeSwitch}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
-              permissionMode === 'default'
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'
-                : permissionMode === 'acceptEdits'
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-900/30'
-                : permissionMode === 'bypassPermissions'
-                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30'
-                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-            }`}
-            title="Click to change permission mode (or press Tab in input)"
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  permissionMode === 'default'
-                    ? 'bg-gray-500'
-                    : permissionMode === 'acceptEdits'
-                    ? 'bg-green-500'
-                    : permissionMode === 'bypassPermissions'
-                    ? 'bg-orange-500'
-                    : 'bg-blue-500'
-                }`}
-              />
-              <span>
-                {permissionMode === 'default' && 'Default Mode'}
-                {permissionMode === 'acceptEdits' && 'Accept Edits'}
-                {permissionMode === 'bypassPermissions' && 'Bypass Permissions'}
-                {permissionMode === 'plan' && 'Plan Mode'}
-              </span>
-            </div>
-          </button>
-
-          {/* Token usage pie chart - positioned next to mode indicator */}
+          {/* Token usage pie chart */}
           <TokenUsagePie
             used={tokenBudget?.used || 0}
             total={

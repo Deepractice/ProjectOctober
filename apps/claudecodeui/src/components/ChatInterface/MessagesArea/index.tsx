@@ -47,60 +47,16 @@ function MessagesArea({
         </div>
       ) : chatMessages.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          {!selectedSession && !currentSessionId && (
-            <div className="text-center px-6 sm:px-4 py-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Choose Your AI Assistant</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">
-                Select a provider to start a new conversation
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-                {/* Claude Button */}
-                <button
-                  onClick={() => {
-                    setProvider('claude');
-                    localStorage.setItem('selected-provider', 'claude');
-                    // Focus input after selection
-                    setTimeout(() => textareaRef.current?.focus(), 100);
-                  }}
-                  className={`group relative w-64 h-32 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-                    provider === 'claude'
-                      ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <ClaudeLogo className="w-10 h-10" />
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Claude</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">by Anthropic</p>
-                    </div>
-                  </div>
-                  {provider === 'claude' && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              </div>
-
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Ready to use Claude AI. Start typing your message below.
-              </p>
-            </div>
-          )}
-          {selectedSession && (
-            <div className="text-center text-gray-500 dark:text-gray-400 px-6 sm:px-4">
-              <p className="font-bold text-lg sm:text-xl mb-3">Continue your conversation</p>
-              <p className="text-sm sm:text-base leading-relaxed">
-                Ask questions about your code, request changes, or get help with development tasks
-              </p>
-            </div>
-          )}
+          <div className="text-center px-6 sm:px-4 py-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              {selectedSession ? 'Continue Your Conversation' : 'Start a New Conversation'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              {selectedSession
+                ? 'Ask questions about your code, request changes, or get help with development tasks'
+                : 'Start typing your message below to chat with Claude'}
+            </p>
+          </div>
         </div>
       ) : (
         <>

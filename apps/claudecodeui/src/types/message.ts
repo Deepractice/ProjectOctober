@@ -79,16 +79,15 @@ export type WebSocketMessage =
   | BaseWebSocketMessage;
 
 /**
- * Message Store State
+ * Message Store State - Unified Message Management
  */
 export interface MessageState {
   // Message routing (existing)
   recentMessages: (WebSocketMessage & { messageId: string })[];
   processedMessageIds: Set<string>;
 
-  // Chat message storage (new)
-  sessionMessages: Map<string, import('./chat').ChatMessage[]>;      // Server messages
-  optimisticMessages: Map<string, import('./chat').ChatMessage[]>;   // Client pending
+  // Chat message storage - Single source of truth
+  sessionMessages: Map<string, import('./chat').ChatMessage[]>;      // All messages
   loadingSessions: Set<string>;                                       // Loading indicators
   messageMetadata: Map<string, import('./chat').MessageMetadata>;    // Pagination metadata
 
@@ -100,15 +99,23 @@ export interface MessageState {
   getMessagesByType: (type: WebSocketMessageType) => WebSocketMessage[];
   getMessagesBySession: (sessionId: string) => WebSocketMessage[];
 
-  // Chat message actions (new)
-  addOptimisticMessage: (sessionId: string, message: import('./chat').ChatMessage) => void;
-  clearOptimisticMessages: (sessionId: string) => void;
-  setServerMessages: (sessionId: string, messages: import('./chat').ChatMessage[]) => void;
-  appendServerMessage: (sessionId: string, message: import('./chat').ChatMessage) => void;
-  updateMessage: (sessionId: string, messageId: string, updates: Partial<import('./chat').ChatMessage>) => void;
-  hasSessionMessages: (sessionId: string) => boolean;
-  getDisplayMessages: (sessionId: string) => import('./chat').ChatMessage[];
+  // Unified chat message operations
+  addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
+  addAssistantMessage: (sessionId: string, content: string) => void;
+  addAssistantChunk: (sessionId: string, chunk: string) => void; // For streaming
+  updateLastAssistantMessage: (sessionId: string, content: string) => void;
+  addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => void;
+  updateToolResult: (sessionId: string, toolId: string, result: any) => void;
+  addErrorMessage: (sessionId: string, error: string) => void;
+
+  // Session lifecycle
+  migrateSession: (oldSessionId: string, newSessionId: string) => void;
   clearSessionMessages: (sessionId: string) => void;
+
+  // Legacy methods (for backward compatibility during migration)
+  setServerMessages: (sessionId: string, messages: import('./chat').ChatMessage[]) => void;
+  getDisplayMessages: (sessionId: string) => import('./chat').ChatMessage[];
+  hasSessionMessages: (sessionId: string) => boolean;
   setLoading: (sessionId: string, loading: boolean) => void;
   setMetadata: (sessionId: string, metadata: import('./chat').MessageMetadata) => void;
 }

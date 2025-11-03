@@ -20,9 +20,8 @@ export const useMessageStore = create<MessageState>()(
       recentMessages: [], // Keep last 100 messages for debugging
       processedMessageIds: new Set(),
 
-      // Chat message storage (new)
+      // Chat message storage - Single source of truth
       sessionMessages: new Map(),
-      optimisticMessages: new Map(),
       loadingSessions: new Set(),
       messageMetadata: new Map(),
 
@@ -100,37 +99,204 @@ export const useMessageStore = create<MessageState>()(
         return get().recentMessages.filter(msg => msg.sessionId === sessionId);
       },
 
-      // ====== Chat Message Actions (NEW) ======
+      // ====== Unified Message Operations ======
 
-      // Get display messages (server + optimistic merged)
+      // Add user message (sent by user)
+      addUserMessage: (sessionId: string, content: string, images?: any[]) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const existing = newMap.get(sessionId) || [];
+          const userMessage: ChatMessage = {
+            type: 'user',
+            content,
+            images: images || [],
+            timestamp: new Date(),
+            id: `user-${Date.now()}-${Math.random()}`
+          };
+          newMap.set(sessionId, [...existing, userMessage]);
+          return { sessionMessages: newMap };
+        });
+        console.log('💬 Added user message to session:', sessionId);
+      },
+
+      // Add complete assistant message
+      addAssistantMessage: (sessionId: string, content: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const existing = newMap.get(sessionId) || [];
+          const assistantMessage: ChatMessage = {
+            type: 'assistant',
+            content,
+            timestamp: new Date(),
+            id: `assistant-${Date.now()}-${Math.random()}`,
+            isStreaming: false
+          };
+          newMap.set(sessionId, [...existing, assistantMessage]);
+          return { sessionMessages: newMap };
+        });
+        console.log('🤖 Added assistant message to session:', sessionId);
+      },
+
+      // Add streaming chunk to last assistant message
+      addAssistantChunk: (sessionId: string, chunk: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const messages = newMap.get(sessionId) || [];
+
+          // Find or create streaming assistant message
+          const lastMsg = messages[messages.length - 1];
+          if (lastMsg && lastMsg.type === 'assistant' && lastMsg.isStreaming) {
+            // Update existing streaming message
+            const updated = [...messages];
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              content: (lastMsg.content || '') + chunk
+            };
+            newMap.set(sessionId, updated);
+          } else {
+            // Create new streaming message
+            const streamingMsg: ChatMessage = {
+              type: 'assistant',
+              content: chunk,
+              timestamp: new Date(),
+              id: `assistant-stream-${Date.now()}`,
+              isStreaming: true
+            };
+            newMap.set(sessionId, [...messages, streamingMsg]);
+          }
+          return { sessionMessages: newMap };
+        });
+      },
+
+      // Mark last assistant message as complete (stop streaming)
+      updateLastAssistantMessage: (sessionId: string, content: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const messages = newMap.get(sessionId);
+          if (!messages || messages.length === 0) return {};
+
+          const lastMsg = messages[messages.length - 1];
+          if (lastMsg.type === 'assistant') {
+            const updated = [...messages];
+            updated[updated.length - 1] = {
+              ...lastMsg,
+              content,
+              isStreaming: false
+            };
+            newMap.set(sessionId, updated);
+            return { sessionMessages: newMap };
+          }
+          return {};
+        });
+      },
+
+      // Add tool use message
+      addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const existing = newMap.get(sessionId) || [];
+          const toolMessage: ChatMessage = {
+            type: 'assistant',
+            content: '',
+            timestamp: new Date(),
+            id: `tool-${toolId}`,
+            isToolUse: true,
+            toolName,
+            toolInput,
+            toolId,
+            toolResult: null
+          };
+          newMap.set(sessionId, [...existing, toolMessage]);
+          return { sessionMessages: newMap };
+        });
+      },
+
+      // Update tool result
+      updateToolResult: (sessionId: string, toolId: string, result: any) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const messages = newMap.get(sessionId);
+          if (!messages) return {};
+
+          const updated = messages.map(msg =>
+            msg.toolId === toolId ? { ...msg, toolResult: result } : msg
+          );
+          newMap.set(sessionId, updated);
+          return { sessionMessages: newMap };
+        });
+      },
+
+      // Add error message
+      addErrorMessage: (sessionId: string, error: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const existing = newMap.get(sessionId) || [];
+          const errorMessage: ChatMessage = {
+            type: 'error',
+            content: `Error: ${error}`,
+            timestamp: new Date(),
+            id: `error-${Date.now()}`
+          };
+          newMap.set(sessionId, [...existing, errorMessage]);
+          return { sessionMessages: newMap };
+        });
+      },
+
+      // ====== Session Lifecycle ======
+
+      // Migrate session messages from old ID to new ID
+      migrateSession: (oldSessionId: string, newSessionId: string) => {
+        set(state => {
+          const newMap = new Map(state.sessionMessages);
+          const newMetadataMap = new Map(state.messageMetadata);
+
+          // Migrate messages
+          const messages = newMap.get(oldSessionId);
+          if (messages) {
+            newMap.set(newSessionId, messages);
+            newMap.delete(oldSessionId);
+          }
+
+          // Migrate metadata
+          const metadata = newMetadataMap.get(oldSessionId);
+          if (metadata) {
+            newMetadataMap.set(newSessionId, metadata);
+            newMetadataMap.delete(oldSessionId);
+          }
+
+          return {
+            sessionMessages: newMap,
+            messageMetadata: newMetadataMap
+          };
+        });
+        console.log('🔄 Migrated session messages:', oldSessionId, '→', newSessionId);
+      },
+
+      // Clear session messages
+      clearSessionMessages: (sessionId: string) => {
+        set(state => {
+          const newSessionMap = new Map(state.sessionMessages);
+          const newMetadataMap = new Map(state.messageMetadata);
+
+          newSessionMap.delete(sessionId);
+          newMetadataMap.delete(sessionId);
+
+          return {
+            sessionMessages: newSessionMap,
+            messageMetadata: newMetadataMap
+          };
+        });
+      },
+
+      // ====== Legacy Methods (for backward compatibility) ======
+
+      // Get display messages (now just returns sessionMessages)
       getDisplayMessages: (sessionId: string): ChatMessage[] => {
         if (!sessionId) return [];
-        const server = get().sessionMessages.get(sessionId) || [];
-        const optimistic = get().optimisticMessages.get(sessionId) || [];
-        return [...server, ...optimistic];
+        return get().sessionMessages.get(sessionId) || [];
       },
 
-      // Add optimistic message (user sending)
-      addOptimisticMessage: (sessionId: string, message: ChatMessage) => {
-        set(state => {
-          const newMap = new Map(state.optimisticMessages);
-          const existing = newMap.get(sessionId) || [];
-          const messageWithOptimistic = { ...message, isOptimistic: true, id: message.id || `opt-${Date.now()}` };
-          newMap.set(sessionId, [...existing, messageWithOptimistic]);
-          return { optimisticMessages: newMap };
-        });
-      },
-
-      // Clear optimistic messages (after server confirms)
-      clearOptimisticMessages: (sessionId: string) => {
-        set(state => {
-          const newMap = new Map(state.optimisticMessages);
-          newMap.delete(sessionId);
-          return { optimisticMessages: newMap };
-        });
-      },
-
-      // Set server messages (replace all)
+      // Set server messages (replace all) - kept for loading from API
       setServerMessages: (sessionId: string, messages: ChatMessage[]) => {
         set(state => {
           const newMap = new Map(state.sessionMessages);
@@ -139,55 +305,10 @@ export const useMessageStore = create<MessageState>()(
         });
       },
 
-      // Append single server message
-      appendServerMessage: (sessionId: string, message: ChatMessage) => {
-        set(state => {
-          const newMap = new Map(state.sessionMessages);
-          const existing = newMap.get(sessionId) || [];
-          const messageWithId = { ...message, id: message.id || `msg-${Date.now()}-${Math.random()}` };
-          newMap.set(sessionId, [...existing, messageWithId]);
-          return { sessionMessages: newMap };
-        });
-      },
-
-      // Update specific message
-      updateMessage: (sessionId: string, messageId: string, updates: Partial<ChatMessage>) => {
-        set(state => {
-          const newMap = new Map(state.sessionMessages);
-          const messages = newMap.get(sessionId);
-          if (!messages) return {};
-
-          const updated = messages.map(msg =>
-            msg.id === messageId ? { ...msg, ...updates } : msg
-          );
-          newMap.set(sessionId, updated);
-          return { sessionMessages: newMap };
-        });
-      },
-
       // Check if session has messages
       hasSessionMessages: (sessionId: string): boolean => {
         const messages = get().sessionMessages.get(sessionId);
         return messages !== undefined && messages.length > 0;
-      },
-
-      // Clear session messages
-      clearSessionMessages: (sessionId: string) => {
-        set(state => {
-          const newSessionMap = new Map(state.sessionMessages);
-          const newOptimisticMap = new Map(state.optimisticMessages);
-          const newMetadataMap = new Map(state.messageMetadata);
-
-          newSessionMap.delete(sessionId);
-          newOptimisticMap.delete(sessionId);
-          newMetadataMap.delete(sessionId);
-
-          return {
-            sessionMessages: newSessionMap,
-            optimisticMessages: newOptimisticMap,
-            messageMetadata: newMetadataMap
-          };
-        });
       },
 
       // Set loading state

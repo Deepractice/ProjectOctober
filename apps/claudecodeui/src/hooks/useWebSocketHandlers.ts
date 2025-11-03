@@ -87,26 +87,16 @@ export function useWebSocketHandlers({
 
       if (!chunk) return;
 
-      // Get current messages to check if we should append or create new
-      const currentMessages = messageStore.getDisplayMessages(sessionId);
-      const lastMessage = currentMessages[currentMessages.length - 1];
+      // Add chunk using the new API
+      messageStore.addAssistantChunk(sessionId, chunk);
 
-      if (lastMessage && lastMessage.type === 'assistant' && !lastMessage.isToolUse && lastMessage.isStreaming) {
-        // Update existing streaming message
-        const updatedContent = (lastMessage.content || '') + chunk;
-        messageStore.updateMessage(sessionId, lastMessage.id!, {
-          content: updatedContent,
-          isStreaming
-        });
-      } else {
-        // Create new message
-        const newMessage: ChatMessage = {
-          type: 'assistant',
-          content: chunk,
-          timestamp: new Date(),
-          isStreaming
-        };
-        messageStore.appendServerMessage(sessionId, newMessage);
+      // If streaming is complete, mark the last message as finished
+      if (!isStreaming) {
+        const messages = messageStore.getDisplayMessages(sessionId);
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.type === 'assistant' && lastMsg.content) {
+          messageStore.updateLastAssistantMessage(sessionId, lastMsg.content);
+        }
       }
     };
 
@@ -163,58 +153,37 @@ export function useWebSocketHandlers({
       if (Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
           if (part.type === 'tool_use') {
-            const toolMessage: ChatMessage = {
-              type: 'assistant',
-              content: '',
-              timestamp: new Date(),
-              isToolUse: true,
-              toolName: part.name,
-              toolInput: part.input ? JSON.stringify(part.input, null, 2) : '',
-              toolId: part.id,
-              toolResult: null
-            };
-            messageStore.appendServerMessage(currentSessionId, toolMessage);
+            // Add tool use message
+            messageStore.addToolUse(
+              currentSessionId,
+              part.name,
+              part.input ? JSON.stringify(part.input, null, 2) : '',
+              part.id
+            );
           } else if (part.type === 'text' && part.text?.trim()) {
             let content = decodeHtmlEntities(part.text);
             content = formatUsageLimitText(content);
-            const textMessage: ChatMessage = {
-              type: 'assistant',
-              content,
-              timestamp: new Date()
-            };
-            messageStore.appendServerMessage(currentSessionId, textMessage);
+            // Add assistant message
+            messageStore.addAssistantMessage(currentSessionId, content);
           }
         }
       } else if (typeof messageData.content === 'string' && messageData.content.trim()) {
         let content = decodeHtmlEntities(messageData.content);
         content = formatUsageLimitText(content);
-        const textMessage: ChatMessage = {
-          type: 'assistant',
-          content,
-          timestamp: new Date()
-        };
-        messageStore.appendServerMessage(currentSessionId, textMessage);
+        // Add assistant message
+        messageStore.addAssistantMessage(currentSessionId, content);
       }
 
       // Handle tool results
       if (messageData.role === 'user' && Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
           if (part.type === 'tool_result') {
-            // Find and update the corresponding tool use message
-            const messages = messageStore.getDisplayMessages(currentSessionId);
-            const toolMessage = messages.find(m =>
-              m.type === 'assistant' && m.isToolUse && m.toolId === part.tool_use_id
-            );
-
-            if (toolMessage?.id) {
-              messageStore.updateMessage(currentSessionId, toolMessage.id, {
-                toolResult: {
-                  content: part.content,
-                  isError: part.is_error,
-                  timestamp: new Date()
-                }
-              });
-            }
+            // Update the tool result
+            messageStore.updateToolResult(currentSessionId, part.tool_use_id, {
+              content: part.content,
+              isError: part.is_error,
+              timestamp: new Date()
+            });
           }
         }
       }
@@ -248,12 +217,8 @@ export function useWebSocketHandlers({
         return;
       }
 
-      const errorMessage: ChatMessage = {
-        type: 'error',
-        content: `Error: ${msg.error}`,
-        timestamp: new Date()
-      };
-      messageStore.appendServerMessage(currentSessionId, errorMessage);
+      // Add error message
+      messageStore.addErrorMessage(currentSessionId, msg.error);
     };
 
     // Handler: claude-complete
@@ -276,10 +241,8 @@ export function useWebSocketHandlers({
         setCanAbortSession(false);
         setClaudeStatus(null);
 
-        // Clear optimistic messages on completion
-        if (currentSessionId) {
-          messageStore.clearOptimisticMessages(currentSessionId);
-        }
+        // Note: No need to clear optimistic messages anymore
+        // All messages are stored in single sessionMessages list
 
         // Fetch updated token usage
         if (selectedProject && selectedSession?.id) {
@@ -331,12 +294,8 @@ export function useWebSocketHandlers({
         setClaudeStatus(null);
       }
 
-      const abortMessage: ChatMessage = {
-        type: 'assistant',
-        content: 'Session interrupted by user.',
-        timestamp: new Date()
-      };
-      messageStore.appendServerMessage(abortedSessionId, abortMessage);
+      // Add abort message
+      messageStore.addAssistantMessage(abortedSessionId, 'Session interrupted by user.');
     };
 
     // Handler: session-status

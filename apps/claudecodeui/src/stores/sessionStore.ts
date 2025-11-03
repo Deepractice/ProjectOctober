@@ -27,12 +27,18 @@ export const useSessionStore = create<SessionState>()(
       activeSessions: new Set(), // Sessions with active conversations (prevents updates)
       processingSessions: new Set(), // Sessions currently processing (thinking)
 
+      // Navigation
+      pendingNavigation: null, // SessionId to navigate to after session-created
+
       // Tracking
       lastFetchTime: 0,
       pendingOperations: new Set(),
 
       // CRUD Operations
-      setSessions: (sessions) => set({ sessions }),
+      setSessions: (sessions) => {
+        console.log('🔧 [sessionStore] setSessions called with', sessions.length, 'sessions');
+        set({ sessions });
+      },
 
       setSelectedSession: (session) => set({ selectedSession: session }),
 
@@ -108,6 +114,10 @@ export const useSessionStore = create<SessionState>()(
         console.log('🔄 Replaced temporary session with real ID:', realSessionId);
       },
 
+      // Navigation management
+      setPendingNavigation: (sessionId) => set({ pendingNavigation: sessionId }),
+      clearPendingNavigation: () => set({ pendingNavigation: null }),
+
       // API Operations
       refreshSessions: async (force = false) => {
         const now = Date.now();
@@ -135,7 +145,7 @@ export const useSessionStore = create<SessionState>()(
           // Optimize to preserve object references when data hasn't changed
           set((state) => {
             if (state.sessions.length === 0) {
-              console.log('✅ No previous sessions, setting', sessionsArray.length, 'sessions');
+              console.log('✅ [refreshSessions] No previous sessions, setting', sessionsArray.length, 'sessions (NEW ARRAY REF)');
               return { sessions: sessionsArray, lastFetchTime: now };
             }
 
@@ -153,11 +163,11 @@ export const useSessionStore = create<SessionState>()(
             }) || sessionsArray.length !== state.sessions.length;
 
             if (hasChanges) {
-              console.log('✅ Sessions changed, updating to:', sessionsArray.length, 'sessions');
+              console.log('✅ [refreshSessions] Sessions changed, updating to:', sessionsArray.length, 'sessions (NEW ARRAY REF)');
               return { sessions: sessionsArray, lastFetchTime: now };
             }
 
-            console.log('⏭️ No changes detected, keeping previous sessions');
+            console.log('⏭️ [refreshSessions] No changes detected, keeping previous sessions array (SAME REF)');
             return { lastFetchTime: now };
           });
 
@@ -209,19 +219,31 @@ export const useSessionStore = create<SessionState>()(
       handleSessionCreated: (sessionId, tempData = null) => {
         console.log('📝 Session created:', sessionId);
 
-        if (tempData) {
-          // Optimistic update
-          get().addSession({
-            id: sessionId,
-            title: 'New Session',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            ...tempData
-          });
+        // Find and migrate temporary session to real session
+        const activeSessions = get().activeSessions;
+        const tempSessionId = Array.from(activeSessions).find(id =>
+          id.startsWith('new-session-')
+        );
+
+        if (tempSessionId) {
+          console.log('🔄 Found temporary session:', tempSessionId);
+          // Migrate messages from temp ID to real ID
+          useMessageStore.getState().migrateSession(tempSessionId, sessionId);
+          // Migrate session protection state
+          get().replaceTemporarySession(sessionId);
         }
 
-        // Refresh to get actual data
-        setTimeout(() => get().refreshSessions(true), 200);
+        console.log('⏭️ Skipping refreshSessions - sessions_updated will handle it');
+
+        // Note: We don't call refreshSessions here because:
+        // 1. Backend always sends sessions_updated after session-created
+        // 2. sessions_updated already contains the complete updated list
+        // 3. Calling refreshSessions causes unnecessary API call + NEW ARRAY REF
+        // 4. NEW ARRAY REF triggers App re-render → ChatInterface unmount/remount
+
+        // Set pending navigation - App.tsx will pick this up and navigate
+        console.log('📍 Setting pendingNavigation to:', sessionId);
+        set({ pendingNavigation: sessionId });
       },
 
       handleSessionsUpdated: (updatedSessions) => {
@@ -254,7 +276,13 @@ export const useSessionStore = create<SessionState>()(
             );
           }) || updatedSessions?.length !== state.sessions.length;
 
-          return hasChanges ? { sessions: updatedSessions || [] } : {};
+          if (hasChanges) {
+            console.log('✅ [handleSessionsUpdated] Sessions changed, updating (NEW ARRAY REF)');
+            return { sessions: updatedSessions || [] };
+          } else {
+            console.log('⏭️ [handleSessionsUpdated] No changes, keeping previous sessions (SAME REF)');
+            return {};
+          }
         });
       },
 

@@ -66,6 +66,8 @@ function AppContent() {
     markSessionNotProcessing,
     replaceTemporarySession,
     processingSessions,
+    pendingNavigation,
+    clearPendingNavigation,
   } = useSessionStore();
 
   const {
@@ -128,17 +130,44 @@ function AppContent() {
   // Handle URL-based session loading
   useEffect(() => {
     if (sessionId && sessions.length > 0) {
-      const shouldSwitchTab = !selectedSession || selectedSession.id !== sessionId;
-      const session = sessions.find(s => s.id === sessionId);
-      if (session) {
-        setSelectedSession(session);
-        if (shouldSwitchTab) {
+      // Only update if session ID actually changed
+      if (!selectedSession || selectedSession.id !== sessionId) {
+        const session = sessions.find(s => s.id === sessionId);
+        if (session) {
+          console.log('📍 [App] URL changed, updating selectedSession:', sessionId);
+          setSelectedSession(session);
           setActiveTab('chat');
         }
-        return;
       }
     }
-  }, [sessionId, sessions, selectedSession, setSelectedSession]);
+  }, [sessionId, sessions.length, selectedSession?.id, setSelectedSession]);
+
+  // Debug: Track selectedSession changes
+  useEffect(() => {
+    console.log('🔄 [App] selectedSession changed:', selectedSession?.id, 'Object ref:', selectedSession ? Object.keys(selectedSession).join(',') : 'null');
+  }, [selectedSession]);
+
+  // Debug: Track sessions array changes
+  const sessionsRef = React.useRef(sessions);
+  useEffect(() => {
+    const refChanged = sessionsRef.current !== sessions;
+    console.log('📊 [App] sessions array changed - Ref changed:', refChanged, 'Length:', sessions.length);
+    sessionsRef.current = sessions;
+  }, [sessions]);
+
+  // Auto-navigate when pendingNavigation is set (after session-created)
+  useEffect(() => {
+    if (pendingNavigation && sessions.length > 0) {
+      const session = sessions.find(s => s.id === pendingNavigation);
+      if (session) {
+        console.log('🚀 [App] Auto-navigating to new session:', pendingNavigation);
+        setSelectedSession(session);
+        setActiveTab('chat');
+        navigate(`/session/${pendingNavigation}`);
+        clearPendingNavigation();
+      }
+    }
+  }, [pendingNavigation, sessions, setSelectedSession, navigate, clearPendingNavigation]);
 
   const handleSessionSelect = (session) => {
     setSelectedSession(session);
@@ -176,13 +205,7 @@ function AppContent() {
 
   const handleSidebarRefresh = () => {
     refreshSessions(true);
-
-    if (selectedSession) {
-      const refreshedSession = sessions.find(s => s.id === selectedSession.id);
-      if (refreshedSession && JSON.stringify(refreshedSession) !== JSON.stringify(selectedSession)) {
-        setSelectedSession(refreshedSession);
-      }
-    }
+    // No need to manually update selectedSession - sessionStore already preserves references
   };
 
 

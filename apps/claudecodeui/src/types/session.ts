@@ -23,6 +23,9 @@ export interface SessionState {
   activeSessions: Set<SessionId>;
   processingSessions: Set<SessionId>;
 
+  // Navigation
+  pendingNavigation: SessionId | null;
+
   // Tracking
   lastFetchTime: number;
   pendingOperations: Set<string>;
@@ -42,6 +45,10 @@ export interface SessionState {
   markSessionNotProcessing: (sessionId: SessionId) => void;
   isSessionProcessing: (sessionId: SessionId) => boolean;
   replaceTemporarySession: (realSessionId: SessionId) => void;
+
+  // Navigation management
+  setPendingNavigation: (sessionId: SessionId | null) => void;
+  clearPendingNavigation: () => void;
 
   // API Operations
   refreshSessions: (force?: boolean) => Promise<void>;
