@@ -1,0 +1,335 @@
+# Configuration Guide
+
+## Overview
+
+Agent uses `@deepractice-ai/agent-config` for unified configuration management. All configuration is schema-driven with type safety and validation.
+
+## Quick Start
+
+**Development Environment:**
+
+1. Copy `.env.example` to `.env`
+2. Update required values (especially `ANTHROPIC_API_KEY`)
+3. Run `pnpm dev`
+
+The configuration system will automatically:
+
+- Load `.env` from monorepo root
+- Validate all values against schema
+- Provide sensible defaults for optional fields
+
+## Configuration Architecture
+
+```
+┌─────────────────────────────────────┐
+│  @deepractice-ai/agent-config       │
+│  (Schema-driven config system)      │
+└─────────────────────────────────────┘
+            │
+            ├─ Loaders (Input)
+            │  ├─ EnvLoader (priority: 10)    → .env file
+            │  ├─ DBLoader (priority: 20)     → Database (future)
+            │  └─ UILoader (priority: 30)     → Web UI (future)
+            │
+            ├─ Validation (Zod)
+            │  ├─ Development mode (relaxed)
+            │  └─ Production mode (strict)
+            │
+            └─ Persisters (Output)
+               ├─ FilePersister → .env.local
+               └─ DBPersister → Database (future)
+```
+
+## Environment Variables
+
+### Server Configuration
+
+| Variable   | Type   | Default       | Description                                          |
+| ---------- | ------ | ------------- | ---------------------------------------------------- |
+| `PORT`     | number | `5201`        | Backend API server port                              |
+| `NODE_ENV` | enum   | `development` | Environment: `development` \| `production` \| `test` |
+
+### Frontend Configuration
+
+| Variable       | Type   | Default                 | Description              |
+| -------------- | ------ | ----------------------- | ------------------------ |
+| `VITE_PORT`    | number | `5200`                  | Frontend dev server port |
+| `FRONTEND_URL` | string | `http://localhost:5200` | Frontend URL for CORS    |
+
+### Anthropic API
+
+| Variable             | Type   | Default                     | Description                  |
+| -------------------- | ------ | --------------------------- | ---------------------------- |
+| `ANTHROPIC_API_KEY`  | string | **Required**                | Your Anthropic API key       |
+| `ANTHROPIC_BASE_URL` | string | `https://api.anthropic.com` | API endpoint (can use relay) |
+
+### Project Settings
+
+| Variable         | Type   | Default  | Description                                       |
+| ---------------- | ------ | -------- | ------------------------------------------------- |
+| `PROJECT_PATH`   | string | `.`      | Default project directory                         |
+| `CONTEXT_WINDOW` | number | `160000` | Context window budget                             |
+| `LOG_LEVEL`      | enum   | `info`   | Log level: `debug` \| `info` \| `warn` \| `error` |
+
+### Optional
+
+| Variable        | Type   | Default     | Description        |
+| --------------- | ------ | ----------- | ------------------ |
+| `DATABASE_PATH` | string | `undefined` | Database file path |
+
+## Configuration Priority
+
+When multiple sources provide the same configuration, **higher priority wins**:
+
+1. **UILoader (30)**: User input from web interface (future)
+2. **DBLoader (20)**: Persisted configuration from database (future)
+3. **EnvLoader (10)**: Environment variables from `.env` file
+
+Example:
+
+```
+PORT in .env         = 5201
+PORT in database     = 5300  ← Overrides .env
+PORT from UI         = 5400  ← Overrides database and .env
+Final PORT           = 5400
+```
+
+## Usage in Code
+
+### Backend (agent-service)
+
+**Initialization:**
+
+```javascript
+import { initConfig, config } from "./config/index.js";
+
+// Initialize at startup
+await initConfig();
+
+// Use configuration
+const port = config().port;
+const apiKey = config().anthropicApiKey;
+```
+
+**Custom .env path:**
+
+```javascript
+await initConfig({
+  envPath: "/custom/path/.env",
+});
+```
+
+### Frontend (agent-web)
+
+Frontend uses Vite's standard environment variables:
+
+```typescript
+// Access via import.meta.env
+const apiUrl = import.meta.env.VITE_API_URL;
+```
+
+No need for agent-config in frontend (yet).
+
+## Development vs Production
+
+### Development Mode
+
+- Relaxed validation
+- `ANTHROPIC_API_KEY` can be empty (warning only)
+- Extra keys allowed in config
+- Uses `.env` from monorepo root
+
+### Production Mode
+
+- Strict validation
+- All required fields must be present
+- No extra keys allowed
+- Uses environment variables from deployment platform
+
+## Configuration Files
+
+### `.env` (Root directory)
+
+Development configuration (committed to git):
+
+```bash
+# Default development settings
+PORT=5201
+VITE_PORT=5200
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5200
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+PROJECT_PATH=.
+CONTEXT_WINDOW=160000
+LOG_LEVEL=info
+
+# Required: Add your API key
+ANTHROPIC_API_KEY=your_api_key_here
+```
+
+### `.env.local` (Root directory)
+
+Personal overrides (not committed to git):
+
+```bash
+# Override for your local setup
+ANTHROPIC_API_KEY=sk-your-actual-key
+ANTHROPIC_BASE_URL=https://relay.deepractice.ai/api
+PROJECT_PATH=/Users/you/projects/myproject
+```
+
+### `.env.example` (Root directory)
+
+Template for new developers (committed to git).
+
+## Docker Configuration
+
+Environment variables in Docker:
+
+**docker-compose.yml:**
+
+```yaml
+services:
+  agent:
+    image: deepracticexs/agent:latest
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      - NODE_ENV=production
+      - PORT=5200
+    volumes:
+      - ${PROJECT_PATH:-.}:/project
+```
+
+**Run with .env:**
+
+```bash
+docker-compose --env-file .env up
+```
+
+## Troubleshooting
+
+### Configuration not loading
+
+**Check initialization:**
+
+```javascript
+// Ensure initConfig() is called before config()
+await initConfig(); // ← Must be called first
+const port = config().port; // ← Will throw if not initialized
+```
+
+**Check .env location:**
+
+```bash
+# Verify .env exists at monorepo root
+ls -la /path/to/Agent/.env
+```
+
+### Validation errors
+
+**Development mode example:**
+
+```
+Configuration validation failed:
+  - port: Expected number, received string
+  - anthropicApiKey: String must contain at least 1 character(s)
+```
+
+**Fix:** Check your `.env` file for correct types and values.
+
+### Environment variable not working
+
+**Check variable name mapping:**
+
+```javascript
+// EnvLoader maps these automatically:
+PORT                → config().port
+NODE_ENV            → config().nodeEnv
+ANTHROPIC_API_KEY   → config().anthropicApiKey
+```
+
+**Check turbo.json:**
+
+Ensure variable is declared in `globalEnv`:
+
+```json
+{
+  "globalEnv": [
+    "NODE_ENV",
+    "PORT",
+    "ANTHROPIC_API_KEY",
+    ...
+  ]
+}
+```
+
+## Advanced Usage
+
+### Custom Validation
+
+Configuration uses Zod schemas. See `packages/agent-config/src/core/schemas/base.ts` for details.
+
+### Programmatic Updates
+
+```typescript
+import { updateConfig } from "@deepractice-ai/agent-config";
+
+// Update and persist to file
+await updateConfig(
+  {
+    port: 5202,
+    contextWindow: 200000,
+  },
+  { persist: true }
+);
+```
+
+### Validation Only
+
+```typescript
+import { validateConfig } from "@deepractice-ai/agent-config";
+
+const result = validateConfig({
+  port: "invalid", // Should be number
+});
+
+if (!result.valid) {
+  console.error(result.errors);
+  // [{path: 'port', message: 'Expected number, received string'}]
+}
+```
+
+## Best Practices
+
+### ✅ Do
+
+- Use `.env` for default development settings
+- Use `.env.local` for personal overrides
+- Commit `.env` and `.env.example` to git
+- Use environment variables in production
+- Validate configuration at startup
+
+### ❌ Don't
+
+- Don't commit secrets to `.env` (use `.env.local`)
+- Don't hardcode configuration values
+- Don't bypass schema validation
+- Don't modify `dist/` files directly
+- Don't use `process.env` directly (use `config()`)
+
+## Future Enhancements
+
+Planned features for agent-config:
+
+- **UI Configuration Panel**: Edit config from web interface
+- **Database Persistence**: Store user preferences
+- **Configuration Profiles**: Switch between presets
+- **Remote Configuration**: Load from API endpoint
+- **Configuration History**: Track changes over time
+
+## See Also
+
+- [Commands Reference](./commands.md)
+- [Port Allocation](./port-allocation.md)
+- [Package README](../packages/agent-config/README.md)
