@@ -7,14 +7,14 @@
 
   <!-- Badges -->
   <p>
-    <a href="https://github.com/Deepractice/ProjectOctober"><img src="https://img.shields.io/github/stars/Deepractice/ProjectOctober?style=social" alt="Stars"/></a>
-    <img src="https://komarev.com/ghpvc/?username=ProjectOctober&label=views&color=0e75b6&style=flat&abbreviated=true" alt="Views"/>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/Deepractice/ProjectOctober?color=blue" alt="License"/></a>
+    <a href="https://github.com/Deepractice/Agent"><img src="https://img.shields.io/github/stars/Deepractice/Agent?style=social" alt="Stars"/></a>
+    <img src="https://komarev.com/ghpvc/?username=Agent&label=views&color=0e75b6&style=flat&abbreviated=true" alt="Views"/>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/Deepractice/Agent?color=blue" alt="License"/></a>
   </p>
 
   <p>
     <a href="https://hub.docker.com/r/deepracticexs/agent"><img src="https://img.shields.io/badge/docker-latest-0db7ed?logo=docker&logoColor=white" alt="Docker"/></a>
-    <a href="https://github.com/Deepractice/ProjectOctober/releases"><img src="https://img.shields.io/github/v/release/Deepractice/ProjectOctober?color=green&logo=github" alt="Latest Release"/></a>
+    <a href="https://github.com/Deepractice/Agent/releases"><img src="https://img.shields.io/github/v/release/Deepractice/Agent?color=green&logo=github" alt="Latest Release"/></a>
   </p>
 
   <p>
@@ -167,7 +167,7 @@ A: You need to sign up at [Anthropic Console](https://console.anthropic.com/) an
 A: Yes. Replace `localhost` with your machine's IP address (e.g., `http://192.168.1.100:5200`).
 
 **Q: I got an error. Where can I get help?**
-A: Check our [Troubleshooting Guide](./docker/agent/README.md) or [open an issue](https://github.com/Deepractice/ProjectOctober/issues).
+A: Check our [Troubleshooting Guide](./docker/agent/README.md) or [open an issue](https://github.com/Deepractice/Agent/issues).
 
 ---
 
@@ -210,7 +210,7 @@ Deepractice Agent provides the interface, PromptX provides the intelligence. Tog
 ## 🤝 Community & Support
 
 - 💬 [Discord Community](https://discord.gg/rdmPr54K) - Get help, share ideas, and discuss
-- 🐛 [GitHub Issues](https://github.com/Deepractice/ProjectOctober/issues) - Report bugs and request features
+- 🐛 [GitHub Issues](https://github.com/Deepractice/Agent/issues) - Report bugs and request features
 - 📖 [Documentation](https://docs.deepractice.ai) - Guides and references
 - 🌐 [Official Website](https://deepractice.ai) - Learn more about Deepractice
 
@@ -226,7 +226,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Deepractice/ProjectOctober&type=Date)](https://star-history.com/#Deepractice/ProjectOctober&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Deepractice/Agent&type=Date)](https://star-history.com/#Deepractice/Agent&Date)
 
 </div>
 
