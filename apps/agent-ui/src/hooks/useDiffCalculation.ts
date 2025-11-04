@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 /**
  * Custom hook for calculating and caching diff between two strings
@@ -22,8 +22,8 @@ export const useDiffCalculation = () => {
    * @returns {Array} Array of diff objects with {type, content, lineNum}
    */
   const calculateDiff = (oldStr, newStr) => {
-    const oldLines = oldStr.split('\n');
-    const newLines = newStr.split('\n');
+    const oldLines = oldStr.split("\n");
+    const newLines = newStr.split("\n");
 
     // Simple diff algorithm - find common lines and differences
     const diffLines = [];
@@ -36,11 +36,11 @@ export const useDiffCalculation = () => {
 
       if (oldIndex >= oldLines.length) {
         // Only new lines remaining
-        diffLines.push({ type: 'added', content: newLine, lineNum: newIndex + 1 });
+        diffLines.push({ type: "added", content: newLine, lineNum: newIndex + 1 });
         newIndex++;
       } else if (newIndex >= newLines.length) {
         // Only old lines remaining
-        diffLines.push({ type: 'removed', content: oldLine, lineNum: oldIndex + 1 });
+        diffLines.push({ type: "removed", content: oldLine, lineNum: oldIndex + 1 });
         oldIndex++;
       } else if (oldLine === newLine) {
         // Lines are the same - skip in diff view (or show as context)
@@ -48,8 +48,8 @@ export const useDiffCalculation = () => {
         newIndex++;
       } else {
         // Lines are different
-        diffLines.push({ type: 'removed', content: oldLine, lineNum: oldIndex + 1 });
-        diffLines.push({ type: 'added', content: newLine, lineNum: newIndex + 1 });
+        diffLines.push({ type: "removed", content: oldLine, lineNum: oldIndex + 1 });
+        diffLines.push({ type: "added", content: newLine, lineNum: newIndex + 1 });
         oldIndex++;
         newIndex++;
       }

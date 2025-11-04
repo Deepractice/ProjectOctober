@@ -14,6 +14,7 @@ Create the following icon files in this directory:
 You can use any icon generator tool or create them manually. The icons should be square and represent your Agent UI application.
 
 For a quick solution, you can:
+
 1. Create a simple square PNG icon (512x512)
 2. Use online tools like realfavicongenerator.net to generate all sizes
 3. Or use ImageMagick: `convert icon-512x512.png -resize 192x192 icon-192x192.png`

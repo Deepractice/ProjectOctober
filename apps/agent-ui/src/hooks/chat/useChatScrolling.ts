@@ -12,7 +12,7 @@
  * - Smart scroll restore after loading more messages
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from "react";
 
 export function useChatScrolling({
   chatMessages,
@@ -23,7 +23,7 @@ export function useChatScrolling({
   selectedProject,
   loadSessionMessages,
   setSessionMessages,
-  isLoadingSessionRef
+  isLoadingSessionRef,
 }) {
   const scrollContainerRef = useRef(null);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
@@ -54,7 +54,7 @@ export function useChatScrolling({
 
     // Load more messages when scrolling near top
     const scrolledNearTop = container.scrollTop < 100;
-    const provider = localStorage.getItem('selected-provider') || 'claude';
+    const provider = localStorage.getItem("selected-provider") || "claude";
 
     if (
       scrolledNearTop &&
@@ -62,7 +62,7 @@ export function useChatScrolling({
       !isLoadingMoreMessages &&
       selectedSession &&
       selectedProject &&
-      provider !== 'cursor'
+      provider !== "cursor"
     ) {
       // Save current scroll position
       const previousScrollHeight = container.scrollHeight;
@@ -73,7 +73,7 @@ export function useChatScrolling({
 
       if (moreMessages.length > 0) {
         // Prepend new messages
-        setSessionMessages(prev => [...moreMessages, ...prev]);
+        setSessionMessages((prev) => [...moreMessages, ...prev]);
 
         // Restore scroll position after DOM update
         setTimeout(() => {
@@ -92,7 +92,7 @@ export function useChatScrolling({
     selectedSession,
     selectedProject,
     loadSessionMessages,
-    setSessionMessages
+    setSessionMessages,
   ]);
 
   // Capture scroll position before render when auto-scroll is disabled
@@ -101,7 +101,7 @@ export function useChatScrolling({
       const container = scrollContainerRef.current;
       scrollPositionRef.current = {
         height: container.scrollHeight,
-        top: container.scrollTop
+        top: container.scrollTop,
       };
     }
   });
@@ -132,11 +132,7 @@ export function useChatScrolling({
 
   // Scroll to bottom when messages first load after session switch
   useEffect(() => {
-    if (
-      scrollContainerRef.current &&
-      chatMessages.length > 0 &&
-      !isLoadingSessionRef.current
-    ) {
+    if (scrollContainerRef.current && chatMessages.length > 0 && !isLoadingSessionRef.current) {
       setIsUserScrolledUp(false);
       setTimeout(() => scrollToBottom(), 200);
     }
@@ -146,8 +142,8 @@ export function useChatScrolling({
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollContainer.addEventListener("scroll", handleScroll);
+      return () => scrollContainer.removeEventListener("scroll", handleScroll);
     }
   }, [handleScroll]);
 
@@ -156,6 +152,6 @@ export function useChatScrolling({
     isUserScrolledUp,
     setIsUserScrolledUp,
     scrollToBottom,
-    isNearBottom
+    isNearBottom,
   };
 }

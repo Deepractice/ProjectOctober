@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 function TokenUsagePie({ used, total }) {
   // Token usage visualization component
   // Only bail out on missing values or non‐positive totals; allow used===0 to render 0%
- if (used == null || total == null || total <= 0) return null;
+  if (used == null || total == null || total <= 0) return null;
 
   const percentage = Math.min(100, (used / total) * 100);
   const radius = 10;
@@ -12,9 +12,9 @@ function TokenUsagePie({ used, total }) {
 
   // Color based on usage level
   const getColor = () => {
-    if (percentage < 50) return '#3b82f6'; // blue
-    if (percentage < 75) return '#f59e0b'; // orange
-    return '#ef4444'; // red
+    if (percentage < 50) return "#3b82f6"; // blue
+    if (percentage < 75) return "#f59e0b"; // orange
+    return "#ef4444"; // red
   };
 
   return (

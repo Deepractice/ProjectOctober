@@ -5,9 +5,9 @@
  * Handles connection, reconnection, and message forwarding to messageStore.
  */
 
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import type { ConnectionState } from '../types';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import type { ConnectionState } from "../types";
 
 export const useConnectionStore = create<ConnectionState>()(
   devtools(
@@ -22,31 +22,38 @@ export const useConnectionStore = create<ConnectionState>()(
       connect: async () => {
         try {
           // Get authentication token (optional for internal network deployment)
-          const token = localStorage.getItem('auth-token');
+          const token = localStorage.getItem("auth-token");
           if (!token) {
-            console.warn('No authentication token found, connecting without auth (internal network mode)');
+            console.warn(
+              "No authentication token found, connecting without auth (internal network mode)"
+            );
           }
 
           // Fetch server configuration to get the correct WebSocket URL
           let wsBaseUrl;
           try {
-            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            const configResponse = await fetch('/api/config', { headers });
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const configResponse = await fetch("/api/config", { headers });
             const config = await configResponse.json();
             wsBaseUrl = config.wsUrl;
 
             // If the config returns localhost but we're not on localhost, use current host but with API server port
-            if (wsBaseUrl.includes('localhost') && !window.location.hostname.includes('localhost')) {
-              const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            if (
+              wsBaseUrl.includes("localhost") &&
+              !window.location.hostname.includes("localhost")
+            ) {
+              const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               // For development, API server is typically on port 3002 when Vite is on 3001
-              const apiPort = window.location.port === '3001' ? '3002' : window.location.port;
+              const apiPort = window.location.port === "3001" ? "3002" : window.location.port;
               wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
             }
           } catch (error) {
-            console.warn('Could not fetch server config, falling back to current host with API server port');
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            console.warn(
+              "Could not fetch server config, falling back to current host with API server port"
+            );
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             // For development, API server is typically on port 3002 when Vite is on 3001
-            const apiPort = window.location.port === '3001' ? '3002' : window.location.port;
+            const apiPort = window.location.port === "3001" ? "3002" : window.location.port;
             wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
           }
 
@@ -57,7 +64,7 @@ export const useConnectionStore = create<ConnectionState>()(
           const websocket = new WebSocket(wsUrl);
 
           websocket.onopen = () => {
-            console.log('✅ WebSocket connected');
+            console.log("✅ WebSocket connected");
             set({ isConnected: true, ws: websocket, reconnectAttempts: 0 });
           };
 
@@ -65,24 +72,24 @@ export const useConnectionStore = create<ConnectionState>()(
             try {
               const data = JSON.parse(event.data);
 
-              console.log('📨 WebSocket message received:', {
+              console.log("📨 WebSocket message received:", {
                 type: data.type,
                 sessionId: data.sessionId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
               });
 
               // Forward message to messageStore
               // Import dynamically to avoid circular dependency
-              import('./messageStore').then(({ useMessageStore }) => {
+              import("./messageStore").then(({ useMessageStore }) => {
                 useMessageStore.getState().handleMessage(data);
               });
             } catch (error) {
-              console.error('Error parsing WebSocket message:', error);
+              console.error("Error parsing WebSocket message:", error);
             }
           };
 
           websocket.onclose = () => {
-            console.log('❌ WebSocket disconnected');
+            console.log("❌ WebSocket disconnected");
             set({ isConnected: false, ws: null });
 
             // Attempt to reconnect
@@ -90,12 +97,12 @@ export const useConnectionStore = create<ConnectionState>()(
           };
 
           websocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error("WebSocket error:", error);
           };
 
           set({ ws: websocket });
         } catch (error) {
-          console.error('Error creating WebSocket connection:', error);
+          console.error("Error creating WebSocket connection:", error);
         }
       },
 
@@ -103,7 +110,7 @@ export const useConnectionStore = create<ConnectionState>()(
       reconnect: () => {
         const attempts = get().reconnectAttempts;
         if (attempts >= 5) {
-          console.error('Max reconnection attempts reached');
+          console.error("Max reconnection attempts reached");
           return;
         }
 
@@ -124,7 +131,7 @@ export const useConnectionStore = create<ConnectionState>()(
         if (ws && isConnected) {
           ws.send(JSON.stringify(message));
         } else {
-          console.warn('WebSocket not connected, cannot send message');
+          console.warn("WebSocket not connected, cannot send message");
         }
       },
 
@@ -143,6 +150,6 @@ export const useConnectionStore = create<ConnectionState>()(
         set({ ws: null, isConnected: false, reconnectAttempts: 0, reconnectTimeout: null });
       },
     }),
-    { name: 'ConnectionStore' }
+    { name: "ConnectionStore" }
   )
 );

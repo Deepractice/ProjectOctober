@@ -27,8 +27,6 @@ A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-co
 </tr>
 </table>
 
-
-
 </div>
 
 ## Features
@@ -39,9 +37,8 @@ A desktop and mobile UI for [Agent](https://docs.anthropic.com/en/docs/claude-co
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
 - **Git Explorer** - View, stage and commit your changes. You can also switch branches
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
-- **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
+- **TaskMaster AI Integration** _(Optional)_ - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation
 - **Model Compatibility** - Works with Agent Sonnet 4 and Opus 4.1
-
 
 ## Quick Start
 
@@ -77,6 +74,7 @@ claude-code-ui
 ```
 
 **Benefits**:
+
 - Faster startup (no download/cache check)
 - Simple command to remember
 - Same experience every time
@@ -105,28 +103,33 @@ pm2 startup          # Auto-start on system boot
 ### Local Development Installation
 
 1. **Clone the repository:**
+
 ```bash
 git clone https://github.com/siteboon/agent-ui.git
 cd agent-ui
 ```
 
 2. **Install dependencies:**
+
 ```bash
 npm install
 ```
 
 3. **Configure environment:**
+
 ```bash
 cp .env.example .env
 # Edit .env with your preferred settings
 ```
 
 4. **Start the application:**
+
 ```bash
 # Development mode (with hot reload)
 npm run dev
 
 ```
+
 The application will start at the port you specified in your .env
 
 5. **Open your browser:**
@@ -141,43 +144,46 @@ The application will start at the port you specified in your .env
 To use Agent's full functionality, you'll need to manually enable tools:
 
 1. **Open Tools Settings** - Click the gear icon in the sidebar
-3. **Enable Selectively** - Turn on only the tools you need
-4. **Apply Settings** - Your preferences are saved locally
+2. **Enable Selectively** - Turn on only the tools you need
+3. **Apply Settings** - Your preferences are saved locally
 
 <div align="center">
 
 ![Tools Settings Modal](public/screenshots/tools-modal.png)
-*Tools Settings interface - enable only what you need*
+_Tools Settings interface - enable only what you need_
 
 </div>
 
 **Recommended approach**: Start with basic tools enabled and add more as needed. You can always adjust these settings later.
 
-## TaskMaster AI Integration *(Optional)*
+## TaskMaster AI Integration _(Optional)_
 
 Agent UI supports **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** (aka claude-task-master) integration for advanced project management and AI-powered task planning.
 
 It provides
+
 - AI-powered task generation from PRDs (Product Requirements Documents)
-- Smart task breakdown and dependency management  
+- Smart task breakdown and dependency management
 - Visual task boards and progress tracking
 
 **Setup & Documentation**: Visit the [TaskMaster AI GitHub repository](https://github.com/eyaltoledano/claude-task-master) for installation instructions, configuration guides, and usage examples.
 After installing it you should be able to enable it from the Settings
-
 
 ## Usage Guide
 
 ### Core Features
 
 #### Project Management
+
 The UI automatically discovers Agent projects from `~/.claude/projects/` and provides:
+
 - **Visual Project Browser** - All available projects with metadata and session counts
 - **Project Actions** - Rename, delete, and organize projects
 - **Smart Navigation** - Quick access to recent projects and sessions
-- **MCP support** - Add your own MCP servers through the UI 
+- **MCP support** - Add your own MCP servers through the UI
 
 #### Chat Interface
+
 - **Use responsive chat or Agent CLI** - You can either use the adapted chat interface or use the shell button to connect to Agent CLI
 - **Real-time Communication** - Stream responses from Agent with WebSocket connection
 - **Session Management** - Resume previous conversations or start fresh sessions
@@ -185,6 +191,7 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 - **Multi-format Support** - Text, code blocks, and file references
 
 #### File Explorer & Editor
+
 - **Interactive File Tree** - Browse project structure with expand/collapse navigation
 - **Live File Editing** - Read, modify, and save files directly in the interface
 - **Syntax Highlighting** - Support for multiple programming languages
@@ -192,19 +199,21 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 
 #### Git Explorer
 
+#### TaskMaster AI Integration _(Optional)_
 
-#### TaskMaster AI Integration *(Optional)*
 - **Visual Task Board** - Kanban-style interface for managing development tasks
 - **PRD Parser** - Create Product Requirements Documents and parse them into structured tasks
 - **Progress Tracking** - Real-time status updates and completion tracking
 
 #### Session Management
+
 - **Session Persistence** - All conversations automatically saved
 - **Session Organization** - Group sessions by project and timestamp
 - **Session Actions** - Rename, delete, and export conversation history
 - **Cross-device Sync** - Access sessions from any device
 
 ### Mobile App
+
 - **Responsive Design** - Optimized for all screen sizes
 - **Touch-friendly Interface** - Swipe gestures and touch navigation
 - **Mobile Navigation** - Bottom tab bar for easy thumb navigation
@@ -223,6 +232,7 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 ```
 
 ### Backend (Node.js + Express)
+
 - **Express Server** - RESTful API with static file serving
 - **WebSocket Server** - Communication for chats and project refresh
 - **CLI Integration** - Agent process spawning and management
@@ -230,24 +240,23 @@ The UI automatically discovers Agent projects from `~/.claude/projects/` and pro
 - **File System API** - Exposing file browser for projects
 
 ### Frontend (React + Vite)
+
 - **React 18** - Modern component architecture with hooks
 - **CodeMirror** - Advanced code editor with syntax highlighting
-
-
-
-
 
 ### Contributing
 
 We welcome contributions! Please follow these guidelines:
 
 #### Getting Started
+
 1. **Fork** the repository
 2. **Clone** your fork: `git clone <your-fork-url>`
 3. **Install** dependencies: `npm install`
 4. **Create** a feature branch: `git checkout -b feature/amazing-feature`
 
 #### Development Process
+
 1. **Make your changes** following the existing code style
 2. **Test thoroughly** - ensure all features work correctly
 3. **Run quality checks**: `npm run lint && npm run format`
@@ -259,6 +268,7 @@ We welcome contributions! Please follow these guidelines:
    - Test results if applicable
 
 #### What to Contribute
+
 - **Bug fixes** - Help us improve stability
 - **New features** - Enhance functionality (discuss in issues first)
 - **Documentation** - Improve guides and API docs
@@ -269,22 +279,24 @@ We welcome contributions! Please follow these guidelines:
 
 ### Common Issues & Solutions
 
-
 #### "No Agent projects found"
+
 **Problem**: The UI shows no projects or empty project list
 **Solutions**:
+
 - Ensure [Agent CLI](https://docs.anthropic.com/en/docs/claude-code) is properly installed
 - Run `claude` command in at least one project directory to initialize
 - Verify `~/.claude/projects/` directory exists and has proper permissions
 
 #### File Explorer Issues
+
 **Problem**: Files not loading, permission errors, empty directories
 **Solutions**:
+
 - Check project directory permissions (`ls -la` in terminal)
 - Verify the project path exists and is accessible
 - Review server console logs for detailed error messages
 - Ensure you're not trying to access system directories outside project scope
-
 
 ## License
 
@@ -295,22 +307,26 @@ This project is open source and free to use, modify, and distribute under the GP
 ## Acknowledgments
 
 ### Built With
+
 - **[Agent](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's official CLI
 - **[React](https://react.dev/)** - User interface library
 - **[Vite](https://vitejs.dev/)** - Fast build tool and dev server
 - **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
 - **[CodeMirror](https://codemirror.net/)** - Advanced code editor
-- **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** *(Optional)* - AI-powered project management and task planning
+- **[TaskMaster AI](https://github.com/eyaltoledano/claude-task-master)** _(Optional)_ - AI-powered project management and task planning
 
 ## Support & Community
 
 ### Stay Updated
+
 - **Star** this repository to show support
 - **Watch** for updates and new releases
 - **Follow** the project for announcements
 
 ### Sponsors
+
 - [Siteboon - AI powered website builder](https://siteboon.ai)
+
 ---
 
 <div align="center">

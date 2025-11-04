@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Maximize2, 
-  Eye, 
+import React, { useState, useEffect } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Eye,
   Settings2,
   Moon,
   Sun,
@@ -12,10 +12,10 @@ import {
   Brain,
   Sparkles,
   FileText,
-  Languages
-} from 'lucide-react';
-import DarkModeToggle from './DarkModeToggle';
-import { useTheme } from '../contexts/ThemeContext';
+  Languages,
+} from "lucide-react";
+import DarkModeToggle from "./DarkModeToggle";
+import { useTheme } from "../contexts/ThemeContext";
 
 const QuickSettingsPanel = ({
   isOpen,
@@ -30,11 +30,11 @@ const QuickSettingsPanel = ({
   onAutoScrollChange,
   sendByCtrlEnter,
   onSendByCtrlEnterChange,
-  isMobile
+  isMobile,
 }) => {
   const [localIsOpen, setLocalIsOpen] = useState(isOpen);
   const [whisperMode, setWhisperMode] = useState(() => {
-    return localStorage.getItem('whisperMode') || 'default';
+    return localStorage.getItem("whisperMode") || "default";
   });
   const { isDarkMode } = useTheme();
 
@@ -52,14 +52,14 @@ const QuickSettingsPanel = ({
     <>
       {/* Pull Tab */}
       <div
-        className={`fixed ${isMobile ? 'bottom-44' : 'top-1/2 -translate-y-1/2'} ${
-          localIsOpen ? 'right-64' : 'right-0'
+        className={`fixed ${isMobile ? "bottom-44" : "top-1/2 -translate-y-1/2"} ${
+          localIsOpen ? "right-64" : "right-0"
         } z-50 transition-all duration-150 ease-out`}
       >
         <button
           onClick={handleToggle}
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-l-md p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-lg"
-          aria-label={localIsOpen ? 'Close settings panel' : 'Open settings panel'}
+          aria-label={localIsOpen ? "Close settings panel" : "Open settings panel"}
         >
           {localIsOpen ? (
             <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -72,8 +72,8 @@ const QuickSettingsPanel = ({
       {/* Panel */}
       <div
         className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-xl transform transition-transform duration-150 ease-out z-40 ${
-          localIsOpen ? 'translate-x-0' : 'translate-x-full'
-        } ${isMobile ? 'h-screen' : ''}`}
+          localIsOpen ? "translate-x-0" : "translate-x-full"
+        } ${isMobile ? "h-screen" : ""}`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
@@ -85,14 +85,22 @@ const QuickSettingsPanel = ({
           </div>
 
           {/* Settings Content */}
-          <div className={`flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 bg-white dark:bg-gray-900 ${isMobile ? 'pb-20' : ''}`}>
+          <div
+            className={`flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 bg-white dark:bg-gray-900 ${isMobile ? "pb-20" : ""}`}
+          >
             {/* Appearance Settings */}
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Appearance</h4>
-              
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                Appearance
+              </h4>
+
               <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-transparent hover:border-gray-300 dark:hover:border-gray-600">
                 <span className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
-                  {isDarkMode ? <Moon className="h-4 w-4 text-gray-600 dark:text-gray-400" /> : <Sun className="h-4 w-4 text-gray-600 dark:text-gray-400" />}
+                  {isDarkMode ? (
+                    <Moon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  ) : (
+                    <Sun className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  )}
                   Dark Mode
                 </span>
                 <DarkModeToggle />
@@ -101,8 +109,10 @@ const QuickSettingsPanel = ({
 
             {/* Tool Display Settings */}
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Tool Display</h4>
-              
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                Tool Display
+              </h4>
+
               <label className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-300 dark:hover:border-gray-600">
                 <span className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
                   <Maximize2 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -144,8 +154,10 @@ const QuickSettingsPanel = ({
             </div>
             {/* View Options */}
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">View Options</h4>
-              
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                View Options
+              </h4>
+
               <label className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-300 dark:hover:border-gray-600">
                 <span className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
                   <ArrowDown className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -162,8 +174,10 @@ const QuickSettingsPanel = ({
 
             {/* Input Settings */}
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Input Settings</h4>
-              
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                Input Settings
+              </h4>
+
               <label className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-300 dark:hover:border-gray-600">
                 <span className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
                   <Languages className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -177,25 +191,28 @@ const QuickSettingsPanel = ({
                 />
               </label>
               <p className="text-xs text-gray-500 dark:text-gray-400 ml-3">
-                When enabled, pressing Ctrl+Enter will send the message instead of just Enter. This is useful for IME users to avoid accidental sends.
+                When enabled, pressing Ctrl+Enter will send the message instead of just Enter. This
+                is useful for IME users to avoid accidental sends.
               </p>
             </div>
 
             {/* Whisper Dictation Settings - HIDDEN */}
-            <div className="space-y-2" style={{ display: 'none' }}>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Whisper Dictation</h4>
-              
+            <div className="space-y-2" style={{ display: "none" }}>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                Whisper Dictation
+              </h4>
+
               <div className="space-y-2">
                 <label className="flex items-start p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-transparent hover:border-gray-300 dark:hover:border-gray-600">
                   <input
                     type="radio"
                     name="whisperMode"
                     value="default"
-                    checked={whisperMode === 'default'}
+                    checked={whisperMode === "default"}
                     onChange={() => {
-                      setWhisperMode('default');
-                      localStorage.setItem('whisperMode', 'default');
-                      window.dispatchEvent(new Event('whisperModeChanged'));
+                      setWhisperMode("default");
+                      localStorage.setItem("whisperMode", "default");
+                      window.dispatchEvent(new Event("whisperModeChanged"));
                     }}
                     className="mt-0.5 h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:checked:bg-blue-600"
                   />
@@ -215,11 +232,11 @@ const QuickSettingsPanel = ({
                     type="radio"
                     name="whisperMode"
                     value="prompt"
-                    checked={whisperMode === 'prompt'}
+                    checked={whisperMode === "prompt"}
                     onChange={() => {
-                      setWhisperMode('prompt');
-                      localStorage.setItem('whisperMode', 'prompt');
-                      window.dispatchEvent(new Event('whisperModeChanged'));
+                      setWhisperMode("prompt");
+                      localStorage.setItem("whisperMode", "prompt");
+                      window.dispatchEvent(new Event("whisperModeChanged"));
                     }}
                     className="mt-0.5 h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:checked:bg-blue-600"
                   />
@@ -239,11 +256,15 @@ const QuickSettingsPanel = ({
                     type="radio"
                     name="whisperMode"
                     value="vibe"
-                    checked={whisperMode === 'vibe' || whisperMode === 'instructions' || whisperMode === 'architect'}
+                    checked={
+                      whisperMode === "vibe" ||
+                      whisperMode === "instructions" ||
+                      whisperMode === "architect"
+                    }
                     onChange={() => {
-                      setWhisperMode('vibe');
-                      localStorage.setItem('whisperMode', 'vibe');
-                      window.dispatchEvent(new Event('whisperModeChanged'));
+                      setWhisperMode("vibe");
+                      localStorage.setItem("whisperMode", "vibe");
+                      window.dispatchEvent(new Event("whisperModeChanged"));
                     }}
                     className="mt-0.5 h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:checked:bg-blue-600"
                   />

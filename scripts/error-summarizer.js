@@ -5,8 +5,8 @@
  * Captures error patterns and provides concise summaries
  */
 
-import { spawn } from 'child_process';
-import { Transform } from 'stream';
+import { spawn } from "child_process";
+import { Transform } from "stream";
 
 class ErrorSummarizer {
   constructor() {
@@ -23,17 +23,17 @@ class ErrorSummarizer {
 
     // Critical errors
     if (/error|exception|fatal|failed|cannot|unable/i.test(line)) {
-      return 'error';
+      return "error";
     }
 
     // Warnings
     if (/warn|deprecated|deprecation/i.test(line)) {
-      return 'warning';
+      return "warning";
     }
 
     // Important info
     if (/listening|started|ready|compiled|built/i.test(line)) {
-      return 'info';
+      return "info";
     }
 
     return null;
@@ -52,7 +52,7 @@ class ErrorSummarizer {
       /turbo/i,
     ];
 
-    return noisePatterns.some(pattern => pattern.test(line));
+    return noisePatterns.some((pattern) => pattern.test(line));
   }
 
   extractErrorKey(line) {
@@ -108,42 +108,42 @@ class ErrorSummarizer {
   }
 
   printSummary() {
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📊 ERROR SUMMARY');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📊 ERROR SUMMARY");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     if (this.errors.size === 0 && this.warnings.size === 0) {
-      console.log('✅ No errors or warnings detected\n');
+      console.log("✅ No errors or warnings detected\n");
       return;
     }
 
     // Print errors
     if (this.errors.size > 0) {
-      console.log('🔴 ERRORS:\n');
+      console.log("🔴 ERRORS:\n");
       let errorNum = 1;
       for (const [key, data] of this.errors) {
-        const count = data.count > 1 ? ` (×${data.count})` : '';
+        const count = data.count > 1 ? ` (×${data.count})` : "";
         console.log(`  ${errorNum}. ${data.message.trim()}${count}`);
         errorNum++;
       }
-      console.log('');
+      console.log("");
     }
 
     // Print warnings (only top 3)
     if (this.warnings.size > 0) {
-      console.log('⚠️  WARNINGS (top 3):\n');
+      console.log("⚠️  WARNINGS (top 3):\n");
       const topWarnings = Array.from(this.warnings.values())
         .sort((a, b) => b.count - a.count)
         .slice(0, 3);
 
       topWarnings.forEach((data, i) => {
-        const count = data.count > 1 ? ` (×${data.count})` : '';
+        const count = data.count > 1 ? ` (×${data.count})` : "";
         console.log(`  ${i + 1}. ${data.message.trim()}${count}`);
       });
-      console.log('');
+      console.log("");
     }
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   }
 
   processLine(line) {
@@ -151,27 +151,27 @@ class ErrorSummarizer {
     const category = this.categorizeLog(line);
 
     switch (category) {
-      case 'error':
+      case "error":
         // Show errors immediately
-        console.log('🔴', line);
+        console.log("🔴", line);
         this.addError(line);
         this.scheduleOutput();
         break;
-      case 'warning':
+      case "warning":
         // Show first occurrence of warnings
         const key = line.substring(0, 100).trim();
         if (!this.warnings.has(key)) {
-          console.log('⚠️ ', line);
+          console.log("⚠️ ", line);
         }
         this.addWarning(line);
         break;
-      case 'info':
-        console.log('✅', line);
+      case "info":
+        console.log("✅", line);
         break;
       default:
         // Skip noise, but show every 100th line to prove we're alive
         if (this.lineCount % 100 === 0) {
-          process.stdout.write('.');
+          process.stdout.write(".");
         }
         break;
     }
@@ -193,26 +193,26 @@ class ErrorSummarizer {
 // Main
 const summarizer = new ErrorSummarizer();
 
-console.log('🚀 Starting development with smart error filtering...');
-console.log('📝 Showing: errors (🔴), warnings (⚠️), and important info (✅)');
-console.log('🔇 Hiding: HMR updates, build noise, watching messages');
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+console.log("🚀 Starting development with smart error filtering...");
+console.log("📝 Showing: errors (🔴), warnings (⚠️), and important info (✅)");
+console.log("🔇 Hiding: HMR updates, build noise, watching messages");
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
-const child = spawn('pnpm', ['turbo', 'dev'], {
-  stdio: ['inherit', 'pipe', 'pipe'],
+const child = spawn("pnpm", ["turbo", "dev"], {
+  stdio: ["inherit", "pipe", "pipe"],
   shell: true,
 });
 
 // Create transform stream for line processing
 const processStream = (stream) => {
-  let buffer = '';
+  let buffer = "";
 
-  stream.on('data', (chunk) => {
+  stream.on("data", (chunk) => {
     buffer += chunk.toString();
-    const lines = buffer.split('\n');
+    const lines = buffer.split("\n");
     buffer = lines.pop(); // Keep incomplete line in buffer
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       if (line.trim()) {
         summarizer.processLine(line);
       }
@@ -223,14 +223,14 @@ const processStream = (stream) => {
 processStream(child.stdout);
 processStream(child.stderr);
 
-child.on('exit', (code) => {
-  console.log('\n');
+child.on("exit", (code) => {
+  console.log("\n");
   if (summarizer.errors.size > 0 || summarizer.warnings.size > 0) {
     summarizer.printSummary();
   }
   process.exit(code);
 });
 
-process.on('SIGINT', () => {
-  child.kill('SIGINT');
+process.on("SIGINT", () => {
+  child.kill("SIGINT");
 });

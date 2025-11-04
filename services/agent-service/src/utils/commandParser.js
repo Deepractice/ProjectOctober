@@ -1,9 +1,9 @@
-import matter from 'gray-matter';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { parse as parseShellCommand } from 'shell-quote';
+import matter from "gray-matter";
+import { promises as fs } from "fs";
+import path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { parse as parseShellCommand } from "shell-quote";
 
 const execFileAsync = promisify(execFile);
 
@@ -11,18 +11,18 @@ const execFileAsync = promisify(execFile);
 const MAX_INCLUDE_DEPTH = 3;
 const BASH_TIMEOUT = 30000; // 30 seconds
 const BASH_COMMAND_ALLOWLIST = [
-  'echo',
-  'ls',
-  'pwd',
-  'date',
-  'whoami',
-  'git',
-  'npm',
-  'node',
-  'cat',
-  'grep',
-  'find',
-  'task-master'
+  "echo",
+  "ls",
+  "pwd",
+  "date",
+  "whoami",
+  "git",
+  "npm",
+  "node",
+  "cat",
+  "grep",
+  "find",
+  "task-master",
 ];
 
 /**
@@ -35,8 +35,8 @@ export function parseCommand(content) {
     const parsed = matter(content);
     return {
       data: parsed.data || {},
-      content: parsed.content || '',
-      raw: content
+      content: parsed.content || "",
+      raw: content,
     };
   } catch (error) {
     throw new Error(`Failed to parse command: ${error.message}`);
@@ -55,16 +55,16 @@ export function replaceArguments(content, args) {
   let result = content;
 
   // Convert args to array if it's a string
-  const argsArray = Array.isArray(args) ? args : (args ? [args] : []);
+  const argsArray = Array.isArray(args) ? args : args ? [args] : [];
 
   // Replace $ARGUMENTS with all arguments joined by space
-  const allArgs = argsArray.join(' ');
+  const allArgs = argsArray.join(" ");
   result = result.replace(/\$ARGUMENTS/g, allArgs);
 
   // Replace positional arguments $1-$9
   for (let i = 1; i <= 9; i++) {
-    const regex = new RegExp(`\\$${i}`, 'g');
-    const value = argsArray[i - 1] || '';
+    const regex = new RegExp(`\\$${i}`, "g");
+    const value = argsArray[i - 1] || "";
     result = result.replace(regex, value);
   }
 
@@ -81,11 +81,7 @@ export function isPathSafe(filePath, basePath) {
   const resolvedPath = path.resolve(basePath, filePath);
   const resolvedBase = path.resolve(basePath);
   const relative = path.relative(resolvedBase, resolvedPath);
-  return (
-    relative !== '' &&
-    !relative.startsWith('..') &&
-    !path.isAbsolute(relative)
-  );
+  return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
 /**
@@ -124,15 +120,18 @@ export async function processFileIncludes(content, basePath, depth = 0) {
 
     try {
       const filePath = path.resolve(basePath, filename);
-      const fileContent = await fs.readFile(filePath, 'utf-8');
+      const fileContent = await fs.readFile(filePath, "utf-8");
 
       // Recursively process includes in the included file
       const processedContent = await processFileIncludes(fileContent, basePath, depth + 1);
 
       // Replace the @filename with the file content
-      result = result.replace(fullMatch, fullMatch.startsWith(' ') ? ' ' + processedContent : processedContent);
+      result = result.replace(
+        fullMatch,
+        fullMatch.startsWith(" ") ? " " + processedContent : processedContent
+      );
     } catch (error) {
-      if (error.code === 'ENOENT') {
+      if (error.code === "ENOENT") {
         throw new Error(`File not found: ${filename}`);
       }
       throw error;
@@ -150,31 +149,29 @@ export async function processFileIncludes(content, basePath, depth = 0) {
 export function validateCommand(commandString) {
   const trimmedCommand = commandString.trim();
   if (!trimmedCommand) {
-    return { allowed: false, command: '', args: [], error: 'Empty command' };
+    return { allowed: false, command: "", args: [], error: "Empty command" };
   }
 
   // Parse the command using shell-quote to handle quotes properly
   const parsed = parseShellCommand(trimmedCommand);
 
   // Check for shell operators or control structures
-  const hasOperators = parsed.some(token =>
-    typeof token === 'object' && token.op
-  );
+  const hasOperators = parsed.some((token) => typeof token === "object" && token.op);
 
   if (hasOperators) {
     return {
       allowed: false,
-      command: '',
+      command: "",
       args: [],
-      error: 'Shell operators (&&, ||, |, ;, etc.) are not allowed'
+      error: "Shell operators (&&, ||, |, ;, etc.) are not allowed",
     };
   }
 
   // Extract command and args (all should be strings after validation)
-  const tokens = parsed.filter(token => typeof token === 'string');
+  const tokens = parsed.filter((token) => typeof token === "string");
 
   if (tokens.length === 0) {
-    return { allowed: false, command: '', args: [], error: 'No valid command found' };
+    return { allowed: false, command: "", args: [], error: "No valid command found" };
   }
 
   const [command, ...args] = tokens;
@@ -190,7 +187,7 @@ export function validateCommand(commandString) {
       allowed: false,
       command: commandName,
       args,
-      error: `Command '${commandName}' is not in the allowlist`
+      error: `Command '${commandName}' is not in the allowlist`,
     };
   }
 
@@ -202,7 +199,7 @@ export function validateCommand(commandString) {
         allowed: false,
         command: commandName,
         args,
-        error: `Argument contains dangerous characters: ${arg}`
+        error: `Argument contains dangerous characters: ${arg}`,
       };
     }
   }
@@ -227,18 +224,20 @@ export function isBashCommandAllowed(command) {
  * @returns {string} Sanitized output
  */
 export function sanitizeOutput(output) {
-  if (!output) return '';
+  if (!output) return "";
 
   // Remove control characters except \t, \n, \r
   return [...output]
-    .filter(ch => {
+    .filter((ch) => {
       const code = ch.charCodeAt(0);
-      return code === 9  // \t
-          || code === 10 // \n
-          || code === 13 // \r
-          || (code >= 32 && code !== 127);
+      return (
+        code === 9 || // \t
+        code === 10 || // \n
+        code === 13 || // \r
+        (code >= 32 && code !== 127)
+      );
     })
-    .join('');
+    .join("");
 }
 
 /**
@@ -275,22 +274,18 @@ export async function processBashCommands(content, options = {}) {
 
     try {
       // Execute without shell using execFile with parsed args
-      const { stdout, stderr } = await execFileAsync(
-        validation.command,
-        validation.args,
-        {
-          cwd,
-          timeout,
-          maxBuffer: 1024 * 1024, // 1MB max output
-          shell: false, // IMPORTANT: No shell interpretation
-          env: { ...process.env, PATH: process.env.PATH } // Inherit PATH for finding commands
-        }
-      );
+      const { stdout, stderr } = await execFileAsync(validation.command, validation.args, {
+        cwd,
+        timeout,
+        maxBuffer: 1024 * 1024, // 1MB max output
+        shell: false, // IMPORTANT: No shell interpretation
+        env: { ...process.env, PATH: process.env.PATH }, // Inherit PATH for finding commands
+      });
 
-      const output = sanitizeOutput(stdout || stderr || '');
+      const output = sanitizeOutput(stdout || stderr || "");
 
       // Replace the !command with the output
-      result = result.replace(fullMatch, fullMatch.startsWith('\n') ? '\n' + output : output);
+      result = result.replace(fullMatch, fullMatch.startsWith("\n") ? "\n" + output : output);
     } catch (error) {
       if (error.killed) {
         throw new Error(`Command timeout: ${commandString}`);

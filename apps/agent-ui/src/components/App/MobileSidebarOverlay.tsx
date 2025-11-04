@@ -1,5 +1,5 @@
-import React from 'react';
-import Sidebar from '../Sidebar';
+import React from "react";
+import Sidebar from "../Sidebar";
 
 function MobileSidebarOverlay({
   isOpen,
@@ -21,9 +21,11 @@ function MobileSidebarOverlay({
   isMobile,
 }) {
   return (
-    <div className={`fixed inset-0 z-50 flex transition-all duration-150 ease-out ${
-      isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-    }`}>
+    <div
+      className={`fixed inset-0 z-50 flex transition-all duration-150 ease-out ${
+        isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+      }`}
+    >
       <button
         className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-150 ease-out"
         onClick={(e) => {
@@ -39,9 +41,9 @@ function MobileSidebarOverlay({
       />
       <div
         className={`relative w-[85vw] max-w-sm sm:w-80 bg-card border-r border-border transform transition-transform duration-150 ease-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ height: 'calc(100vh - 80px)' }}
+        style={{ height: "calc(100vh - 80px)" }}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
       >

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../utils/api';
+import { useState, useEffect, useCallback } from "react";
+import { api } from "../utils/api";
 
 /**
  * Custom hook for file autocomplete functionality
@@ -20,7 +20,7 @@ export const useFileAutocomplete = ({
   selectedProject,
   textareaRef,
   setInput,
-  setCursorPosition
+  setCursorPosition,
 }) => {
   const [showFileDropdown, setShowFileDropdown] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -45,21 +45,21 @@ export const useFileAutocomplete = ({
         setFileList(flatFiles);
       }
     } catch (error) {
-      console.error('Error fetching files:', error);
+      console.error("Error fetching files:", error);
     }
   };
 
-  const flattenFileTree = (files, basePath = '') => {
+  const flattenFileTree = (files, basePath = "") => {
     let result = [];
     for (const file of files) {
       const fullPath = basePath ? `${basePath}/${file.name}` : file.name;
-      if (file.type === 'directory' && file.children) {
+      if (file.type === "directory" && file.children) {
         result = result.concat(flattenFileTree(file.children, fullPath));
-      } else if (file.type === 'file') {
+      } else if (file.type === "file") {
         result.push({
           name: file.name,
           path: fullPath,
-          relativePath: file.path
+          relativePath: file.path,
         });
       }
     }
@@ -69,20 +69,23 @@ export const useFileAutocomplete = ({
   // Handle @ symbol detection and file filtering
   useEffect(() => {
     const textBeforeCursor = input.slice(0, cursorPosition);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
       // Check if there's a space after the @ symbol (which would end the file reference)
-      if (!textAfterAt.includes(' ')) {
+      if (!textAfterAt.includes(" ")) {
         setAtSymbolPosition(lastAtIndex);
         setShowFileDropdown(true);
 
         // Filter files based on the text after @
-        const filtered = fileList.filter(file =>
-          file.name.toLowerCase().includes(textAfterAt.toLowerCase()) ||
-          file.path.toLowerCase().includes(textAfterAt.toLowerCase())
-        ).slice(0, 10); // Limit to 10 results
+        const filtered = fileList
+          .filter(
+            (file) =>
+              file.name.toLowerCase().includes(textAfterAt.toLowerCase()) ||
+              file.path.toLowerCase().includes(textAfterAt.toLowerCase())
+          )
+          .slice(0, 10); // Limit to 10 results
 
         setFilteredFiles(filtered);
         setSelectedFileIndex(-1);
@@ -96,77 +99,79 @@ export const useFileAutocomplete = ({
     }
   }, [input, cursorPosition, fileList]);
 
-  const selectFile = useCallback((file) => {
-    const textBeforeAt = input.slice(0, atSymbolPosition);
-    const textAfterAtQuery = input.slice(atSymbolPosition);
-    const spaceIndex = textAfterAtQuery.indexOf(' ');
-    const textAfterQuery = spaceIndex !== -1 ? textAfterAtQuery.slice(spaceIndex) : '';
+  const selectFile = useCallback(
+    (file) => {
+      const textBeforeAt = input.slice(0, atSymbolPosition);
+      const textAfterAtQuery = input.slice(atSymbolPosition);
+      const spaceIndex = textAfterAtQuery.indexOf(" ");
+      const textAfterQuery = spaceIndex !== -1 ? textAfterAtQuery.slice(spaceIndex) : "";
 
-    const newInput = textBeforeAt + '@' + file.path + ' ' + textAfterQuery;
-    const newCursorPos = textBeforeAt.length + 1 + file.path.length + 1;
+      const newInput = textBeforeAt + "@" + file.path + " " + textAfterQuery;
+      const newCursorPos = textBeforeAt.length + 1 + file.path.length + 1;
 
-    // Immediately ensure focus is maintained
-    if (textareaRef.current && !textareaRef.current.matches(':focus')) {
-      textareaRef.current.focus();
-    }
+      // Immediately ensure focus is maintained
+      if (textareaRef.current && !textareaRef.current.matches(":focus")) {
+        textareaRef.current.focus();
+      }
 
-    // Update input and cursor position
-    setInput(newInput);
-    setCursorPosition(newCursorPos);
+      // Update input and cursor position
+      setInput(newInput);
+      setCursorPosition(newCursorPos);
 
-    // Hide dropdown
-    setShowFileDropdown(false);
-    setAtSymbolPosition(-1);
+      // Hide dropdown
+      setShowFileDropdown(false);
+      setAtSymbolPosition(-1);
 
-    // Set cursor position synchronously
-    if (textareaRef.current) {
-      // Use requestAnimationFrame for smoother updates
-      requestAnimationFrame(() => {
-        if (textareaRef.current) {
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-          // Ensure focus is maintained
-          if (!textareaRef.current.matches(':focus')) {
-            textareaRef.current.focus();
+      // Set cursor position synchronously
+      if (textareaRef.current) {
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+            // Ensure focus is maintained
+            if (!textareaRef.current.matches(":focus")) {
+              textareaRef.current.focus();
+            }
           }
-        }
-      });
-    }
-  }, [input, atSymbolPosition, textareaRef, setInput, setCursorPosition]);
+        });
+      }
+    },
+    [input, atSymbolPosition, textareaRef, setInput, setCursorPosition]
+  );
 
-  const handleFileKeyDown = useCallback((e) => {
-    // Handle file dropdown navigation
-    if (showFileDropdown && filteredFiles.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedFileIndex(prev =>
-          prev < filteredFiles.length - 1 ? prev + 1 : 0
-        );
-        return true;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedFileIndex(prev =>
-          prev > 0 ? prev - 1 : filteredFiles.length - 1
-        );
-        return true;
-      }
-      if (e.key === 'Tab' || e.key === 'Enter') {
-        e.preventDefault();
-        if (selectedFileIndex >= 0) {
-          selectFile(filteredFiles[selectedFileIndex]);
-        } else if (filteredFiles.length > 0) {
-          selectFile(filteredFiles[0]);
+  const handleFileKeyDown = useCallback(
+    (e) => {
+      // Handle file dropdown navigation
+      if (showFileDropdown && filteredFiles.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedFileIndex((prev) => (prev < filteredFiles.length - 1 ? prev + 1 : 0));
+          return true;
         }
-        return true;
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedFileIndex((prev) => (prev > 0 ? prev - 1 : filteredFiles.length - 1));
+          return true;
+        }
+        if (e.key === "Tab" || e.key === "Enter") {
+          e.preventDefault();
+          if (selectedFileIndex >= 0) {
+            selectFile(filteredFiles[selectedFileIndex]);
+          } else if (filteredFiles.length > 0) {
+            selectFile(filteredFiles[0]);
+          }
+          return true;
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setShowFileDropdown(false);
+          return true;
+        }
       }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowFileDropdown(false);
-        return true;
-      }
-    }
-    return false;
-  }, [showFileDropdown, filteredFiles, selectedFileIndex, selectFile]);
+      return false;
+    },
+    [showFileDropdown, filteredFiles, selectedFileIndex, selectFile]
+  );
 
   return {
     showFileDropdown,
@@ -175,6 +180,6 @@ export const useFileAutocomplete = ({
     atSymbolPosition,
     selectFile,
     handleFileKeyDown,
-    setShowFileDropdown
+    setShowFileDropdown,
   };
 };

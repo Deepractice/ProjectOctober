@@ -1,4 +1,4 @@
-import { useFileAutocomplete } from '../../hooks/useFileAutocomplete';
+import { useFileAutocomplete } from "../../hooks/useFileAutocomplete";
 
 /**
  * FileAutocomplete - Encapsulates file path autocomplete functionality
@@ -16,7 +16,7 @@ function FileAutocomplete({
   setCursorPosition,
 
   // Children (render prop pattern for UI customization)
-  children
+  children,
 }) {
   const {
     showFileDropdown,
@@ -25,18 +25,18 @@ function FileAutocomplete({
     atSymbolPosition,
     selectFile,
     handleFileKeyDown,
-    setShowFileDropdown
+    setShowFileDropdown,
   } = useFileAutocomplete({
     input,
     cursorPosition,
     selectedProject,
     textareaRef,
     setInput,
-    setCursorPosition
+    setCursorPosition,
   });
 
   // Provide all file autocomplete state and handlers to children via render prop
-  if (typeof children === 'function') {
+  if (typeof children === "function") {
     return children({
       // State
       showFileDropdown,
@@ -49,7 +49,7 @@ function FileAutocomplete({
       handleFileKeyDown,
 
       // Setters
-      setShowFileDropdown
+      setShowFileDropdown,
     });
   }
 

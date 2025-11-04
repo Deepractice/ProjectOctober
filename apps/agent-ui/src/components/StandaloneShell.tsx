@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import Shell from './Shell.jsx';
+import React, { useState, useEffect } from "react";
+import Shell from "./Shell.jsx";
 
 /**
  * Generic Shell wrapper that can be used in tabs, modals, and other contexts.
  * Provides a flexible API for both standalone and session-based usage.
- * 
+ *
  * @param {Object} project - Project object with name, fullPath/path, displayName
  * @param {Object} session - Session object (optional, for tab usage)
  * @param {string} command - Initial command to run (optional)
@@ -30,12 +30,12 @@ function StandaloneShell({
   title = null,
   className = "",
   showHeader = true,
-  compact = false
+  compact = false,
 }) {
   const [isCompleted, setIsCompleted] = useState(false);
 
   // Auto-detect isPlainShell based on props
-  const shouldUsePlainShell = isPlainShell !== null ? isPlainShell : (command !== null);
+  const shouldUsePlainShell = isPlainShell !== null ? isPlainShell : command !== null;
 
   // Handle process completion
   const handleProcessComplete = (exitCode) => {
@@ -50,8 +50,18 @@ function StandaloneShell({
       <div className={`h-full flex items-center justify-center ${className}`}>
         <div className="text-center text-gray-500 dark:text-gray-400">
           <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 002 2z" />
+            <svg
+              className="w-8 h-8 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 002 2z"
+              />
             </svg>
           </div>
           <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
@@ -69,18 +79,17 @@ function StandaloneShell({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h3 className="text-sm font-medium text-gray-200">{title}</h3>
-              {isCompleted && (
-                <span className="text-xs text-green-400">(Completed)</span>
-              )}
+              {isCompleted && <span className="text-xs text-green-400">(Completed)</span>}
             </div>
             {onClose && (
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white"
-                title="Close"
-              >
+              <button onClick={onClose} className="text-gray-400 hover:text-white" title="Close">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}

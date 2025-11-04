@@ -1,54 +1,76 @@
 /*
  * ChatInterface.jsx - Chat Component with Session Protection Integration
- * 
+ *
  * SESSION PROTECTION INTEGRATION:
  * ===============================
- * 
+ *
  * This component integrates with the Session Protection System to prevent project updates
  * from interrupting active conversations:
- * 
+ *
  * Key Integration Points:
  * 1. handleSubmit() - Marks session as active when user sends message (including temp ID for new sessions)
- * 2. session-created handler - Replaces temporary session ID with real WebSocket session ID  
+ * 2. session-created handler - Replaces temporary session ID with real WebSocket session ID
  * 3. agent-complete handler - Marks session as inactive when conversation finishes
  * 4. session-aborted handler - Marks session as inactive when conversation is aborted
- * 
+ *
  * This ensures uninterrupted chat experience by coordinating with App.jsx to pause sidebar updates.
  */
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { shallow } from 'zustand/shallow';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { shallow } from "zustand/shallow";
 
-import { authenticatedFetch } from '../../utils/api';
-import { useDiffCalculation } from '../../hooks/useDiffCalculation';
-import { useImageUpload } from '../../hooks/useImageUpload';
-import { useMessages } from '../../hooks/useMessages';
-import { useWebSocket } from '../../hooks/useWebSocket';
-import { useChatScrolling } from '../../hooks/chat/useChatScrolling';
-import { useChatInput } from '../../hooks/chat/useChatInput';
-import safeLocalStorage from '../../utils/safeLocalStorage';
-import { decodeHtmlEntities, formatUsageLimitText } from './MessageRenderer';
-import MessagesArea from './MessagesArea';
-import InputArea from './InputArea';
-import CommandPalette from './CommandPalette';
-import FileAutocomplete from './FileAutocomplete';
-import AgentStatusBar from './AgentStatusBar';
-import { useMessageStore } from '../../stores';
+import { authenticatedFetch } from "../../utils/api";
+import { useDiffCalculation } from "../../hooks/useDiffCalculation";
+import { useImageUpload } from "../../hooks/useImageUpload";
+import { useMessages } from "../../hooks/useMessages";
+import { useWebSocket } from "../../hooks/useWebSocket";
+import { useChatScrolling } from "../../hooks/chat/useChatScrolling";
+import { useChatInput } from "../../hooks/chat/useChatInput";
+import safeLocalStorage from "../../utils/safeLocalStorage";
+import { decodeHtmlEntities, formatUsageLimitText } from "./MessageRenderer";
+import MessagesArea from "./MessagesArea";
+import InputArea from "./InputArea";
+import CommandPalette from "./CommandPalette";
+import FileAutocomplete from "./FileAutocomplete";
+import AgentStatusBar from "./AgentStatusBar";
+import { useMessageStore } from "../../stores";
 
 // ChatInterface: Main chat component with Session Protection System integration
-// 
+//
 // Session Protection System prevents automatic project updates from interrupting active conversations:
 // - onSessionActive: Called when user sends message to mark session as protected
 // - onSessionInactive: Called when conversation completes/aborts to re-enable updates
 //
 // This ensures uninterrupted chat experience by pausing sidebar refreshes during conversations.
-function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
-
+function ChatInterface({
+  selectedProject,
+  selectedSession,
+  ws,
+  sendMessage,
+  messages,
+  onFileOpen,
+  onInputFocusChange,
+  onSessionActive,
+  onSessionInactive,
+  onSessionProcessing,
+  onSessionNotProcessing,
+  processingSessions,
+  onNavigateToSession,
+  onShowSettings,
+  autoExpandTools,
+  showRawParameters,
+  showThinking,
+  autoScrollToBottom,
+  sendByCtrlEnter,
+  externalMessageUpdate,
+  onTaskClick,
+  onShowAllTasks,
+}) {
   // Debug: Track component mount/unmount
   useEffect(() => {
-    console.log('🔷 ChatInterface MOUNTED - sessionId:', selectedSession?.id);
+    console.log("🔷 ChatInterface MOUNTED - sessionId:", selectedSession?.id);
     return () => {
-      console.log('🔶 ChatInterface UNMOUNTING - sessionId:', selectedSession?.id);
+      console.log("🔶 ChatInterface UNMOUNTING - sessionId:", selectedSession?.id);
     };
   }, []);
 
@@ -58,7 +80,14 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     const refChanged = prevSelectedSessionRef.current !== selectedSession;
     const idChanged = prevSelectedSessionRef.current?.id !== selectedSession?.id;
     if (refChanged || idChanged) {
-      console.log('🔄 [ChatInterface] selectedSession prop changed - Ref changed:', refChanged, 'ID changed:', idChanged, 'New ID:', selectedSession?.id);
+      console.log(
+        "🔄 [ChatInterface] selectedSession prop changed - Ref changed:",
+        refChanged,
+        "ID changed:",
+        idChanged,
+        "New ID:",
+        selectedSession?.id
+      );
     }
     prevSelectedSessionRef.current = selectedSession;
   }, [selectedSession]);
@@ -76,7 +105,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     setImageErrors,
     handleImageFiles,
     handlePaste,
-    dropzoneProps
+    dropzoneProps,
   } = useImageUpload();
 
   // Chat input hook - handles input state, debouncing, textarea sizing, draft persistence
@@ -94,7 +123,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     inputContainerRef,
     handleTranscript,
     handleTextareaClick,
-    clearInput
+    clearInput,
   } = useChatInput({ selectedProject });
 
   // UI state and refs (non-input, non-scroll)
@@ -103,10 +132,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const handleSubmitRef = useRef(null);
   const [visibleMessageCount, setVisibleMessageCount] = useState(100);
   const [provider, setProvider] = useState(() => {
-    return localStorage.getItem('selected-provider') || 'claude';
+    return localStorage.getItem("selected-provider") || "claude";
   });
   const [cursorModel, setCursorModel] = useState(() => {
-    return localStorage.getItem('cursor-model') || 'gpt-5';
+    return localStorage.getItem("cursor-model") || "gpt-5";
   });
 
   // WebSocket state management - centralized in useWebSocket hook
@@ -127,12 +156,12 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
       return scrollHeight - scrollTop - clientHeight < 50;
     },
-    autoScrollToBottom
+    autoScrollToBottom,
   });
 
   // Destructure WebSocket state for cleaner code
   const {
-    chatMessages: legacyChatMessages,  // Still kept for backward compat
+    chatMessages: legacyChatMessages, // Still kept for backward compat
     setChatMessages: legacySetChatMessages,
     isLoading,
     setIsLoading,
@@ -149,7 +178,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     permissionMode,
     setPermissionMode,
     streamBufferRef,
-    streamTimerRef
+    streamTimerRef,
   } = wsState;
 
   // === Subscribe to messageStore (Global State) ===
@@ -169,15 +198,15 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     // This handles edge cases like:
     // - User sends first message (temporary session exists)
     // - After migration but before selectedSession updates (real session exists)
-    const allSessionIds = Array.from(sessionMessagesMap.keys()).filter(id => {
+    const allSessionIds = Array.from(sessionMessagesMap.keys()).filter((id) => {
       const messages = sessionMessagesMap.get(id);
       return messages && messages.length > 0;
     });
 
-    if (allSessionIds.length === 0) return '';
+    if (allSessionIds.length === 0) return "";
 
     // Prefer real sessions over temporary ones
-    const realSession = allSessionIds.find(id => !id.startsWith('new-session-'));
+    const realSession = allSessionIds.find((id) => !id.startsWith("new-session-"));
     if (realSession) return realSession;
 
     // Fallback to temporary session
@@ -192,7 +221,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
   // No-op setter for backward compatibility (all writes go to store now)
   const setChatMessages = useCallback(() => {
-    console.warn('setChatMessages called but ignored - use messageStore actions instead');
+    console.warn("setChatMessages called but ignored - use messageStore actions instead");
   }, []);
 
   // Messages Hook - handles session message loading and conversion
@@ -211,11 +240,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     loadCursorSessionMessages,
     convertSessionMessages,
     convertedMessages,
-    MESSAGES_PER_PAGE
+    MESSAGES_PER_PAGE,
   } = useMessages({
     selectedProject,
     decodeHtmlEntities,
-    MESSAGES_PER_PAGE: 20
+    MESSAGES_PER_PAGE: 20,
   });
 
   // Chat scrolling hook - handles all scroll-related logic and infinite scroll
@@ -224,7 +253,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     isUserScrolledUp,
     setIsUserScrolledUp,
     scrollToBottom,
-    isNearBottom
+    isNearBottom,
   } = useChatScrolling({
     chatMessages,
     autoScrollToBottom,
@@ -234,14 +263,14 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     selectedProject,
     loadSessionMessages,
     setSessionMessages,
-    isLoadingSessionRef
+    isLoadingSessionRef,
   });
 
   // When selecting a session from Sidebar, auto-switch provider to match session's origin
   useEffect(() => {
     if (selectedSession && selectedSession.__provider && selectedSession.__provider !== provider) {
       setProvider(selectedSession.__provider);
-      localStorage.setItem('selected-provider', selectedSession.__provider);
+      localStorage.setItem("selected-provider", selectedSession.__provider);
     }
   }, [selectedSession]);
 
@@ -263,7 +292,15 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       setTokenBudget(null);
       setIsLoading(false);
     }
-  }, [selectedSession?.id, currentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages, setTokenBudget, setIsLoading]);
+  }, [
+    selectedSession?.id,
+    currentSessionId,
+    setMessagesOffset,
+    setHasMoreMessages,
+    setTotalMessages,
+    setTokenBudget,
+    setIsLoading,
+  ]);
 
   // 2. Load Agent messages when session/project changes
   useEffect(() => {
@@ -272,8 +309,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
     if (!sessionId || !projectPath || isSystemSessionChange) return;
 
-    const provider = localStorage.getItem('selected-provider') || 'claude';
-    if (provider !== 'claude') return;
+    const provider = localStorage.getItem("selected-provider") || "claude";
+    if (provider !== "claude") return;
 
     const loadAgentMessages = async () => {
       isLoadingSessionRef.current = true;
@@ -285,11 +322,21 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       const converted = convertSessionMessages(messages);
       useMessageStore.getState().setServerMessages(sessionId, converted);
 
-      setTimeout(() => { isLoadingSessionRef.current = false; }, 250);
+      setTimeout(() => {
+        isLoadingSessionRef.current = false;
+      }, 250);
     };
 
     loadAgentMessages();
-  }, [selectedSession?.id, selectedProject?.path, isSystemSessionChange, loadSessionMessages, setSessionMessages, convertSessionMessages, setCurrentSessionId]);
+  }, [
+    selectedSession?.id,
+    selectedProject?.path,
+    isSystemSessionChange,
+    loadSessionMessages,
+    setSessionMessages,
+    convertSessionMessages,
+    setCurrentSessionId,
+  ]);
 
   // 3. Load Cursor messages when session/project changes
   useEffect(() => {
@@ -298,23 +345,33 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
     if (!sessionId || !projectPath || isSystemSessionChange) return;
 
-    const provider = localStorage.getItem('selected-provider') || 'claude';
-    if (provider !== 'cursor') return;
+    const provider = localStorage.getItem("selected-provider") || "claude";
+    if (provider !== "cursor") return;
 
     const loadCursorMsgs = async () => {
       isLoadingSessionRef.current = true;
       setCurrentSessionId(sessionId);
-      sessionStorage.setItem('cursorSessionId', sessionId);
+      sessionStorage.setItem("cursorSessionId", sessionId);
 
       const converted = await loadCursorSessionMessages(projectPath, sessionId);
       setSessionMessages([]);
       useMessageStore.getState().setServerMessages(sessionId, converted);
 
-      setTimeout(() => { isLoadingSessionRef.current = false; }, 250);
+      setTimeout(() => {
+        isLoadingSessionRef.current = false;
+      }, 250);
     };
 
     loadCursorMsgs();
-  }, [selectedSession?.id, selectedProject?.fullPath, selectedProject?.path, isSystemSessionChange, loadCursorSessionMessages, setSessionMessages, setCurrentSessionId]);
+  }, [
+    selectedSession?.id,
+    selectedProject?.fullPath,
+    selectedProject?.path,
+    isSystemSessionChange,
+    loadCursorSessionMessages,
+    setSessionMessages,
+    setCurrentSessionId,
+  ]);
 
   // 4. Check session status via WebSocket when session changes
   useEffect(() => {
@@ -322,11 +379,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
     if (!sessionId || !ws || !sendMessage || isSystemSessionChange) return;
 
-    const provider = localStorage.getItem('selected-provider') || 'claude';
+    const provider = localStorage.getItem("selected-provider") || "claude";
     sendMessage({
-      type: 'check-session-status',
+      type: "check-session-status",
       sessionId: sessionId,
-      provider
+      provider,
     });
   }, [selectedSession?.id, ws, sendMessage, isSystemSessionChange]);
 
@@ -338,12 +395,22 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       }
       setSessionMessages([]);
       setCurrentSessionId(null);
-      sessionStorage.removeItem('cursorSessionId');
+      sessionStorage.removeItem("cursorSessionId");
       setMessagesOffset(0);
       setHasMoreMessages(false);
       setTotalMessages(0);
     }
-  }, [selectedSession, isSystemSessionChange, isLoading, currentSessionId, setSessionMessages, setCurrentSessionId, setMessagesOffset, setHasMoreMessages, setTotalMessages]);
+  }, [
+    selectedSession,
+    isSystemSessionChange,
+    isLoading,
+    currentSessionId,
+    setSessionMessages,
+    setCurrentSessionId,
+    setMessagesOffset,
+    setHasMoreMessages,
+    setTotalMessages,
+  ]);
 
   // Reset isSystemSessionChange flag after handling
   useEffect(() => {
@@ -359,9 +426,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     if (externalMessageUpdate > 0 && selectedSession && selectedProject) {
       const reloadExternalMessages = async () => {
         try {
-          const provider = localStorage.getItem('selected-provider') || 'claude';
+          const provider = localStorage.getItem("selected-provider") || "claude";
 
-          if (provider === 'cursor') {
+          if (provider === "cursor") {
             // Reload Cursor messages from SQLite
             const projectPath = selectedProject.fullPath || selectedProject.path;
             const converted = await loadCursorSessionMessages(projectPath, selectedSession.id);
@@ -384,13 +451,23 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             // If user scrolled up, preserve their position (they're reading history)
           }
         } catch (error) {
-          console.error('Error reloading messages from external update:', error);
+          console.error("Error reloading messages from external update:", error);
         }
       };
 
       reloadExternalMessages();
     }
-  }, [externalMessageUpdate, selectedSession, selectedProject, loadCursorSessionMessages, loadSessionMessages, setSessionMessages, isNearBottom, autoScrollToBottom, scrollToBottom]);
+  }, [
+    externalMessageUpdate,
+    selectedSession,
+    selectedProject,
+    loadCursorSessionMessages,
+    loadSessionMessages,
+    setSessionMessages,
+    isNearBottom,
+    autoScrollToBottom,
+    scrollToBottom,
+  ]);
 
   // REMOVED: Redundant sync - messages already written to store at lines 260, 277
 
@@ -407,7 +484,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     if (selectedProject && chatMessages.length > 0) {
       // Only save when message count changes significantly (every 5 messages) or on completion
       if (Math.abs(chatMessages.length - prevMessageCountRef.current) >= 5 || !isLoading) {
-        safeLocalStorage.setItem(`chat_messages_${selectedProject.name}`, JSON.stringify(chatMessages));
+        safeLocalStorage.setItem(
+          `chat_messages_${selectedProject.name}`,
+          JSON.stringify(chatMessages)
+        );
         prevMessageCountRef.current = chatMessages.length;
       }
     }
@@ -442,7 +522,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
   // Load token usage when session changes (but don't poll to avoid conflicts with WebSocket)
   useEffect(() => {
-    if (!selectedProject || !selectedSession?.id || selectedSession.id.startsWith('new-session-')) {
+    if (!selectedProject || !selectedSession?.id || selectedSession.id.startsWith("new-session-")) {
       // Reset for new/empty sessions
       setTokenBudget(null);
       return;
@@ -462,153 +542,177 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           setTokenBudget(null);
         }
       } catch (error) {
-        console.error('Failed to fetch initial token usage:', error);
+        console.error("Failed to fetch initial token usage:", error);
       }
     };
 
     fetchInitialTokenUsage();
   }, [selectedSession?.id, selectedProject?.path]);
 
-
   // Load earlier messages by increasing the visible message count
   const loadEarlierMessages = useCallback(() => {
-    setVisibleMessageCount(prevCount => prevCount + 100);
+    setVisibleMessageCount((prevCount) => prevCount + 100);
   }, []);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !selectedProject) return;
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!input.trim() || isLoading || !selectedProject) return;
 
-    // Upload images first if any
-    let uploadedImages = [];
-    if (attachedImages.length > 0) {
-      const formData = new FormData();
-      attachedImages.forEach(file => {
-        formData.append('images', file);
-      });
-      
-      try {
-        const token = safeLocalStorage.getItem('auth-token');
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(`/api/upload-images`, {
-          method: 'POST',
-          headers: headers,
-          body: formData
+      // Upload images first if any
+      let uploadedImages = [];
+      if (attachedImages.length > 0) {
+        const formData = new FormData();
+        attachedImages.forEach((file) => {
+          formData.append("images", file);
         });
-        
-        if (!response.ok) {
-          throw new Error('Failed to upload images');
+
+        try {
+          const token = safeLocalStorage.getItem("auth-token");
+          const headers = {};
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`/api/upload-images`, {
+            method: "POST",
+            headers: headers,
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to upload images");
+          }
+
+          const result = await response.json();
+          uploadedImages = result.images;
+        } catch (error) {
+          console.error("Image upload failed:", error);
+          // Write error to store using unified API
+          const errorSessionId = currentSessionId || selectedSession?.id || "";
+          if (errorSessionId) {
+            useMessageStore.getState().addErrorMessage(errorSessionId, error.message);
+          }
+          return;
         }
-        
-        const result = await response.json();
-        uploadedImages = result.images;
-      } catch (error) {
-        console.error('Image upload failed:', error);
-        // Write error to store using unified API
-        const errorSessionId = currentSessionId || selectedSession?.id || '';
-        if (errorSessionId) {
-          useMessageStore.getState().addErrorMessage(errorSessionId, error.message);
-        }
+      }
+
+      // === Determine unified session ID for this submission ===
+      // Session must exist before sending messages (created via warmup)
+      const effectiveSessionId =
+        currentSessionId || selectedSession?.id || sessionStorage.getItem("cursorSessionId");
+
+      if (!effectiveSessionId) {
+        console.error("No session ID available - user must create a session first");
+        alert("Please create a new session before sending messages.");
         return;
       }
-    }
 
-    // === Determine unified session ID for this submission ===
-    // Session must exist before sending messages (created via warmup)
-    const effectiveSessionId = currentSessionId || selectedSession?.id || sessionStorage.getItem('cursorSessionId');
+      const sessionIdToUse = effectiveSessionId;
 
-    if (!effectiveSessionId) {
-      console.error('No session ID available - user must create a session first');
-      alert('Please create a new session before sending messages.');
-      return;
-    }
+      // === Add user message using unified API ===
+      useMessageStore.getState().addUserMessage(sessionIdToUse, input, uploadedImages);
+      setIsLoading(true);
+      setCanAbortSession(true);
+      // Set a default status when starting
+      setAgentStatus({
+        text: "Processing",
+        tokens: 0,
+        can_interrupt: true,
+      });
 
-    const sessionIdToUse = effectiveSessionId;
+      // Always scroll to bottom when user sends a message and reset scroll state
+      setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Agent's response
+      setTimeout(() => scrollToBottom(), 100); // Longer delay to ensure message is rendered
 
-    // === Add user message using unified API ===
-    useMessageStore.getState().addUserMessage(sessionIdToUse, input, uploadedImages);
-    setIsLoading(true);
-    setCanAbortSession(true);
-    // Set a default status when starting
-    setAgentStatus({
-      text: 'Processing',
-      tokens: 0,
-      can_interrupt: true
-    });
-
-    // Always scroll to bottom when user sends a message and reset scroll state
-    setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Agent's response
-    setTimeout(() => scrollToBottom(), 100); // Longer delay to ensure message is rendered
-
-    // Session Protection: Mark session as active to prevent automatic project updates during conversation
-    if (onSessionActive) {
-      onSessionActive(sessionIdToUse);  // Use unified sessionId
-    }
-
-    // Get tools settings from localStorage based on provider
-    const getToolsSettings = () => {
-      try {
-        const settingsKey = provider === 'cursor' ? 'cursor-tools-settings' : 'claude-settings';
-        const savedSettings = safeLocalStorage.getItem(settingsKey);
-        if (savedSettings) {
-          return JSON.parse(savedSettings);
-        }
-      } catch (error) {
-        console.error('Error loading tools settings:', error);
+      // Session Protection: Mark session as active to prevent automatic project updates during conversation
+      if (onSessionActive) {
+        onSessionActive(sessionIdToUse); // Use unified sessionId
       }
-      return {
-        allowedTools: [],
-        disallowedTools: [],
-        skipPermissions: false
+
+      // Get tools settings from localStorage based on provider
+      const getToolsSettings = () => {
+        try {
+          const settingsKey = provider === "cursor" ? "cursor-tools-settings" : "claude-settings";
+          const savedSettings = safeLocalStorage.getItem(settingsKey);
+          if (savedSettings) {
+            return JSON.parse(savedSettings);
+          }
+        } catch (error) {
+          console.error("Error loading tools settings:", error);
+        }
+        return {
+          allowedTools: [],
+          disallowedTools: [],
+          skipPermissions: false,
+        };
       };
-    };
 
-    const toolsSettings = getToolsSettings();
+      const toolsSettings = getToolsSettings();
 
-    // Send command based on provider
-    if (provider === 'cursor') {
-      // Send Cursor command (always use cursor-command; include resume/sessionId when replying)
-      sendMessage({
-        type: 'cursor-command',
-        command: input,
-        sessionId: effectiveSessionId,
-        options: {
-          // Prefer fullPath (actual cwd for project), fallback to path
-          cwd: selectedProject.fullPath || selectedProject.path,
-          projectPath: selectedProject.fullPath || selectedProject.path,
+      // Send command based on provider
+      if (provider === "cursor") {
+        // Send Cursor command (always use cursor-command; include resume/sessionId when replying)
+        sendMessage({
+          type: "cursor-command",
+          command: input,
           sessionId: effectiveSessionId,
-          resume: !!effectiveSessionId,
-          model: cursorModel,
-          skipPermissions: toolsSettings?.skipPermissions || false,
-          toolsSettings: toolsSettings
-        }
-      });
-    } else {
-      // Send Agent command (existing code)
-      sendMessage({
-        type: 'agent-command',
-        command: input,
-        options: {
-          projectPath: selectedProject.path,
-          cwd: selectedProject.fullPath,
-          sessionId: currentSessionId,
-          resume: !!currentSessionId,
-          toolsSettings: toolsSettings,
-          permissionMode: permissionMode,
-          images: uploadedImages // Pass images to backend
-        }
-      });
-    }
+          options: {
+            // Prefer fullPath (actual cwd for project), fallback to path
+            cwd: selectedProject.fullPath || selectedProject.path,
+            projectPath: selectedProject.fullPath || selectedProject.path,
+            sessionId: effectiveSessionId,
+            resume: !!effectiveSessionId,
+            model: cursorModel,
+            skipPermissions: toolsSettings?.skipPermissions || false,
+            toolsSettings: toolsSettings,
+          },
+        });
+      } else {
+        // Send Agent command (existing code)
+        sendMessage({
+          type: "agent-command",
+          command: input,
+          options: {
+            projectPath: selectedProject.path,
+            cwd: selectedProject.fullPath,
+            sessionId: currentSessionId,
+            resume: !!currentSessionId,
+            toolsSettings: toolsSettings,
+            permissionMode: permissionMode,
+            images: uploadedImages, // Pass images to backend
+          },
+        });
+      }
 
-    clearInput();
-    setAttachedImages([]);
-    setUploadingImages(new Map());
-    setImageErrors(new Map());
-  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, sendMessage, setAttachedImages, setUploadingImages, setImageErrors, setIsLoading, setCanAbortSession, setAgentStatus, setIsUserScrolledUp, scrollToBottom, clearInput]);
+      clearInput();
+      setAttachedImages([]);
+      setUploadingImages(new Map());
+      setImageErrors(new Map());
+    },
+    [
+      input,
+      isLoading,
+      selectedProject,
+      attachedImages,
+      currentSessionId,
+      selectedSession,
+      provider,
+      permissionMode,
+      onSessionActive,
+      cursorModel,
+      sendMessage,
+      setAttachedImages,
+      setUploadingImages,
+      setImageErrors,
+      setIsLoading,
+      setCanAbortSession,
+      setAgentStatus,
+      setIsUserScrolledUp,
+      scrollToBottom,
+      clearInput,
+    ]
+  );
 
   // Store handleSubmit in ref so handleCustomCommand can access it
   useEffect(() => {
@@ -631,7 +735,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     // Permission mode is locked to bypassPermissions - no Tab key switching allowed
 
     // Handle Enter key: Ctrl+Enter (Cmd+Enter on Mac) sends, Shift+Enter creates new line
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       // If we're in composition, don't send message
       if (e.nativeEvent.isComposing) {
         return; // Let IME handle the Enter key
@@ -658,7 +762,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     const cursorPos = e.target.selectionStart;
 
     // Auto-select Agent provider if no session exists and user starts typing
-    if (!currentSessionId && newValue.trim() && provider === 'claude') {
+    if (!currentSessionId && newValue.trim() && provider === "claude") {
       // Provider is already set to 'claude' by default, so no need to change it
       // The session will be created automatically when they submit
     }
@@ -668,7 +772,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
     // Handle height reset when input becomes empty
     if (!newValue.trim()) {
-      e.target.style.height = 'auto';
+      e.target.style.height = "auto";
       setIsTextareaExpanded(false);
       return;
     }
@@ -684,23 +788,23 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     if (currentSessionId) {
       useMessageStore.getState().clearSessionMessages(currentSessionId);
     }
-    setInput('');
+    setInput("");
     setIsLoading(false);
     setCanAbortSession(false);
   };
-  
+
   const handleAbortSession = () => {
     if (currentSessionId && canAbortSession) {
       sendMessage({
-        type: 'abort-session',
+        type: "abort-session",
         sessionId: currentSessionId,
-        provider: provider
+        provider: provider,
       });
     }
   };
 
   const handleModeSwitch = () => {
-    const modes = ['default', 'acceptEdits', 'bypassPermissions', 'plan'];
+    const modes = ["default", "acceptEdits", "bypassPermissions", "plan"];
     const currentIndex = modes.indexOf(permissionMode);
     const nextIndex = (currentIndex + 1) % modes.length;
     const newMode = modes[nextIndex];
@@ -839,7 +943,10 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                       handleCommandSelect={commandProps.handleCommandSelect}
                       handleInputChange={createHandleInputChange(commandProps.detectSlashCommand)}
                       handleTextareaClick={handleTextareaClick}
-                      handleKeyDown={createHandleKeyDown(commandProps.handleCommandKeyDown, fileProps.handleFileKeyDown)}
+                      handleKeyDown={createHandleKeyDown(
+                        commandProps.handleCommandKeyDown,
+                        fileProps.handleFileKeyDown
+                      )}
                       handlePaste={handlePaste}
                       setIsInputFocused={setIsInputFocused}
                       setCursorPosition={setCursorPosition}

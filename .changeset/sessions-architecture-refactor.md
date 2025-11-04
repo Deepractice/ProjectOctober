@@ -34,58 +34,69 @@ server/
 ### Module Responsibilities
 
 **`index.js`** (Entry point - 88 lines)
+
 - Load environment configuration
 - Create HTTP and WebSocket servers
 - Route WebSocket connections
 - Start the server
 
 **`app.js`** (Express configuration)
+
 - Middleware setup
 - Route registration
 - Static file serving
 - Catch-all routing
 
 **`config/env.js`** (Environment management)
+
 - Load .env file
 - Parse environment variables
 
 **`websocket/chat.js`** (Chat WebSocket)
+
 - Handle Agent AI chat connections
 - Process chat messages
 - Session management commands
 
 **`websocket/shell.js`** (Shell WebSocket)
+
 - Handle terminal connections
 - PTY process management
 - Terminal I/O
 
 **`watchers/sessions.js`** (File monitoring)
+
 - Watch session folder changes
 - Notify connected clients
 - Debounced updates
 
 **`routes/sessions.js`** (Session API)
+
 - Session listing with pagination
 - Session message retrieval
 - Session deletion
 - Token usage tracking
 
 **`routes/project.js`** (Project API)
+
 - Project information
 - File tree listing
 - File read/write operations
 - Binary file serving
 
 **`routes/system.js`** (System API)
+
 - Server configuration
 - System updates
 
 **`routes/media.js`** (Media API)
+
 - Audio transcription (Whisper)
 - Image uploads
 - GPT enhancement modes
 
 **`messages.js`** (Message business logic - NEW)
+
 - Filter system messages (constants + functions)
 - Extract message text content
 - Process message entries
@@ -94,6 +105,7 @@ server/
 - Validate message types
 
 **`sessions.js`** (Session data operations)
+
 - Parse JSONL session files
 - Get session messages with pagination
 - Delete sessions
@@ -102,18 +114,21 @@ server/
 ## Benefits of This Refactoring
 
 ### Code Organization
+
 - **Single Responsibility**: Each module has one clear purpose
 - **Easier Testing**: Individual modules can be tested in isolation
 - **Better Maintainability**: Changes to one feature don't affect others
 - **Clearer Dependencies**: Module imports show relationships clearly
 
 ### Developer Experience
+
 - **Faster Onboarding**: New developers can understand code structure quickly
 - **Easier Debugging**: Problems are localized to specific modules
 - **Reduced Conflicts**: Team members can work on different modules without conflicts
 - **Better Code Review**: Smaller, focused modules are easier to review
 
 ### Performance
+
 - **Lazy Loading**: Modules are only loaded when needed
 - **Clearer Boundaries**: Easier to optimize specific features
 - **Better Caching**: Node.js can cache modules efficiently
@@ -123,16 +138,19 @@ server/
 All system message filtering logic is now centralized in `sessions.js`:
 
 **Filtered user messages**:
+
 - `<command-name>`, `<command-message>`, `<command-args>`, `<local-command-stdout>`
 - `<system-reminder>`, `Caveat:`
 - `Warmup` (session initialization)
 - Task Master JSON prompts
 
 **Filtered assistant messages**:
+
 - API error messages (flagged with `isApiErrorMessage`)
 - Task Master JSON responses
 
 **Benefits**:
+
 - Frontend doesn't need to know about "Warmup" or other technical details
 - `messageCount` accurately reflects real messages only
 - `summary` is generated from actual user messages

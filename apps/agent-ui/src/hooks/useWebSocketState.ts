@@ -10,12 +10,9 @@
  * - Initialized State: Handles initial values from props
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef } from "react";
 
-export function useWebSocketState({
-  initialSessionId = null,
-  initialPermissionMode = 'default'
-}) {
+export function useWebSocketState({ initialSessionId = null, initialPermissionMode = "default" }) {
   // Chat messages state
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -40,7 +37,7 @@ export function useWebSocketState({
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
 
   // Streaming refs - for buffering streaming responses
-  const streamBufferRef = useRef('');
+  const streamBufferRef = useRef("");
   const streamTimerRef = useRef(null);
 
   return {
@@ -68,6 +65,6 @@ export function useWebSocketState({
 
     // Refs
     streamBufferRef,
-    streamTimerRef
+    streamTimerRef,
   };
 }

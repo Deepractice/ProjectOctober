@@ -1,7 +1,7 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import AgentLogo from '../../AgentLogo.jsx';
-import MessageComponent from '../MessageRenderer';
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import AgentLogo from "../../AgentLogo.jsx";
+import MessageComponent from "../MessageRenderer";
 
 function MessagesArea({
   // Refs
@@ -32,7 +32,7 @@ function MessagesArea({
   autoExpandTools,
   showRawParameters,
   showThinking,
-  selectedProject
+  selectedProject,
 }) {
   return (
     <div
@@ -100,13 +100,13 @@ function MessagesArea({
 
               return (
                 <motion.div
-                  key={`message-${index}-${message.timestamp || ''}`}
+                  key={`message-${index}-${message.timestamp || ""}`}
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, x: -20, scale: 0.95 }}
                   transition={{
                     duration: 0.3,
-                    ease: [0.4, 0, 0.2, 1]
+                    ease: [0.4, 0, 0.2, 1],
                   }}
                 >
                   <MessageComponent
@@ -148,8 +148,12 @@ function MessagesArea({
               <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">
                 <div className="flex items-center space-x-1">
                   <div className="animate-pulse">●</div>
-                  <div className="animate-pulse" style={{ animationDelay: '0.2s' }}>●</div>
-                  <div className="animate-pulse" style={{ animationDelay: '0.4s' }}>●</div>
+                  <div className="animate-pulse" style={{ animationDelay: "0.2s" }}>
+                    ●
+                  </div>
+                  <div className="animate-pulse" style={{ animationDelay: "0.4s" }}>
+                    ●
+                  </div>
                   <span className="ml-2">Thinking...</span>
                 </div>
               </div>

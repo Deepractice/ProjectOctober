@@ -10,12 +10,15 @@
  * - Latest state accessed via stateRef
  */
 
-import { useEffect, useRef } from 'react';
-import { useMessageStore } from '../stores';
-import { decodeHtmlEntities, formatUsageLimitText } from '../components/ChatInterface/MessageRenderer';
-import { authenticatedFetch } from '../utils/api';
-import safeLocalStorage from '../utils/safeLocalStorage';
-import type { ChatMessage } from '../types';
+import { useEffect, useRef } from "react";
+import { useMessageStore } from "../stores";
+import {
+  decodeHtmlEntities,
+  formatUsageLimitText,
+} from "../components/ChatInterface/MessageRenderer";
+import { authenticatedFetch } from "../utils/api";
+import safeLocalStorage from "../utils/safeLocalStorage";
+import type { ChatMessage } from "../types";
 
 export function useWebSocketHandlers({
   // Current session context
@@ -83,7 +86,7 @@ export function useWebSocketHandlers({
       }
 
       const chunk = streamBufferRef.current;
-      streamBufferRef.current = '';
+      streamBufferRef.current = "";
 
       if (!chunk) return;
 
@@ -94,7 +97,7 @@ export function useWebSocketHandlers({
       if (!isStreaming) {
         const messages = messageStore.getDisplayMessages(sessionId);
         const lastMsg = messages[messages.length - 1];
-        if (lastMsg && lastMsg.type === 'assistant' && lastMsg.content) {
+        if (lastMsg && lastMsg.type === "assistant" && lastMsg.content) {
           messageStore.updateLastAssistantMessage(sessionId, lastMsg.content);
         }
       }
@@ -112,9 +115,9 @@ export function useWebSocketHandlers({
       const messageData = msg.data?.message || msg.data;
 
       // Handle streaming format
-      if (messageData && typeof messageData === 'object' && messageData.type) {
+      if (messageData && typeof messageData === "object" && messageData.type) {
         // Streaming delta
-        if (messageData.type === 'content_block_delta' && messageData.delta?.text) {
+        if (messageData.type === "content_block_delta" && messageData.delta?.text) {
           const decodedText = decodeHtmlEntities(messageData.delta.text);
           streamBufferRef.current += decodedText;
 
@@ -127,24 +130,25 @@ export function useWebSocketHandlers({
         }
 
         // Streaming stop
-        if (messageData.type === 'content_block_stop') {
+        if (messageData.type === "content_block_stop") {
           flushStreamBuffer(currentSessionId, false);
           return;
         }
       }
 
       // Handle system/init messages for session changes
-      if (messageData.type === 'system' &&
-          messageData.subtype === 'init' &&
-          messageData.session_id) {
-
+      if (
+        messageData.type === "system" &&
+        messageData.subtype === "init" &&
+        messageData.session_id
+      ) {
         if (currentSessionId && messageData.session_id !== currentSessionId) {
           setIsSystemSessionChange(true);
           if (onNavigateToSession) {
             onNavigateToSession(messageData.session_id);
           }
         } else if (!currentSessionId) {
-          sessionStorage.setItem('pendingNavigationSessionId', messageData.session_id);
+          sessionStorage.setItem("pendingNavigationSessionId", messageData.session_id);
         }
         return;
       }
@@ -152,22 +156,22 @@ export function useWebSocketHandlers({
       // Handle content (text, tool use)
       if (Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
-          if (part.type === 'tool_use') {
+          if (part.type === "tool_use") {
             // Add tool use message
             messageStore.addToolUse(
               currentSessionId,
               part.name,
-              part.input ? JSON.stringify(part.input, null, 2) : '',
+              part.input ? JSON.stringify(part.input, null, 2) : "",
               part.id
             );
-          } else if (part.type === 'text' && part.text?.trim()) {
+          } else if (part.type === "text" && part.text?.trim()) {
             let content = decodeHtmlEntities(part.text);
             content = formatUsageLimitText(content);
             // Add assistant message
             messageStore.addAssistantMessage(currentSessionId, content);
           }
         }
-      } else if (typeof messageData.content === 'string' && messageData.content.trim()) {
+      } else if (typeof messageData.content === "string" && messageData.content.trim()) {
         let content = decodeHtmlEntities(messageData.content);
         content = formatUsageLimitText(content);
         // Add assistant message
@@ -175,14 +179,14 @@ export function useWebSocketHandlers({
       }
 
       // Handle tool results
-      if (messageData.role === 'user' && Array.isArray(messageData.content)) {
+      if (messageData.role === "user" && Array.isArray(messageData.content)) {
         for (const part of messageData.content) {
-          if (part.type === 'tool_result') {
+          if (part.type === "tool_result") {
             // Update the tool result
             messageStore.updateToolResult(currentSessionId, part.tool_use_id, {
               content: part.content,
               isError: part.is_error,
-              timestamp: new Date()
+              timestamp: new Date(),
             });
           }
         }
@@ -197,9 +201,9 @@ export function useWebSocketHandlers({
         return;
       }
 
-      const cleaned = String(msg.data || '');
+      const cleaned = String(msg.data || "");
       if (cleaned.trim()) {
-        streamBufferRef.current += (streamBufferRef.current ? `\n${cleaned}` : cleaned);
+        streamBufferRef.current += streamBufferRef.current ? `\n${cleaned}` : cleaned;
 
         if (!streamTimerRef.current) {
           streamTimerRef.current = setTimeout(() => {
@@ -231,10 +235,11 @@ export function useWebSocketHandlers({
         setCanAbortSession,
         setAgentStatus,
         setTokenBudget,
-        setCurrentSessionId
+        setCurrentSessionId,
       } = stateRef.current;
 
-      const completedSessionId = msg.sessionId || currentSessionId || sessionStorage.getItem('pendingSessionId');
+      const completedSessionId =
+        msg.sessionId || currentSessionId || sessionStorage.getItem("pendingSessionId");
 
       if (completedSessionId === currentSessionId || !currentSessionId) {
         setIsLoading(false);
@@ -255,22 +260,22 @@ export function useWebSocketHandlers({
                 setTokenBudget(data);
               }
             } catch (error) {
-              console.error('Failed to fetch updated token usage:', error);
+              console.error("Failed to fetch updated token usage:", error);
             }
           };
           fetchUpdatedTokenUsage();
         }
       }
 
-      const pendingSessionId = sessionStorage.getItem('pendingSessionId');
-      const pendingNavigationSessionId = sessionStorage.getItem('pendingNavigationSessionId');
+      const pendingSessionId = sessionStorage.getItem("pendingSessionId");
+      const pendingNavigationSessionId = sessionStorage.getItem("pendingNavigationSessionId");
 
       if (pendingSessionId && !currentSessionId && msg.exitCode === 0) {
         setCurrentSessionId(pendingSessionId);
-        sessionStorage.removeItem('pendingSessionId');
+        sessionStorage.removeItem("pendingSessionId");
 
         if (pendingNavigationSessionId) {
-          sessionStorage.removeItem('pendingNavigationSessionId');
+          sessionStorage.removeItem("pendingNavigationSessionId");
           const { onNavigateToSession } = stateRef.current;
           if (onNavigateToSession) {
             setTimeout(() => onNavigateToSession(pendingNavigationSessionId), 700);
@@ -285,7 +290,8 @@ export function useWebSocketHandlers({
 
     // Handler: session-aborted
     const handleSessionAborted = (msg: any) => {
-      const { currentSessionId, setIsLoading, setCanAbortSession, setAgentStatus } = stateRef.current;
+      const { currentSessionId, setIsLoading, setCanAbortSession, setAgentStatus } =
+        stateRef.current;
       const abortedSessionId = msg.sessionId || currentSessionId;
 
       if (abortedSessionId === currentSessionId) {
@@ -295,16 +301,23 @@ export function useWebSocketHandlers({
       }
 
       // Add abort message
-      messageStore.addAssistantMessage(abortedSessionId, 'Session interrupted by user.');
+      messageStore.addAssistantMessage(abortedSessionId, "Session interrupted by user.");
     };
 
     // Handler: session-status
     const handleSessionStatus = (msg: any) => {
-      const { currentSessionId, selectedSession, setIsLoading, setCanAbortSession, onSessionProcessing } = stateRef.current;
+      const {
+        currentSessionId,
+        selectedSession,
+        setIsLoading,
+        setCanAbortSession,
+        onSessionProcessing,
+      } = stateRef.current;
 
       const statusSessionId = msg.sessionId;
-      const isCurrentSession = statusSessionId === currentSessionId ||
-                               (selectedSession && statusSessionId === selectedSession.id);
+      const isCurrentSession =
+        statusSessionId === currentSessionId ||
+        (selectedSession && statusSessionId === selectedSession.id);
 
       if (isCurrentSession && msg.isProcessing) {
         setIsLoading(true);
@@ -322,16 +335,16 @@ export function useWebSocketHandlers({
 
       if (statusData) {
         let statusInfo = {
-          text: 'Working...',
+          text: "Working...",
           tokens: 0,
-          can_interrupt: true
+          can_interrupt: true,
         };
 
         if (statusData.message) {
           statusInfo.text = statusData.message;
         } else if (statusData.status) {
           statusInfo.text = statusData.status;
-        } else if (typeof statusData === 'string') {
+        } else if (typeof statusData === "string") {
           statusInfo.text = statusData;
         }
 
@@ -352,25 +365,25 @@ export function useWebSocketHandlers({
     };
 
     // Register all handlers (ONCE)
-    console.log('✅ Registering WebSocket handlers (one-time)');
-    messageStore.registerHandler('agent-response', handleAgentResponse);
-    messageStore.registerHandler('claude-output', handleAgentOutput);
-    messageStore.registerHandler('claude-error', handleAgentError);
-    messageStore.registerHandler('agent-complete', handleAgentComplete);
-    messageStore.registerHandler('session-aborted', handleSessionAborted);
-    messageStore.registerHandler('session-status', handleSessionStatus);
-    messageStore.registerHandler('claude-status', handleAgentStatus);
+    console.log("✅ Registering WebSocket handlers (one-time)");
+    messageStore.registerHandler("agent-response", handleAgentResponse);
+    messageStore.registerHandler("claude-output", handleAgentOutput);
+    messageStore.registerHandler("claude-error", handleAgentError);
+    messageStore.registerHandler("agent-complete", handleAgentComplete);
+    messageStore.registerHandler("session-aborted", handleSessionAborted);
+    messageStore.registerHandler("session-status", handleSessionStatus);
+    messageStore.registerHandler("claude-status", handleAgentStatus);
 
     // Cleanup on unmount
     return () => {
-      console.log('🧹 Unregistering WebSocket handlers');
-      messageStore.unregisterHandler('agent-response');
-      messageStore.unregisterHandler('claude-output');
-      messageStore.unregisterHandler('claude-error');
-      messageStore.unregisterHandler('agent-complete');
-      messageStore.unregisterHandler('session-aborted');
-      messageStore.unregisterHandler('session-status');
-      messageStore.unregisterHandler('claude-status');
+      console.log("🧹 Unregistering WebSocket handlers");
+      messageStore.unregisterHandler("agent-response");
+      messageStore.unregisterHandler("claude-output");
+      messageStore.unregisterHandler("claude-error");
+      messageStore.unregisterHandler("agent-complete");
+      messageStore.unregisterHandler("session-aborted");
+      messageStore.unregisterHandler("session-status");
+      messageStore.unregisterHandler("claude-status");
     };
   }, []); // Empty deps - register once on mount
 }

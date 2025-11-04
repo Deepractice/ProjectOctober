@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 /**
  * Custom hook to persist state in localStorage.
@@ -9,7 +9,7 @@ import { useState } from 'react';
  */
 function useLocalStorage(key, initialValue) {
   const [storedValue, setStoredValue] = useState(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return initialValue;
     }
     try {
@@ -22,12 +22,11 @@ function useLocalStorage(key, initialValue) {
   });
 
   const setValue = (value) => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return;
     }
     try {
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
       setStoredValue(valueToStore);
     } catch (error) {

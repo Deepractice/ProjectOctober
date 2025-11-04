@@ -3,17 +3,17 @@
  */
 
 export type WebSocketMessageType =
-  | 'session-created'
-  | 'sessions_updated'
-  | 'token-budget'
-  | 'agent-response'
-  | 'claude-output'
-  | 'claude-interactive-prompt'
-  | 'claude-error'
-  | 'agent-complete'
-  | 'session-aborted'
-  | 'session-status'
-  | 'claude-status';
+  | "session-created"
+  | "sessions_updated"
+  | "token-budget"
+  | "agent-response"
+  | "claude-output"
+  | "claude-interactive-prompt"
+  | "claude-error"
+  | "agent-complete"
+  | "session-aborted"
+  | "session-status"
+  | "claude-status";
 
 export interface BaseWebSocketMessage {
   type: WebSocketMessageType;
@@ -22,46 +22,46 @@ export interface BaseWebSocketMessage {
 }
 
 export interface SessionCreatedMessage extends BaseWebSocketMessage {
-  type: 'session-created';
+  type: "session-created";
   sessionId: string;
 }
 
 export interface SessionsUpdatedMessage extends BaseWebSocketMessage {
-  type: 'sessions_updated';
-  sessions: import('./session').Session[];
+  type: "sessions_updated";
+  sessions: import("./session").Session[];
 }
 
 export interface AgentCompleteMessage extends BaseWebSocketMessage {
-  type: 'agent-complete';
+  type: "agent-complete";
   sessionId: string;
   exitCode?: number;
 }
 
 export interface SessionAbortedMessage extends BaseWebSocketMessage {
-  type: 'session-aborted';
+  type: "session-aborted";
   sessionId: string;
 }
 
 export interface SessionStatusMessage extends BaseWebSocketMessage {
-  type: 'session-status';
+  type: "session-status";
   sessionId: string;
   isProcessing: boolean;
 }
 
 export interface AgentResponseMessage extends BaseWebSocketMessage {
-  type: 'agent-response';
+  type: "agent-response";
   sessionId: string;
   data?: any;
 }
 
 export interface AgentOutputMessage extends BaseWebSocketMessage {
-  type: 'claude-output';
+  type: "claude-output";
   sessionId: string;
   data?: any;
 }
 
 export interface AgentErrorMessage extends BaseWebSocketMessage {
-  type: 'claude-error';
+  type: "claude-error";
   sessionId: string;
   error?: string;
   data?: any;
@@ -87,9 +87,9 @@ export interface MessageState {
   processedMessageIds: Set<string>;
 
   // Chat message storage - Single source of truth
-  sessionMessages: Map<string, import('./chat').ChatMessage[]>;      // All messages
-  loadingSessions: Set<string>;                                       // Loading indicators
-  messageMetadata: Map<string, import('./chat').MessageMetadata>;    // Pagination metadata
+  sessionMessages: Map<string, import("./chat").ChatMessage[]>; // All messages
+  loadingSessions: Set<string>; // Loading indicators
+  messageMetadata: Map<string, import("./chat").MessageMetadata>; // Pagination metadata
 
   // Message routing actions (existing)
   handleMessage: (message: WebSocketMessage) => void;
@@ -113,9 +113,9 @@ export interface MessageState {
   clearSessionMessages: (sessionId: string) => void;
 
   // Legacy methods (for backward compatibility during migration)
-  setServerMessages: (sessionId: string, messages: import('./chat').ChatMessage[]) => void;
-  getDisplayMessages: (sessionId: string) => import('./chat').ChatMessage[];
+  setServerMessages: (sessionId: string, messages: import("./chat").ChatMessage[]) => void;
+  getDisplayMessages: (sessionId: string) => import("./chat").ChatMessage[];
   hasSessionMessages: (sessionId: string) => boolean;
   setLoading: (sessionId: string, loading: boolean) => void;
-  setMetadata: (sessionId: string, metadata: import('./chat').MessageMetadata) => void;
+  setMetadata: (sessionId: string, metadata: import("./chat").MessageMetadata) => void;
 }

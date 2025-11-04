@@ -21,36 +21,36 @@
 /**
  * System entry types that should be filtered out
  */
-export const SYSTEM_ENTRY_TYPES = ['queue-operation', 'summary'];
+export const SYSTEM_ENTRY_TYPES = ["queue-operation", "summary"];
 
 /**
  * User message patterns that indicate system messages
  */
 const USER_SYSTEM_MESSAGE_PATTERNS = [
-  '<command-name>',
-  '<command-message>',
-  '<command-args>',
-  '<local-command-stdout>',
-  '<system-reminder>',
-  'Caveat:',
-  'This session is being continued from a previous',
-  'Invalid API key',
+  "<command-name>",
+  "<command-message>",
+  "<command-args>",
+  "<local-command-stdout>",
+  "<system-reminder>",
+  "Caveat:",
+  "This session is being continued from a previous",
+  "Invalid API key",
   '{"subtasks":',
-  'CRITICAL: You MUST respond with ONLY a JSON'
+  "CRITICAL: You MUST respond with ONLY a JSON",
 ];
 
 /**
  * Exact user message strings that indicate system messages
  */
-const USER_SYSTEM_MESSAGE_EXACT = ['Warmup'];
+const USER_SYSTEM_MESSAGE_EXACT = ["Warmup"];
 
 /**
  * Assistant message patterns that indicate system messages
  */
 const ASSISTANT_SYSTEM_MESSAGE_PATTERNS = [
-  'Invalid API key',
+  "Invalid API key",
   '{"subtasks":',
-  'CRITICAL: You MUST respond with ONLY a JSON'
+  "CRITICAL: You MUST respond with ONLY a JSON",
 ];
 
 // ══════════════════════════════════════════════════════════
@@ -70,7 +70,7 @@ export function isSystemEntry(entry) {
 export function isSystemUserMessage(content) {
   const textContent = extractTextContent(content);
 
-  if (typeof textContent !== 'string') {
+  if (typeof textContent !== "string") {
     return false;
   }
 
@@ -80,8 +80,8 @@ export function isSystemUserMessage(content) {
   }
 
   // Check patterns
-  return USER_SYSTEM_MESSAGE_PATTERNS.some(pattern =>
-    textContent.startsWith(pattern) || textContent.includes(pattern)
+  return USER_SYSTEM_MESSAGE_PATTERNS.some(
+    (pattern) => textContent.startsWith(pattern) || textContent.includes(pattern)
   );
 }
 
@@ -91,12 +91,12 @@ export function isSystemUserMessage(content) {
 export function isSystemAssistantMessage(content) {
   const textContent = extractTextContent(content);
 
-  if (typeof textContent !== 'string') {
+  if (typeof textContent !== "string") {
     return false;
   }
 
-  return ASSISTANT_SYSTEM_MESSAGE_PATTERNS.some(pattern =>
-    textContent.startsWith(pattern) || textContent.includes(pattern)
+  return ASSISTANT_SYSTEM_MESSAGE_PATTERNS.some(
+    (pattern) => textContent.startsWith(pattern) || textContent.includes(pattern)
   );
 }
 
@@ -115,12 +115,12 @@ export function shouldFilterMessage(entry) {
   }
 
   // Filter user system messages
-  if (entry.message?.role === 'user' && entry.message?.content) {
+  if (entry.message?.role === "user" && entry.message?.content) {
     return isSystemUserMessage(entry.message.content);
   }
 
   // Filter assistant system messages
-  if (entry.message?.role === 'assistant' && entry.message?.content) {
+  if (entry.message?.role === "assistant" && entry.message?.content) {
     return isSystemAssistantMessage(entry.message.content);
   }
 
@@ -136,14 +136,14 @@ export function shouldFilterMessage(entry) {
  */
 export function extractTextContent(content) {
   // String format
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
 
   // Array format (Agent API format)
   if (Array.isArray(content)) {
     for (const part of content) {
-      if (part.type === 'text' && part.text) {
+      if (part.type === "text" && part.text) {
         return part.text;
       }
     }
@@ -156,13 +156,13 @@ export function extractTextContent(content) {
  * Extract user message text from entry
  */
 export function extractUserMessageText(entry) {
-  if (entry.message?.role !== 'user' || !entry.message?.content) {
+  if (entry.message?.role !== "user" || !entry.message?.content) {
     return null;
   }
 
   const textContent = extractTextContent(entry.message.content);
 
-  if (typeof textContent === 'string' && textContent.length > 0) {
+  if (typeof textContent === "string" && textContent.length > 0) {
     return textContent;
   }
 
@@ -173,13 +173,13 @@ export function extractUserMessageText(entry) {
  * Extract assistant message text from entry
  */
 export function extractAssistantMessageText(entry) {
-  if (entry.message?.role !== 'assistant' || !entry.message?.content) {
+  if (entry.message?.role !== "assistant" || !entry.message?.content) {
     return null;
   }
 
   const textContent = extractTextContent(entry.message.content);
 
-  if (typeof textContent === 'string' && textContent.length > 0) {
+  if (typeof textContent === "string" && textContent.length > 0) {
     return textContent;
   }
 
@@ -207,7 +207,7 @@ export function processMessageEntry(entry, session) {
   let shouldCount = true;
 
   // Process user message
-  if (entry.message?.role === 'user') {
+  if (entry.message?.role === "user") {
     if (isSystemUserMessage(entry.message.content)) {
       shouldCount = false;
     } else {
@@ -219,7 +219,7 @@ export function processMessageEntry(entry, session) {
   }
 
   // Process assistant message
-  if (entry.message?.role === 'assistant') {
+  if (entry.message?.role === "assistant") {
     if (entry.isApiErrorMessage === true || isSystemAssistantMessage(entry.message.content)) {
       shouldCount = false;
     } else {
@@ -253,7 +253,7 @@ export function shouldCountMessage(entry) {
  * Generate a summary from text (truncate if needed)
  */
 export function generateSummary(text, maxLength = 50) {
-  if (!text || typeof text !== 'string') {
+  if (!text || typeof text !== "string") {
     return null;
   }
 
@@ -261,21 +261,19 @@ export function generateSummary(text, maxLength = 50) {
     return text;
   }
 
-  return text.substring(0, maxLength) + '...';
+  return text.substring(0, maxLength) + "...";
 }
 
 /**
  * Sort messages by timestamp (ascending)
  */
 export function sortMessagesByTimestamp(messages) {
-  return messages.sort((a, b) =>
-    new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
-  );
+  return messages.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
 }
 
 /**
  * Check if a summary looks like a JSON error (Task Master errors)
  */
 export function isInvalidSummary(summary) {
-  return typeof summary === 'string' && summary.startsWith('{ "');
+  return typeof summary === "string" && summary.startsWith('{ "');
 }

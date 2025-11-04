@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import AgentStatus from '../AgentStatus';
+import { useState } from "react";
+import AgentStatus from "../AgentStatus";
 
 /**
  * AgentStatusBar - Encapsulates Agent status display and management
@@ -22,7 +22,7 @@ function AgentStatusBar({
   showThinking,
 
   // Children (render prop pattern for custom rendering)
-  children
+  children,
 }) {
   // Internal state management (only used if no external control)
   const [internalStatus, setInternalStatus] = useState(initialStatus);
@@ -41,10 +41,10 @@ function AgentStatusBar({
   };
 
   // Provide status control via render prop if children is a function
-  if (typeof children === 'function') {
+  if (typeof children === "function") {
     return children({
       status: claudeStatus,
-      setStatus: updateStatus
+      setStatus: updateStatus,
     });
   }
 

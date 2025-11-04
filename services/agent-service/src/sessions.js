@@ -12,20 +12,20 @@
  * - Calculate session metadata (using messages.js)
  */
 
-import { promises as fs } from 'fs';
-import fsSync from 'fs';
-import path from 'path';
-import readline from 'readline';
-import { getCurrentProject } from './projects.js';
+import { promises as fs } from "fs";
+import fsSync from "fs";
+import path from "path";
+import readline from "readline";
+import { getCurrentProject } from "./projects.js";
 import {
   shouldFilterMessage,
   processMessageEntry,
   generateSummary,
   sortMessagesByTimestamp,
-  isInvalidSummary
-} from './messages.js';
-import sessionManager from './core/SessionManager.js';
-import { logger } from './utils/logger.js';
+  isInvalidSummary,
+} from "./messages.js";
+import sessionManager from "./core/SessionManager.js";
+import { logger } from "./utils/logger.js";
 
 /**
  * Parse JSONL file and extract sessions with metadata
@@ -48,7 +48,7 @@ async function parseJsonlSessions(filePath) {
     const fileStream = fsSync.createReadStream(filePath);
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     for await (const line of rl) {
@@ -58,7 +58,7 @@ async function parseJsonlSessions(filePath) {
           entries.push(entry);
 
           // Handle summary entries that don't have sessionId yet
-          if (entry.type === 'summary' && entry.summary && !entry.sessionId && entry.leafUuid) {
+          if (entry.type === "summary" && entry.summary && !entry.sessionId && entry.leafUuid) {
             pendingSummaries.set(entry.leafUuid, entry.summary);
           }
 
@@ -67,24 +67,28 @@ async function parseJsonlSessions(filePath) {
             if (!sessions.has(entry.sessionId)) {
               sessions.set(entry.sessionId, {
                 id: entry.sessionId,
-                summary: 'New Session',
+                summary: "New Session",
                 messageCount: 0,
                 lastActivity: new Date(),
-                cwd: entry.cwd || '',
+                cwd: entry.cwd || "",
                 lastUserMessage: null,
-                lastAssistantMessage: null
+                lastAssistantMessage: null,
               });
             }
 
             const session = sessions.get(entry.sessionId);
 
             // Apply pending summary
-            if (session.summary === 'New Session' && entry.parentUuid && pendingSummaries.has(entry.parentUuid)) {
+            if (
+              session.summary === "New Session" &&
+              entry.parentUuid &&
+              pendingSummaries.has(entry.parentUuid)
+            ) {
               session.summary = pendingSummaries.get(entry.parentUuid);
             }
 
             // Update summary from summary entries
-            if (entry.type === 'summary' && entry.summary) {
+            if (entry.type === "summary" && entry.summary) {
               session.summary = entry.summary;
             }
 
@@ -104,7 +108,7 @@ async function parseJsonlSessions(filePath) {
 
     // Set final summary based on last message if no summary exists
     for (const session of sessions.values()) {
-      if (session.summary === 'New Session') {
+      if (session.summary === "New Session") {
         const lastMessage = session.lastUserMessage || session.lastAssistantMessage;
         if (lastMessage) {
           session.summary = generateSummary(lastMessage);
@@ -114,12 +118,12 @@ async function parseJsonlSessions(filePath) {
 
     // Filter out sessions with invalid summaries (Task Master errors)
     const allSessions = Array.from(sessions.values());
-    const filteredSessions = allSessions.filter(session => !isInvalidSummary(session.summary));
+    const filteredSessions = allSessions.filter((session) => !isInvalidSummary(session.summary));
 
     const result = {
       sessions: filteredSessions,
       entries: entries,
-      filePath // 🆕 Include file path for cache tracking
+      filePath, // 🆕 Include file path for cache tracking
     };
 
     // 🆕 Cache the result
@@ -127,7 +131,7 @@ async function parseJsonlSessions(filePath) {
 
     return result;
   } catch (error) {
-    console.error('Error reading JSONL file:', error);
+    console.error("Error reading JSONL file:", error);
     return { sessions: [], entries: [], filePath };
   }
 }
@@ -142,7 +146,9 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
 
   try {
     const files = await fs.readdir(projectDir);
-    const jsonlFiles = files.filter(file => file.endsWith('.jsonl') && !file.startsWith('agent-'));
+    const jsonlFiles = files.filter(
+      (file) => file.endsWith(".jsonl") && !file.startsWith("agent-")
+    );
 
     if (jsonlFiles.length === 0) {
       return { messages: [], total: 0, hasMore: false };
@@ -156,7 +162,7 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
       const fileStream = fsSync.createReadStream(jsonlFile);
       const rl = readline.createInterface({
         input: fileStream,
-        crlfDelay: Infinity
+        crlfDelay: Infinity,
       });
 
       for await (const line of rl) {
@@ -170,7 +176,7 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
               }
             }
           } catch (parseError) {
-            console.warn('Error parsing line:', parseError.message);
+            console.warn("Error parsing line:", parseError.message);
           }
         }
       }
@@ -196,7 +202,7 @@ async function getSessionMessages(sessionId, limit = null, offset = 0) {
       total,
       hasMore,
       offset,
-      limit
+      limit,
     };
   } catch (error) {
     console.error(`Error reading messages for session ${sessionId}:`, error);
@@ -213,10 +219,10 @@ async function deleteSession(sessionId) {
 
   try {
     const files = await fs.readdir(projectDir);
-    const jsonlFiles = files.filter(file => file.endsWith('.jsonl'));
+    const jsonlFiles = files.filter((file) => file.endsWith(".jsonl"));
 
     if (jsonlFiles.length === 0) {
-      throw new Error('No session files found for this project');
+      throw new Error("No session files found for this project");
     }
 
     let deletedFromAnyFile = false;
@@ -227,11 +233,11 @@ async function deleteSession(sessionId) {
     // Check ALL JSONL files (not just the first one) to ensure complete deletion
     for (const file of jsonlFiles) {
       const jsonlFile = path.join(projectDir, file);
-      const content = await fs.readFile(jsonlFile, 'utf8');
-      const lines = content.split('\n').filter(line => line.trim());
+      const content = await fs.readFile(jsonlFile, "utf8");
+      const lines = content.split("\n").filter((line) => line.trim());
 
       // Check if this file contains the session
-      const hasSession = lines.some(line => {
+      const hasSession = lines.some((line) => {
         try {
           const data = JSON.parse(line);
           return data.sessionId === sessionId;
@@ -243,7 +249,7 @@ async function deleteSession(sessionId) {
       if (hasSession) {
         // Collect all UUIDs related to this session
         const sessionUUIDs = new Set();
-        lines.forEach(line => {
+        lines.forEach((line) => {
           try {
             const data = JSON.parse(line);
             if (data.sessionId === sessionId) {
@@ -256,7 +262,7 @@ async function deleteSession(sessionId) {
         });
 
         // Filter out all entries for this session and related summary entries
-        const filteredLines = lines.filter(line => {
+        const filteredLines = lines.filter((line) => {
           try {
             const data = JSON.parse(line);
             // Remove if:
@@ -265,7 +271,7 @@ async function deleteSession(sessionId) {
             if (data.sessionId === sessionId) {
               return false;
             }
-            if (data.type === 'summary' && data.leafUuid && sessionUUIDs.has(data.leafUuid)) {
+            if (data.type === "summary" && data.leafUuid && sessionUUIDs.has(data.leafUuid)) {
               return false;
             }
             return true;
@@ -277,7 +283,9 @@ async function deleteSession(sessionId) {
         const entriesRemovedFromFile = lines.length - filteredLines.length;
         totalEntriesRemoved += entriesRemovedFromFile;
 
-        logger.info(`🗑️ Deleting from ${path.basename(jsonlFile)}: ${entriesRemovedFromFile} entries removed`);
+        logger.info(
+          `🗑️ Deleting from ${path.basename(jsonlFile)}: ${entriesRemovedFromFile} entries removed`
+        );
 
         // If file is empty after deletion, delete the file itself
         if (filteredLines.length === 0) {
@@ -286,7 +294,7 @@ async function deleteSession(sessionId) {
           filesDeleted++;
         } else {
           // Write back the filtered content
-          await fs.writeFile(jsonlFile, filteredLines.join('\n') + '\n');
+          await fs.writeFile(jsonlFile, filteredLines.join("\n") + "\n");
           logger.info(`💾 File updated with ${filteredLines.length} remaining entries`);
           filesModified++;
         }
@@ -315,8 +323,4 @@ async function deleteSession(sessionId) {
   }
 }
 
-export {
-  parseJsonlSessions,
-  getSessionMessages,
-  deleteSession
-};
+export { parseJsonlSessions, getSessionMessages, deleteSession };

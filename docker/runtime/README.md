@@ -56,6 +56,7 @@ Approximately ~800MB (compressed ~300MB)
 Default: `docker.io/deepractice/agent-runtime`
 
 Custom registry:
+
 ```bash
 export REGISTRY=your-registry.com
 ./build.sh 1.0.0

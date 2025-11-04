@@ -5,6 +5,7 @@ This document describes the configuration changes made to integrate Agent UI int
 ## Changes Made
 
 ### 1. Directory Structure
+
 ```
 ProjectOctober/
 ├── apps/
@@ -29,6 +30,7 @@ ProjectOctober/
 ### 2. Root Configuration
 
 #### `package.json`
+
 - **Name**: `project-october` (changed from `@siteboon/claude-code-ui`)
 - **Version**: `1.0.0`
 - **Private**: `true`
@@ -40,6 +42,7 @@ ProjectOctober/
 - **Engines**: Node.js >=20.0.0, pnpm >=9.0.0
 
 #### `pnpm-workspace.yaml`
+
 ```yaml
 packages:
   - apps/*
@@ -55,11 +58,13 @@ ignoredBuiltDependencies:
 ```
 
 **Why ignore built dependencies?**
+
 - These are native modules with platform-specific binaries
 - Need to be built separately for each platform
 - Prevents pnpm from caching pre-built binaries across platforms
 
 #### `turbo.json`
+
 ```json
 {
   "tasks": {
@@ -93,6 +98,7 @@ ignoredBuiltDependencies:
 ### 3. App Configuration
 
 #### `apps/agent-ui/package.json`
+
 - **Name**: `@project-october/agent-ui` (changed from `@siteboon/claude-code-ui`)
 - **Private**: `true` (added to prevent accidental publishing)
 - **Version**: `1.10.4` (preserved from original)
@@ -100,6 +106,7 @@ ignoredBuiltDependencies:
 - **Dependencies**: All preserved from original
 
 #### `apps/agent-ui/turbo.json`
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
@@ -136,22 +143,26 @@ ignoredBuiltDependencies:
 ### 4. Cleanup Actions
 
 **Removed files**:
+
 - `.git/` - Removed nested git repository (app now uses root git)
 - `.nvmrc` - Node version managed at root level
 - `.release-it.json` - Release process handled at root
 - `release.sh` - Release script handled at root
 
 **Updated files**:
+
 - `.gitignore` - Cleaned up and organized
 - `README.md` - Updated to reflect monorepo structure
 
 ### 5. Documentation
 
 **Created**:
+
 - `docs/API_DOCUMENTATION.md` - Comprehensive backend API documentation
 - `MONOREPO_SETUP.md` - This file
 
 **Updated**:
+
 - `README.md` - Added monorepo context and usage instructions
 
 ## Usage
@@ -236,6 +247,7 @@ VITE_CONTEXT_WINDOW=160000
 ## Future Enhancements
 
 ### Potential Structure
+
 ```
 ProjectOctober/
 ├── apps/
@@ -277,10 +289,12 @@ ProjectOctober/
 ## Migration Notes
 
 ### Breaking Changes
+
 - Package name changed: `@siteboon/claude-code-ui` → `@project-october/agent-ui`
 - Root scripts now use Turbo: `pnpm dev` → `turbo dev`
 
 ### Non-Breaking Changes
+
 - All app-level scripts work as before when run from `apps/agent-ui/`
 - Dependencies unchanged
 - Build output unchanged
@@ -289,15 +303,19 @@ ProjectOctober/
 ## Troubleshooting
 
 ### Issue: Native modules fail to build
+
 **Solution**: Run `pnpm install` from root, not from app directory
 
 ### Issue: Turbo cache issues
+
 **Solution**: Run `pnpm clean` and rebuild
 
 ### Issue: Environment variables not working
+
 **Solution**: Ensure `.env` file is in `apps/agent-ui/`, not root
 
 ### Issue: Port conflicts
+
 **Solution**: Update PORT and VITE_PORT in `apps/agent-ui/.env`
 
 ## Related Documentation

@@ -2,18 +2,18 @@
  * Chat Message Types (for UI rendering)
  */
 
-export type ChatMessageType = 'user' | 'assistant' | 'error';
+export type ChatMessageType = "user" | "assistant" | "error";
 
 export interface BaseMessage {
-  id?: string;                    // Unique message ID
+  id?: string; // Unique message ID
   type: ChatMessageType;
   content: string;
   timestamp: Date | string;
-  isOptimistic?: boolean;         // Client-side pending message
+  isOptimistic?: boolean; // Client-side pending message
 }
 
 export interface UserMessage extends BaseMessage {
-  type: 'user';
+  type: "user";
   images?: string[];
 }
 
@@ -25,18 +25,18 @@ export interface ToolResult {
 }
 
 export interface AssistantMessage extends BaseMessage {
-  type: 'assistant';
+  type: "assistant";
   isToolUse?: boolean;
   toolName?: string;
   toolInput?: string;
-  toolId?: string;                // Tool use ID for matching results
+  toolId?: string; // Tool use ID for matching results
   toolResult?: ToolResult | null;
   isStreaming?: boolean;
   reasoning?: string;
 }
 
 export interface ErrorMessage extends BaseMessage {
-  type: 'error';
+  type: "error";
   error?: string;
 }
 
@@ -46,10 +46,10 @@ export type ChatMessage = UserMessage | AssistantMessage | ErrorMessage;
  * Message Metadata (for pagination and caching)
  */
 export interface MessageMetadata {
-  hasMore: boolean;              // Has more messages to load
-  offset: number;                // Current pagination offset
-  total: number;                 // Total message count
-  lastLoadedAt: number;          // Cache timestamp
+  hasMore: boolean; // Has more messages to load
+  offset: number; // Current pagination offset
+  total: number; // Total message count
+  lastLoadedAt: number; // Cache timestamp
 }
 
 /**

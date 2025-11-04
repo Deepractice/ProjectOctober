@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 
 /**
  * Custom hook for managing image uploads with drag-and-drop and paste support
@@ -37,24 +37,24 @@ export const useImageUpload = () => {
    * @param {Array<File>} files - Array of File objects
    */
   const handleImageFiles = useCallback((files) => {
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       try {
         // Validate file object and properties
-        if (!file || typeof file !== 'object') {
-          console.warn('Invalid file object:', file);
+        if (!file || typeof file !== "object") {
+          console.warn("Invalid file object:", file);
           return false;
         }
 
-        if (!file.type || !file.type.startsWith('image/')) {
+        if (!file.type || !file.type.startsWith("image/")) {
           return false;
         }
 
         if (!file.size || file.size > 5 * 1024 * 1024) {
           // Safely get file name with fallback
-          const fileName = file.name || 'Unknown file';
-          setImageErrors(prev => {
+          const fileName = file.name || "Unknown file";
+          setImageErrors((prev) => {
             const newMap = new Map(prev);
-            newMap.set(fileName, 'File too large (max 5MB)');
+            newMap.set(fileName, "File too large (max 5MB)");
             return newMap;
           });
           return false;
@@ -62,13 +62,13 @@ export const useImageUpload = () => {
 
         return true;
       } catch (error) {
-        console.error('Error validating file:', error, file);
+        console.error("Error validating file:", error, file);
         return false;
       }
     });
 
     if (validFiles.length > 0) {
-      setAttachedImages(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 images
+      setAttachedImages((prev) => [...prev, ...validFiles].slice(0, 5)); // Max 5 images
     }
   }, []);
 
@@ -78,27 +78,30 @@ export const useImageUpload = () => {
    *
    * @param {ClipboardEvent} e - Clipboard paste event
    */
-  const handlePaste = useCallback(async (e) => {
-    const items = Array.from(e.clipboardData.items);
+  const handlePaste = useCallback(
+    async (e) => {
+      const items = Array.from(e.clipboardData.items);
 
-    for (const item of items) {
-      if ((item as DataTransferItem).type.startsWith('image/')) {
-        const file = (item as DataTransferItem).getAsFile();
-        if (file) {
-          handleImageFiles([file]);
+      for (const item of items) {
+        if ((item as DataTransferItem).type.startsWith("image/")) {
+          const file = (item as DataTransferItem).getAsFile();
+          if (file) {
+            handleImageFiles([file]);
+          }
         }
       }
-    }
 
-    // Fallback for some browsers/platforms
-    if (items.length === 0 && e.clipboardData.files.length > 0) {
-      const files = Array.from(e.clipboardData.files);
-      const imageFiles = files.filter(f => (f as DataTransferItem).type.startsWith('image/'));
-      if (imageFiles.length > 0) {
-        handleImageFiles(imageFiles);
+      // Fallback for some browsers/platforms
+      if (items.length === 0 && e.clipboardData.files.length > 0) {
+        const files = Array.from(e.clipboardData.files);
+        const imageFiles = files.filter((f) => (f as DataTransferItem).type.startsWith("image/"));
+        if (imageFiles.length > 0) {
+          handleImageFiles(imageFiles);
+        }
       }
-    }
-  }, [handleImageFiles]);
+    },
+    [handleImageFiles]
+  );
 
   /**
    * Setup react-dropzone for drag-and-drop functionality
@@ -106,13 +109,13 @@ export const useImageUpload = () => {
    */
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']
+      "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
     },
     maxSize: 5 * 1024 * 1024, // 5MB
     maxFiles: 5,
     onDrop: handleImageFiles,
     noClick: true, // We'll use our own button
-    noKeyboard: true
+    noKeyboard: true,
   });
 
   return {
@@ -128,7 +131,7 @@ export const useImageUpload = () => {
       getRootProps,
       getInputProps,
       isDragActive,
-      open
-    }
+      open,
+    },
   };
 };

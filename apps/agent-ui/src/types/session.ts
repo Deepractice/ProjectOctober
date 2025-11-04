@@ -7,7 +7,7 @@ export interface Session {
   title: string;
   created_at: string;
   updated_at: string;
-  __provider?: 'claude' | 'cursor';
+  __provider?: "claude" | "cursor";
 }
 
 export type SessionId = string;

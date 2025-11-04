@@ -1,6 +1,6 @@
-import React from 'react';
-import CommandMenu from '../../CommandMenu';
-import ActionButtons from './ActionButtons';
+import React from "react";
+import CommandMenu from "../../CommandMenu";
+import ActionButtons from "./ActionButtons";
 
 /**
  * Textarea component - Main input textarea with file dropdown and command menu
@@ -38,7 +38,7 @@ import ActionButtons from './ActionButtons';
  */
 function Textarea({
   textareaRef,
-  value = '',
+  value = "",
   isLoading = false,
   isExpanded = false,
   isInputFocused = false,
@@ -51,8 +51,13 @@ function Textarea({
   selectedCommandIndex = -1,
   slashCommands = [],
   frequentCommands = [],
-  commandQuery = '',
-  dropzoneProps = { getRootProps: () => ({}), getInputProps: () => ({}), isDragActive: false, open: () => {} },
+  commandQuery = "",
+  dropzoneProps = {
+    getRootProps: () => ({}),
+    getInputProps: () => ({}),
+    isDragActive: false,
+    open: () => {},
+  },
   onChange,
   onClick,
   onKeyDown,
@@ -66,7 +71,7 @@ function Textarea({
   onToggleCommandMenu,
   onCommandSelect,
   onCloseCommandMenu,
-  onTranscript
+  onTranscript,
 }) {
   return (
     <>
@@ -78,8 +83,8 @@ function Textarea({
               key={file.path}
               className={`px-4 py-3 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 touch-manipulation ${
                 index === selectedFileIndex
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                  : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               }`}
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -92,9 +97,7 @@ function Textarea({
               }}
             >
               <div className="font-medium text-sm">{file.name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                {file.path}
-              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{file.path}</div>
             </div>
           ))}
         </div>
@@ -110,12 +113,10 @@ function Textarea({
           top: textareaRef.current
             ? Math.max(16, textareaRef.current.getBoundingClientRect().top - 316)
             : 0,
-          left: textareaRef.current
-            ? textareaRef.current.getBoundingClientRect().left
-            : 16,
+          left: textareaRef.current ? textareaRef.current.getBoundingClientRect().left : 16,
           bottom: textareaRef.current
             ? window.innerHeight - textareaRef.current.getBoundingClientRect().top + 8
-            : 90
+            : 90,
         }}
         isOpen={showCommandMenu}
         frequentCommands={commandQuery ? [] : frequentCommands}
@@ -125,7 +126,7 @@ function Textarea({
       <div
         {...dropzoneProps.getRootProps()}
         className={`relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200 overflow-hidden ${
-          isExpanded ? 'chat-input-expanded' : ''
+          isExpanded ? "chat-input-expanded" : ""
         }`}
       >
         <input {...dropzoneProps.getInputProps()} />
@@ -143,7 +144,7 @@ function Textarea({
           placeholder="Type / for commands, @ for files, or ask Agent anything..."
           disabled={isLoading}
           className="chat-input-placeholder block w-full pl-12 pr-20 sm:pr-40 py-1.5 sm:py-4 bg-transparent rounded-2xl focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 resize-none min-h-[50px] sm:min-h-[80px] max-h-[40vh] sm:max-h-[300px] overflow-y-auto text-sm sm:text-base leading-[21px] sm:leading-6 transition-all duration-200"
-          style={{ height: '50px' }}
+          style={{ height: "50px" }}
         />
 
         {/* Action Buttons */}
@@ -166,7 +167,7 @@ function Textarea({
         </div>
         <div
           className={`absolute bottom-1 left-12 right-14 text-xs text-gray-400 dark:text-gray-500 pointer-events-none sm:hidden transition-opacity duration-200 ${
-            isInputFocused ? 'opacity-100' : 'opacity-0'
+            isInputFocused ? "opacity-100" : "opacity-0"
           }`}
         >
           {sendByCtrlEnter

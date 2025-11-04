@@ -5,9 +5,9 @@
  * Replaces all useLocalStorage hooks in the app.
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { UIState } from '../types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { UIState } from "../types";
 
 export const useUIStore = create<UIState>()(
   persist(
@@ -21,29 +21,35 @@ export const useUIStore = create<UIState>()(
       sidebarVisible: true,
 
       // Toggle Actions
-      toggleAutoExpandTools: () => set((state) => ({
-        autoExpandTools: !state.autoExpandTools
-      })),
+      toggleAutoExpandTools: () =>
+        set((state) => ({
+          autoExpandTools: !state.autoExpandTools,
+        })),
 
-      toggleShowRawParameters: () => set((state) => ({
-        showRawParameters: !state.showRawParameters
-      })),
+      toggleShowRawParameters: () =>
+        set((state) => ({
+          showRawParameters: !state.showRawParameters,
+        })),
 
-      toggleShowThinking: () => set((state) => ({
-        showThinking: !state.showThinking
-      })),
+      toggleShowThinking: () =>
+        set((state) => ({
+          showThinking: !state.showThinking,
+        })),
 
-      toggleAutoScrollToBottom: () => set((state) => ({
-        autoScrollToBottom: !state.autoScrollToBottom
-      })),
+      toggleAutoScrollToBottom: () =>
+        set((state) => ({
+          autoScrollToBottom: !state.autoScrollToBottom,
+        })),
 
-      toggleSendByCtrlEnter: () => set((state) => ({
-        sendByCtrlEnter: !state.sendByCtrlEnter
-      })),
+      toggleSendByCtrlEnter: () =>
+        set((state) => ({
+          sendByCtrlEnter: !state.sendByCtrlEnter,
+        })),
 
-      toggleSidebar: () => set((state) => ({
-        sidebarVisible: !state.sidebarVisible
-      })),
+      toggleSidebar: () =>
+        set((state) => ({
+          sidebarVisible: !state.sidebarVisible,
+        })),
 
       // Setter Actions (for direct setting)
       setAutoExpandTools: (value) => set({ autoExpandTools: value }),
@@ -54,32 +60,33 @@ export const useUIStore = create<UIState>()(
       setSidebarVisible: (value) => set({ sidebarVisible: value }),
 
       // Reset all preferences to defaults
-      resetPreferences: () => set({
-        autoExpandTools: false,
-        showRawParameters: false,
-        showThinking: true,
-        autoScrollToBottom: true,
-        sendByCtrlEnter: false,
-        sidebarVisible: true,
-      }),
+      resetPreferences: () =>
+        set({
+          autoExpandTools: false,
+          showRawParameters: false,
+          showThinking: true,
+          autoScrollToBottom: true,
+          sendByCtrlEnter: false,
+          sidebarVisible: true,
+        }),
     }),
     {
-      name: 'ui-preferences',
+      name: "ui-preferences",
       version: 1,
       // Migrate old localStorage keys
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           // Try to import old localStorage values
           try {
-            const autoExpandTools = localStorage.getItem('autoExpandTools');
-            const showRawParameters = localStorage.getItem('showRawParameters');
-            const showThinking = localStorage.getItem('showThinking');
-            const autoScrollToBottom = localStorage.getItem('autoScrollToBottom');
-            const sendByCtrlEnter = localStorage.getItem('sendByCtrlEnter');
-            const sidebarVisible = localStorage.getItem('sidebarVisible');
+            const autoExpandTools = localStorage.getItem("autoExpandTools");
+            const showRawParameters = localStorage.getItem("showRawParameters");
+            const showThinking = localStorage.getItem("showThinking");
+            const autoScrollToBottom = localStorage.getItem("autoScrollToBottom");
+            const sendByCtrlEnter = localStorage.getItem("sendByCtrlEnter");
+            const sidebarVisible = localStorage.getItem("sidebarVisible");
 
             return {
-              ...(persistedState as object || {}),
+              ...((persistedState as object) || {}),
               autoExpandTools: autoExpandTools ? JSON.parse(autoExpandTools) : false,
               showRawParameters: showRawParameters ? JSON.parse(showRawParameters) : false,
               showThinking: showThinking ? JSON.parse(showThinking) : true,
@@ -88,7 +95,7 @@ export const useUIStore = create<UIState>()(
               sidebarVisible: sidebarVisible ? JSON.parse(sidebarVisible) : true,
             };
           } catch (error) {
-            console.error('Error migrating old localStorage:', error);
+            console.error("Error migrating old localStorage:", error);
           }
         }
         return persistedState;

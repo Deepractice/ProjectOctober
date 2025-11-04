@@ -1,7 +1,7 @@
-import React from 'react';
-import { Settings as SettingsIcon, Sparkles } from 'lucide-react';
-import Sidebar from '../Sidebar';
-import { useUIStore } from '../../stores';
+import React from "react";
+import { Settings as SettingsIcon, Sparkles } from "lucide-react";
+import Sidebar from "../Sidebar";
+import { useUIStore } from "../../stores";
 
 function DesktopSidebar({
   sessions,
@@ -25,7 +25,7 @@ function DesktopSidebar({
   return (
     <div
       className={`flex-shrink-0 border-r border-border bg-card transition-all duration-300 ${
-        sidebarVisible ? 'w-80' : 'w-14'
+        sidebarVisible ? "w-80" : "w-14"
       }`}
     >
       <div className="h-full overflow-hidden">
@@ -62,7 +62,12 @@ function DesktopSidebar({
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
               </svg>
             </button>
 

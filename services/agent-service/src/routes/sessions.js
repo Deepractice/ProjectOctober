@@ -3,19 +3,19 @@
  * Handles session listing, creation, messages, deletion, and token usage
  */
 
-import express from 'express';
-import path from 'path';
-import os from 'os';
-import { promises as fs } from 'fs';
-import { getCurrentProject, getSessions } from '../projects.js';
-import { getSessionMessages, deleteSession } from '../sessions.js';
-import { warmupSession } from '../agent-sdk.js';
-import sessionManager from '../core/SessionManager.js';
+import express from "express";
+import path from "path";
+import os from "os";
+import { promises as fs } from "fs";
+import { getCurrentProject, getSessions } from "../projects.js";
+import { getSessionMessages, deleteSession } from "../sessions.js";
+import { warmupSession } from "../agent-sdk.js";
+import sessionManager from "../core/SessionManager.js";
 
 const router = express.Router();
 
 // Get sessions for current project
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { limit = 5, offset = 0 } = req.query;
     const result = await getSessions(parseInt(limit), parseInt(offset));
@@ -26,9 +26,9 @@ router.get('/', async (req, res) => {
 });
 
 // Create new session with warmup
-router.post('/create', async (req, res) => {
+router.post("/create", async (req, res) => {
   try {
-    console.log('📝 Creating new session via warmup...');
+    console.log("📝 Creating new session via warmup...");
 
     const project = getCurrentProject();
     const projectPath = project.fullPath;
@@ -36,33 +36,33 @@ router.post('/create', async (req, res) => {
     // Call warmup to create session
     const sessionId = await warmupSession(projectPath);
 
-    console.log('✅ Session created successfully:', sessionId);
+    console.log("✅ Session created successfully:", sessionId);
 
     // Register warmup session with SessionManager
     sessionManager.createSession(sessionId, {
       cwd: projectPath,
-      command: 'Warmup',
+      command: "Warmup",
       timestamp: new Date().toISOString(),
-      isWarmup: true
+      isWarmup: true,
     });
-    console.log('📝 Warmup session registered with SessionManager:', sessionId);
+    console.log("📝 Warmup session registered with SessionManager:", sessionId);
 
     res.json({
       success: true,
       sessionId: sessionId,
       project: {
         name: project.name,
-        path: project.path
-      }
+        path: project.path,
+      },
     });
   } catch (error) {
-    console.error('❌ Error creating session:', error);
+    console.error("❌ Error creating session:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get messages for a specific session
-router.get('/:sessionId/messages', async (req, res) => {
+router.get("/:sessionId/messages", async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { limit, offset } = req.query;
@@ -87,7 +87,7 @@ router.get('/:sessionId/messages', async (req, res) => {
 });
 
 // Delete session endpoint
-router.delete('/:sessionId', async (req, res) => {
+router.delete("/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
     await deleteSession(sessionId);
@@ -98,7 +98,7 @@ router.delete('/:sessionId', async (req, res) => {
 });
 
 // Get token usage for a specific session
-router.get('/:sessionId/token-usage', async (req, res) => {
+router.get("/:sessionId/token-usage", async (req, res) => {
   try {
     const { sessionId } = req.params;
     const homeDir = os.homedir();
@@ -108,33 +108,33 @@ router.get('/:sessionId/token-usage', async (req, res) => {
     const projectPath = project.fullPath;
 
     // Construct the JSONL file path
-    const encodedPath = projectPath.replace(/[\\/:\s~_]/g, '-');
-    const projectDir = path.join(homeDir, '.claude', 'projects', encodedPath);
+    const encodedPath = projectPath.replace(/[\\/:\s~_]/g, "-");
+    const projectDir = path.join(homeDir, ".claude", "projects", encodedPath);
 
     // Allow only safe characters in sessionId
-    const safeSessionId = String(sessionId).replace(/[^a-zA-Z0-9._-]/g, '');
+    const safeSessionId = String(sessionId).replace(/[^a-zA-Z0-9._-]/g, "");
     if (!safeSessionId) {
-      return res.status(400).json({ error: 'Invalid sessionId' });
+      return res.status(400).json({ error: "Invalid sessionId" });
     }
     const jsonlPath = path.join(projectDir, `${safeSessionId}.jsonl`);
 
     // Constrain to projectDir
     const rel = path.relative(path.resolve(projectDir), path.resolve(jsonlPath));
-    if (rel.startsWith('..') || path.isAbsolute(rel)) {
-      return res.status(400).json({ error: 'Invalid path' });
+    if (rel.startsWith("..") || path.isAbsolute(rel)) {
+      return res.status(400).json({ error: "Invalid path" });
     }
 
     // Read and parse the JSONL file
     let fileContent;
     try {
-      fileContent = await fs.readFile(jsonlPath, 'utf8');
+      fileContent = await fs.readFile(jsonlPath, "utf8");
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        return res.status(404).json({ error: 'Session file not found', path: jsonlPath });
+      if (error.code === "ENOENT") {
+        return res.status(404).json({ error: "Session file not found", path: jsonlPath });
       }
       throw error;
     }
-    const lines = fileContent.trim().split('\n');
+    const lines = fileContent.trim().split("\n");
 
     const parsedContextWindow = parseInt(process.env.CONTEXT_WINDOW, 10);
     const contextWindow = Number.isFinite(parsedContextWindow) ? parsedContextWindow : 160000;
@@ -148,7 +148,7 @@ router.get('/:sessionId/token-usage', async (req, res) => {
         const entry = JSON.parse(lines[i]);
 
         // Only count assistant messages which have usage data
-        if (entry.type === 'assistant' && entry.message?.usage) {
+        if (entry.type === "assistant" && entry.message?.usage) {
           const usage = entry.message.usage;
 
           // Use token counts from latest assistant message only
@@ -173,12 +173,12 @@ router.get('/:sessionId/token-usage', async (req, res) => {
       breakdown: {
         input: inputTokens,
         cacheCreation: cacheCreationTokens,
-        cacheRead: cacheReadTokens
-      }
+        cacheRead: cacheReadTokens,
+      },
     });
   } catch (error) {
-    console.error('Error reading session token usage:', error);
-    res.status(500).json({ error: 'Failed to read session token usage' });
+    console.error("Error reading session token usage:", error);
+    res.status(500).json({ error: "Failed to read session token usage" });
   }
 });
 

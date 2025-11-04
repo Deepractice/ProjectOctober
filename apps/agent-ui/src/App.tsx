@@ -13,30 +13,33 @@
  * updates during conversations to avoid message loss.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import MainContent from './components/MainContent';
-import MobileNav from './components/MobileNav';
-import DesktopSidebar from './components/App/DesktopSidebar';
-import MobileSidebarOverlay from './components/App/MobileSidebarOverlay';
-import AppModals from './components/App/AppModals';
+import React, { useState, useEffect, useCallback } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from "react-router-dom";
+import MainContent from "./components/MainContent";
+import MobileNav from "./components/MobileNav";
+import DesktopSidebar from "./components/App/DesktopSidebar";
+import MobileSidebarOverlay from "./components/App/MobileSidebarOverlay";
+import AppModals from "./components/App/AppModals";
 
-import { ThemeProvider } from './contexts/ThemeContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import { useVersionCheck } from './hooks/useVersionCheck';
-import { useResponsive } from './hooks/app/useResponsive';
-import { useProjectInfo } from './hooks/app/useProjectInfo';
-import { useModals } from './hooks/app/useModals';
+import { ThemeProvider } from "./contexts/ThemeContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useVersionCheck } from "./hooks/useVersionCheck";
+import { useResponsive } from "./hooks/app/useResponsive";
+import { useProjectInfo } from "./hooks/app/useProjectInfo";
+import { useModals } from "./hooks/app/useModals";
 
 // Import Zustand stores
-import { useConnectionStore, useSessionStore, useUIStore, useMessageStore } from './stores';
+import { useConnectionStore, useSessionStore, useUIStore, useMessageStore } from "./stores";
 
 // Main App component with routing
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
 
-  const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck('siteboon', 'agent-ui');
+  const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck(
+    "siteboon",
+    "agent-ui"
+  );
 
   // Custom hooks
   const { isMobile, isPWA } = useResponsive();
@@ -67,16 +70,11 @@ function AppContent() {
     processingSessions,
   } = useSessionStore();
 
-  const {
-    autoExpandTools,
-    showRawParameters,
-    showThinking,
-    autoScrollToBottom,
-    sendByCtrlEnter,
-  } = useUIStore();
+  const { autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter } =
+    useUIStore();
 
   // Local UI state (not persisted)
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'files'
+  const [activeTab, setActiveTab] = useState("chat"); // 'chat' or 'files'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [externalMessageUpdate, setExternalMessageUpdate] = useState(0);
@@ -130,11 +128,11 @@ function AppContent() {
     if (sessionId && sessions.length > 0) {
       // Only update if session ID actually changed
       if (!selectedSession || selectedSession.id !== sessionId) {
-        const session = sessions.find(s => s.id === sessionId);
+        const session = sessions.find((s) => s.id === sessionId);
         if (session) {
-          console.log('📍 [App] URL changed, updating selectedSession:', sessionId);
+          console.log("📍 [App] URL changed, updating selectedSession:", sessionId);
           setSelectedSession(session);
-          setActiveTab('chat');
+          setActiveTab("chat");
         }
       }
     }
@@ -142,21 +140,31 @@ function AppContent() {
 
   // Debug: Track selectedSession changes
   useEffect(() => {
-    console.log('🔄 [App] selectedSession changed:', selectedSession?.id, 'Object ref:', selectedSession ? Object.keys(selectedSession).join(',') : 'null');
+    console.log(
+      "🔄 [App] selectedSession changed:",
+      selectedSession?.id,
+      "Object ref:",
+      selectedSession ? Object.keys(selectedSession).join(",") : "null"
+    );
   }, [selectedSession]);
 
   // Debug: Track sessions array changes
   const sessionsRef = React.useRef(sessions);
   useEffect(() => {
     const refChanged = sessionsRef.current !== sessions;
-    console.log('📊 [App] sessions array changed - Ref changed:', refChanged, 'Length:', sessions.length);
+    console.log(
+      "📊 [App] sessions array changed - Ref changed:",
+      refChanged,
+      "Length:",
+      sessions.length
+    );
     sessionsRef.current = sessions;
   }, [sessions]);
 
   const handleSessionSelect = (session) => {
     setSelectedSession(session);
-    if (activeTab !== 'preview') {
-      setActiveTab('chat');
+    if (activeTab !== "preview") {
+      setActiveTab("chat");
     }
 
     if (isMobile) {
@@ -170,13 +178,13 @@ function AppContent() {
       setIsCreatingSession(true);
 
       // Call backend to create warmup session
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch('/api/sessions/create', {
-        method: 'POST',
+      const token = localStorage.getItem("auth-token");
+      const response = await fetch("/api/sessions/create", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
@@ -184,18 +192,18 @@ function AppContent() {
       }
 
       const { sessionId } = await response.json();
-      console.log('✅ Warmup session created:', sessionId);
+      console.log("✅ Warmup session created:", sessionId);
 
       // Navigate to new session
       navigate(`/session/${sessionId}`);
-      setActiveTab('chat');
+      setActiveTab("chat");
 
       if (isMobile) {
         setSidebarOpen(false);
       }
     } catch (error) {
-      console.error('❌ Error creating session:', error);
-      alert('Failed to create new session. Please try again.');
+      console.error("❌ Error creating session:", error);
+      alert("Failed to create new session. Please try again.");
     } finally {
       setIsCreatingSession(false);
     }
@@ -204,13 +212,13 @@ function AppContent() {
   const handleSessionDelete = async (sessionId) => {
     if (selectedSession?.id === sessionId) {
       setSelectedSession(null);
-      navigate('/');
+      navigate("/");
     }
 
     try {
       await deleteSessionAPI(sessionId);
     } catch (error) {
-      console.error('Failed to delete session:', error);
+      console.error("Failed to delete session:", error);
     }
   };
 
@@ -218,7 +226,6 @@ function AppContent() {
     refreshSessions(true);
     // No need to manually update selectedSession - sessionStore already preserves references
   };
-
 
   return (
     <div className="fixed inset-0 flex bg-background">
@@ -267,7 +274,7 @@ function AppContent() {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 ${isMobile && !isInputFocused ? 'pb-16' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${isMobile && !isInputFocused ? "pb-16" : ""}`}>
         <MainContent
           selectedProject={project}
           selectedSession={selectedSession}

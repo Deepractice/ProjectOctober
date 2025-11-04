@@ -6,9 +6,9 @@
  * Keeps recent messages for debugging purposes.
  */
 
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import type { MessageState, WebSocketMessageType, ChatMessage } from '../types';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import type { MessageState, WebSocketMessageType, ChatMessage } from "../types";
 
 // Message handler registry
 const messageHandlers = new Map<WebSocketMessageType, (message: any) => void>();
@@ -28,11 +28,11 @@ export const useMessageStore = create<MessageState>()(
       // Handle incoming WebSocket message
       handleMessage: (message) => {
         // Create unique message ID for deduplication
-        const messageId = `${message.type}-${message.sessionId || 'null'}-${message.timestamp || Date.now()}`;
+        const messageId = `${message.type}-${message.sessionId || "null"}-${message.timestamp || Date.now()}`;
 
         // Skip if already processed
         if (get().processedMessageIds.has(messageId)) {
-          console.log('⏭️ Skipping already processed message:', messageId);
+          console.log("⏭️ Skipping already processed message:", messageId);
           return;
         }
 
@@ -54,18 +54,18 @@ export const useMessageStore = create<MessageState>()(
         set((state) => ({
           recentMessages: [
             ...state.recentMessages.slice(-99),
-            { ...message, timestamp: Date.now(), messageId }
-          ]
+            { ...message, timestamp: Date.now(), messageId },
+          ],
         }));
 
-        console.log('🎯 Processing message:', message.type, 'sessionId:', message.sessionId);
+        console.log("🎯 Processing message:", message.type, "sessionId:", message.sessionId);
 
         // Route to handler
         const handler = messageHandlers.get(message.type);
         if (handler) {
           handler(message);
         } else {
-          console.warn('⚠️ Unhandled message type:', message.type);
+          console.warn("⚠️ Unhandled message type:", message.type);
         }
       },
 
@@ -73,17 +73,26 @@ export const useMessageStore = create<MessageState>()(
       registerHandler: (type, handler) => {
         const wasRegistered = messageHandlers.has(type);
         messageHandlers.set(type, handler);
-        console.log(`📝 ${wasRegistered ? 'RE-REGISTERING' : 'Registering'} handler for:`, type,
-                    '| Total handlers:', messageHandlers.size,
-                    '| Stack:', new Error().stack?.split('\n')[2]?.trim());
+        console.log(
+          `📝 ${wasRegistered ? "RE-REGISTERING" : "Registering"} handler for:`,
+          type,
+          "| Total handlers:",
+          messageHandlers.size,
+          "| Stack:",
+          new Error().stack?.split("\n")[2]?.trim()
+        );
       },
 
       // Unregister message handler
       unregisterHandler: (type) => {
         const wasRegistered = messageHandlers.has(type);
         messageHandlers.delete(type);
-        console.log(`🗑️ ${wasRegistered ? 'Unregistered' : 'Attempted to unregister non-existent'} handler:`, type,
-                    '| Total handlers:', messageHandlers.size);
+        console.log(
+          `🗑️ ${wasRegistered ? "Unregistered" : "Attempted to unregister non-existent"} handler:`,
+          type,
+          "| Total handlers:",
+          messageHandlers.size
+        );
       },
 
       // Clear messages
@@ -91,76 +100,76 @@ export const useMessageStore = create<MessageState>()(
 
       // Get messages by type
       getMessagesByType: (type) => {
-        return get().recentMessages.filter(msg => msg.type === type);
+        return get().recentMessages.filter((msg) => msg.type === type);
       },
 
       // Get messages by session
       getMessagesBySession: (sessionId) => {
-        return get().recentMessages.filter(msg => msg.sessionId === sessionId);
+        return get().recentMessages.filter((msg) => msg.sessionId === sessionId);
       },
 
       // ====== Unified Message Operations ======
 
       // Add user message (sent by user)
       addUserMessage: (sessionId: string, content: string, images?: any[]) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const existing = newMap.get(sessionId) || [];
           const userMessage: ChatMessage = {
-            type: 'user',
+            type: "user",
             content,
             images: images || [],
             timestamp: new Date(),
-            id: `user-${Date.now()}-${Math.random()}`
+            id: `user-${Date.now()}-${Math.random()}`,
           };
           newMap.set(sessionId, [...existing, userMessage]);
           return { sessionMessages: newMap };
         });
-        console.log('💬 Added user message to session:', sessionId);
+        console.log("💬 Added user message to session:", sessionId);
       },
 
       // Add complete assistant message
       addAssistantMessage: (sessionId: string, content: string) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const existing = newMap.get(sessionId) || [];
           const assistantMessage: ChatMessage = {
-            type: 'assistant',
+            type: "assistant",
             content,
             timestamp: new Date(),
             id: `assistant-${Date.now()}-${Math.random()}`,
-            isStreaming: false
+            isStreaming: false,
           };
           newMap.set(sessionId, [...existing, assistantMessage]);
           return { sessionMessages: newMap };
         });
-        console.log('🤖 Added assistant message to session:', sessionId);
+        console.log("🤖 Added assistant message to session:", sessionId);
       },
 
       // Add streaming chunk to last assistant message
       addAssistantChunk: (sessionId: string, chunk: string) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
 
           // Find or create streaming assistant message
           const lastMsg = messages[messages.length - 1];
-          if (lastMsg && lastMsg.type === 'assistant' && lastMsg.isStreaming) {
+          if (lastMsg && lastMsg.type === "assistant" && lastMsg.isStreaming) {
             // Update existing streaming message
             const updated = [...messages];
             updated[updated.length - 1] = {
               ...lastMsg,
-              content: (lastMsg.content || '') + chunk
+              content: (lastMsg.content || "") + chunk,
             };
             newMap.set(sessionId, updated);
           } else {
             // Create new streaming message
             const streamingMsg: ChatMessage = {
-              type: 'assistant',
+              type: "assistant",
               content: chunk,
               timestamp: new Date(),
               id: `assistant-stream-${Date.now()}`,
-              isStreaming: true
+              isStreaming: true,
             };
             newMap.set(sessionId, [...messages, streamingMsg]);
           }
@@ -170,18 +179,18 @@ export const useMessageStore = create<MessageState>()(
 
       // Mark last assistant message as complete (stop streaming)
       updateLastAssistantMessage: (sessionId: string, content: string) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId);
           if (!messages || messages.length === 0) return {};
 
           const lastMsg = messages[messages.length - 1];
-          if (lastMsg.type === 'assistant') {
+          if (lastMsg.type === "assistant") {
             const updated = [...messages];
             updated[updated.length - 1] = {
               ...lastMsg,
               content,
-              isStreaming: false
+              isStreaming: false,
             };
             newMap.set(sessionId, updated);
             return { sessionMessages: newMap };
@@ -192,19 +201,19 @@ export const useMessageStore = create<MessageState>()(
 
       // Add tool use message
       addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const existing = newMap.get(sessionId) || [];
           const toolMessage: ChatMessage = {
-            type: 'assistant',
-            content: '',
+            type: "assistant",
+            content: "",
             timestamp: new Date(),
             id: `tool-${toolId}`,
             isToolUse: true,
             toolName,
             toolInput,
             toolId,
-            toolResult: null
+            toolResult: null,
           };
           newMap.set(sessionId, [...existing, toolMessage]);
           return { sessionMessages: newMap };
@@ -213,12 +222,12 @@ export const useMessageStore = create<MessageState>()(
 
       // Update tool result
       updateToolResult: (sessionId: string, toolId: string, result: any) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId);
           if (!messages) return {};
 
-          const updated = messages.map(msg =>
+          const updated = messages.map((msg) =>
             msg.toolId === toolId ? { ...msg, toolResult: result } : msg
           );
           newMap.set(sessionId, updated);
@@ -228,14 +237,14 @@ export const useMessageStore = create<MessageState>()(
 
       // Add error message
       addErrorMessage: (sessionId: string, error: string) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           const existing = newMap.get(sessionId) || [];
           const errorMessage: ChatMessage = {
-            type: 'error',
+            type: "error",
             content: `Error: ${error}`,
             timestamp: new Date(),
-            id: `error-${Date.now()}`
+            id: `error-${Date.now()}`,
           };
           newMap.set(sessionId, [...existing, errorMessage]);
           return { sessionMessages: newMap };
@@ -246,7 +255,7 @@ export const useMessageStore = create<MessageState>()(
 
       // Clear session messages
       clearSessionMessages: (sessionId: string) => {
-        set(state => {
+        set((state) => {
           const newSessionMap = new Map(state.sessionMessages);
           const newMetadataMap = new Map(state.messageMetadata);
 
@@ -255,7 +264,7 @@ export const useMessageStore = create<MessageState>()(
 
           return {
             sessionMessages: newSessionMap,
-            messageMetadata: newMetadataMap
+            messageMetadata: newMetadataMap,
           };
         });
       },
@@ -270,7 +279,7 @@ export const useMessageStore = create<MessageState>()(
 
       // Set server messages (replace all) - kept for loading from API
       setServerMessages: (sessionId: string, messages: ChatMessage[]) => {
-        set(state => {
+        set((state) => {
           const newMap = new Map(state.sessionMessages);
           newMap.set(sessionId, messages);
           return { sessionMessages: newMap };
@@ -285,7 +294,7 @@ export const useMessageStore = create<MessageState>()(
 
       // Set loading state
       setLoading: (sessionId: string, loading: boolean) => {
-        set(state => {
+        set((state) => {
           const newSet = new Set(state.loadingSessions);
           if (loading) {
             newSet.add(sessionId);
@@ -297,14 +306,14 @@ export const useMessageStore = create<MessageState>()(
       },
 
       // Set metadata
-      setMetadata: (sessionId: string, metadata: import('../types').MessageMetadata) => {
-        set(state => {
+      setMetadata: (sessionId: string, metadata: import("../types").MessageMetadata) => {
+        set((state) => {
           const newMap = new Map(state.messageMetadata);
           newMap.set(sessionId, metadata);
           return { messageMetadata: newMap };
         });
       },
     }),
-    { name: 'MessageStore' }
+    { name: "MessageStore" }
   )
 );

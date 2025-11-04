@@ -1,8 +1,8 @@
-import React from 'react';
-import Settings from '../Settings';
-import QuickSettingsPanel from '../QuickSettingsPanel';
-import VersionUpgradeModal from './VersionUpgradeModal';
-import { useUIStore } from '../../stores';
+import React from "react";
+import Settings from "../Settings";
+import QuickSettingsPanel from "../QuickSettingsPanel";
+import VersionUpgradeModal from "./VersionUpgradeModal";
+import { useUIStore } from "../../stores";
 
 function AppModals({
   // Settings Modal
@@ -57,7 +57,7 @@ function AppModals({
       />
 
       {/* Quick Settings Panel */}
-      {activeTab === 'chat' && (
+      {activeTab === "chat" && (
         <QuickSettingsPanel
           isOpen={showQuickSettings}
           onToggle={onToggleQuickSettings}

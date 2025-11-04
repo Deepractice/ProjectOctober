@@ -19,9 +19,9 @@
  *    (write)   (state+events)  (listen)    (parse+cache)
  */
 
-import { EventEmitter } from 'events';
-import { promises as fs } from 'fs';
-import { logger } from '../utils/logger.js';
+import { EventEmitter } from "events";
+import { promises as fs } from "fs";
+import { logger } from "../utils/logger.js";
 
 class SessionManager extends EventEmitter {
   constructor() {
@@ -49,10 +49,10 @@ class SessionManager extends EventEmitter {
       totalAborted: 0,
       totalTimeout: 0,
       cacheHits: 0,
-      cacheMisses: 0
+      cacheMisses: 0,
     };
 
-    logger.info('🎯 SessionManager constructed');
+    logger.info("🎯 SessionManager constructed");
 
     // Start timeout checker
     this.startTimeoutChecker();
@@ -66,16 +66,16 @@ class SessionManager extends EventEmitter {
    */
   async initialize(sessionFilesPath) {
     if (this.initialized) {
-      logger.warn('⚠️ SessionManager already initialized, skipping');
+      logger.warn("⚠️ SessionManager already initialized, skipping");
       return;
     }
 
-    logger.info('🔄 SessionManager initializing from filesystem...');
+    logger.info("🔄 SessionManager initializing from filesystem...");
     logger.info(`📁 Session files path: ${sessionFilesPath}`);
 
     try {
       // Import getSessions here to avoid circular dependency
-      const { getSessions } = await import('../projects.js');
+      const { getSessions } = await import("../projects.js");
 
       // Load all sessions to warm up cache
       const startTime = Date.now();
@@ -87,7 +87,7 @@ class SessionManager extends EventEmitter {
 
       this.initialized = true;
     } catch (error) {
-      logger.error({ err: error }, '❌ Failed to initialize SessionManager');
+      logger.error({ err: error }, "❌ Failed to initialize SessionManager");
       // Continue anyway, cache will be empty
       this.initialized = true;
     }
@@ -107,10 +107,10 @@ class SessionManager extends EventEmitter {
 
     const session = {
       id: sessionId,
-      status: 'created',
+      status: "created",
       startTime: Date.now(),
       lastUpdateTime: Date.now(),
-      metadata
+      metadata,
     };
 
     this.activeSessions.set(sessionId, session);
@@ -118,7 +118,7 @@ class SessionManager extends EventEmitter {
     logger.info(`   Metadata:`, JSON.stringify(metadata));
     logger.info(`   Active sessions: ${this.activeSessions.size}`);
 
-    this.safeEmit('session:created', sessionId, session);
+    this.safeEmit("session:created", sessionId, session);
 
     return session;
   }
@@ -134,19 +134,19 @@ class SessionManager extends EventEmitter {
       return false;
     }
 
-    if (session.status !== 'created') {
+    if (session.status !== "created") {
       logger.warn(`⚠️ Session ${sessionId} already ${session.status}, cannot start processing`);
       return false;
     }
 
-    session.status = 'processing';
+    session.status = "processing";
     session.processingStartTime = Date.now();
     session.lastUpdateTime = Date.now();
 
     logger.info(`⚙️ Session processing: ${sessionId}`);
     logger.info(`   Time to start: ${session.processingStartTime - session.startTime}ms`);
 
-    this.safeEmit('session:processing', sessionId, session);
+    this.safeEmit("session:processing", sessionId, session);
 
     return true;
   }
@@ -176,20 +176,22 @@ class SessionManager extends EventEmitter {
       return false;
     }
 
-    session.status = 'completed';
+    session.status = "completed";
     session.completedTime = Date.now();
     session.duration = session.completedTime - session.startTime;
 
     logger.info(`✅ Session completed: ${sessionId}`);
     logger.info(`   Duration: ${session.duration}ms`);
-    logger.info(`   Processing time: ${session.completedTime - (session.processingStartTime || session.startTime)}ms`);
+    logger.info(
+      `   Processing time: ${session.completedTime - (session.processingStartTime || session.startTime)}ms`
+    );
 
     this.activeSessions.delete(sessionId);
     this.metrics.totalProcessed++;
 
     logger.info(`   Active sessions remaining: ${this.activeSessions.size}`);
 
-    this.safeEmit('session:completed', sessionId, session);
+    this.safeEmit("session:completed", sessionId, session);
 
     return true;
   }
@@ -205,7 +207,7 @@ class SessionManager extends EventEmitter {
       return false;
     }
 
-    session.status = 'error';
+    session.status = "error";
     session.error = error;
     session.errorTime = Date.now();
 
@@ -219,7 +221,7 @@ class SessionManager extends EventEmitter {
 
     logger.info(`   Active sessions remaining: ${this.activeSessions.size}`);
 
-    this.safeEmit('session:error', sessionId, session, error);
+    this.safeEmit("session:error", sessionId, session, error);
 
     return true;
   }
@@ -235,7 +237,7 @@ class SessionManager extends EventEmitter {
       return false;
     }
 
-    session.status = 'aborted';
+    session.status = "aborted";
     session.abortedTime = Date.now();
 
     logger.info(`🛑 Session aborted: ${sessionId}`);
@@ -247,7 +249,7 @@ class SessionManager extends EventEmitter {
 
     logger.info(`   Active sessions remaining: ${this.activeSessions.size}`);
 
-    this.safeEmit('session:aborted', sessionId, session);
+    this.safeEmit("session:aborted", sessionId, session);
 
     return true;
   }
@@ -260,7 +262,7 @@ class SessionManager extends EventEmitter {
     const session = this.activeSessions.get(sessionId);
     if (!session) return false;
 
-    session.status = 'timeout';
+    session.status = "timeout";
     session.timeoutTime = Date.now();
     const inactiveTime = session.timeoutTime - session.lastUpdateTime;
 
@@ -274,7 +276,7 @@ class SessionManager extends EventEmitter {
 
     logger.info(`   Active sessions remaining: ${this.activeSessions.size}`);
 
-    this.safeEmit('session:timeout', sessionId, session);
+    this.safeEmit("session:timeout", sessionId, session);
 
     return true;
   }
@@ -286,7 +288,7 @@ class SessionManager extends EventEmitter {
    * Runs every minute to check for stale sessions
    */
   startTimeoutChecker() {
-    logger.info('⏰ Starting session timeout checker');
+    logger.info("⏰ Starting session timeout checker");
     logger.info(`   Created state timeout: ${this.SESSION_TIMEOUT / 1000}s`);
     logger.info(`   Processing state timeout: ${this.PROCESSING_TIMEOUT / 1000}s`);
 
@@ -297,9 +299,8 @@ class SessionManager extends EventEmitter {
       for (const [sessionId, session] of this.activeSessions.entries()) {
         const timeSinceUpdate = now - session.lastUpdateTime;
 
-        const timeout = session.status === 'processing'
-          ? this.PROCESSING_TIMEOUT
-          : this.SESSION_TIMEOUT;
+        const timeout =
+          session.status === "processing" ? this.PROCESSING_TIMEOUT : this.SESSION_TIMEOUT;
 
         if (timeSinceUpdate > timeout) {
           logger.warn(`⏱️ Detected timeout for session ${sessionId}`);
@@ -338,7 +339,7 @@ class SessionManager extends EventEmitter {
    */
   isSessionProcessing(sessionId) {
     const session = this.activeSessions.get(sessionId);
-    return session && session.status === 'processing';
+    return session && session.status === "processing";
   }
 
   /**
@@ -395,7 +396,7 @@ class SessionManager extends EventEmitter {
       const stats = await fs.stat(filePath);
       this.sessionCache.set(filePath, {
         mtime: stats.mtimeMs,
-        data
+        data,
       });
       logger.info(`💾 Cached: ${filePath}`);
       logger.info(`   Cache size: ${this.sessionCache.size} entries`);
@@ -423,7 +424,7 @@ class SessionManager extends EventEmitter {
    * Removes cached entries for files that changed or were deleted
    */
   async cleanupCache() {
-    logger.info('🧹 Starting cache cleanup...');
+    logger.info("🧹 Starting cache cleanup...");
     logger.info(`   Cache size before: ${this.sessionCache.size}`);
 
     const keysToDelete = [];
@@ -442,7 +443,7 @@ class SessionManager extends EventEmitter {
       }
     }
 
-    keysToDelete.forEach(key => this.sessionCache.delete(key));
+    keysToDelete.forEach((key) => this.sessionCache.delete(key));
 
     logger.info(`✅ Cache cleanup complete`);
     logger.info(`   Removed: ${keysToDelete.length} entries`);
@@ -473,13 +474,13 @@ class SessionManager extends EventEmitter {
       this.emit(event, ...args);
     } catch (error) {
       logger.error(`❌ Error in ${event} listener:`, error.message);
-      logger.error('   Stack:', error.stack);
+      logger.error("   Stack:", error.stack);
       // Emit error event (if not already emitting error to avoid loop)
-      if (event !== 'error') {
+      if (event !== "error") {
         try {
-          this.emit('error', error);
+          this.emit("error", error);
         } catch (nestedError) {
-          logger.error('❌ Error in error handler:', nestedError.message);
+          logger.error("❌ Error in error handler:", nestedError.message);
         }
       }
     }
@@ -500,17 +501,18 @@ class SessionManager extends EventEmitter {
    * Get performance metrics
    */
   getMetrics() {
-    const totalSessions = this.metrics.totalProcessed +
-                          this.metrics.totalErrors +
-                          this.metrics.totalAborted +
-                          this.metrics.totalTimeout;
+    const totalSessions =
+      this.metrics.totalProcessed +
+      this.metrics.totalErrors +
+      this.metrics.totalAborted +
+      this.metrics.totalTimeout;
 
     return {
       ...this.metrics,
       activeSessions: this.activeSessions.size,
       cacheSize: this.sessionCache.size,
       cacheHitRate: this.getCacheHitRate(),
-      totalSessions
+      totalSessions,
     };
   }
 
@@ -518,17 +520,17 @@ class SessionManager extends EventEmitter {
    * Print debug info
    */
   debug() {
-    logger.info('===== SessionManager Debug =====');
-    logger.info('Initialized:', this.initialized);
-    logger.info('Active Sessions:', this.activeSessions.size);
+    logger.info("===== SessionManager Debug =====");
+    logger.info("Initialized:", this.initialized);
+    logger.info("Active Sessions:", this.activeSessions.size);
 
     for (const [id, session] of this.activeSessions.entries()) {
       logger.info(`  - ${id}: ${session.status} (age: ${Date.now() - session.startTime}ms)`);
     }
 
-    logger.info('Cache Size:', this.sessionCache.size);
-    logger.info('Metrics:', JSON.stringify(this.getMetrics(), null, 2));
-    logger.info('================================');
+    logger.info("Cache Size:", this.sessionCache.size);
+    logger.info("Metrics:", JSON.stringify(this.getMetrics(), null, 2));
+    logger.info("================================");
   }
 }
 

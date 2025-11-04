@@ -12,18 +12,18 @@
  * - Voice transcript integration
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import safeLocalStorage from '../../utils/safeLocalStorage';
+import { useState, useEffect, useRef, useCallback } from "react";
+import safeLocalStorage from "../../utils/safeLocalStorage";
 
 export function useChatInput({ selectedProject }) {
   // Input state
   const [input, setInput] = useState(() => {
-    if (typeof window !== 'undefined' && selectedProject) {
-      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
+    if (typeof window !== "undefined" && selectedProject) {
+      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || "";
     }
-    return '';
+    return "";
   });
-  const [debouncedInput, setDebouncedInput] = useState('');
+  const [debouncedInput, setDebouncedInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
@@ -43,9 +43,9 @@ export function useChatInput({ selectedProject }) {
 
   // Persist input draft to localStorage
   useEffect(() => {
-    if (selectedProject && input !== '') {
+    if (selectedProject && input !== "") {
       safeLocalStorage.setItem(`draft_input_${selectedProject.name}`, input);
-    } else if (selectedProject && input === '') {
+    } else if (selectedProject && input === "") {
       safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
     }
   }, [input, selectedProject]);
@@ -53,7 +53,7 @@ export function useChatInput({ selectedProject }) {
   // Load saved state when project changes
   useEffect(() => {
     if (selectedProject) {
-      const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
+      const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || "";
       if (savedInput !== input) {
         setInput(savedInput);
       }
@@ -63,8 +63,8 @@ export function useChatInput({ selectedProject }) {
   // Initial textarea setup - set to 2 rows height
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
 
       // Check if initially expanded
       const lineHeight = parseInt(window.getComputedStyle(textareaRef.current).lineHeight);
@@ -76,7 +76,7 @@ export function useChatInput({ selectedProject }) {
   // Reset textarea height when input is cleared
   useEffect(() => {
     if (textareaRef.current && !input.trim()) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
       setIsTextareaExpanded(false);
     }
   }, [input]);
@@ -84,8 +84,8 @@ export function useChatInput({ selectedProject }) {
   // Update textarea height
   const updateTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
 
       const lineHeight = parseInt(window.getComputedStyle(textareaRef.current).lineHeight);
       const isExpanded = textareaRef.current.scrollHeight > lineHeight * 2;
@@ -94,20 +94,23 @@ export function useChatInput({ selectedProject }) {
   }, []);
 
   // Handle voice transcript
-  const handleTranscript = useCallback((text) => {
-    if (text.trim()) {
-      setInput(prevInput => {
-        const newInput = prevInput.trim() ? `${prevInput} ${text}` : text;
+  const handleTranscript = useCallback(
+    (text) => {
+      if (text.trim()) {
+        setInput((prevInput) => {
+          const newInput = prevInput.trim() ? `${prevInput} ${text}` : text;
 
-        // Update textarea height after setting new content
-        setTimeout(() => {
-          updateTextareaHeight();
-        }, 0);
+          // Update textarea height after setting new content
+          setTimeout(() => {
+            updateTextareaHeight();
+          }, 0);
 
-        return newInput;
-      });
-    }
-  }, [updateTextareaHeight]);
+          return newInput;
+        });
+      }
+    },
+    [updateTextareaHeight]
+  );
 
   // Handle textarea click (update cursor position)
   const handleTextareaClick = useCallback((e) => {
@@ -116,10 +119,10 @@ export function useChatInput({ selectedProject }) {
 
   // Clear input (e.g., after message send)
   const clearInput = useCallback(() => {
-    setInput('');
+    setInput("");
     setIsTextareaExpanded(false);
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
     if (selectedProject) {
       safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
@@ -146,6 +149,6 @@ export function useChatInput({ selectedProject }) {
     handleTranscript,
     handleTextareaClick,
     clearInput,
-    updateTextareaHeight
+    updateTextareaHeight,
   };
 }

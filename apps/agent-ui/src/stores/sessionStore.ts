@@ -8,11 +8,11 @@
  * - Session lifecycle management
  */
 
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { api } from '../utils/api';
-import { useMessageStore } from './messageStore';
-import type { SessionState } from '../types';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { api } from "../utils/api";
+import { useMessageStore } from "./messageStore";
+import type { SessionState } from "../types";
 
 export const useSessionStore = create<SessionState>()(
   devtools(
@@ -33,34 +33,35 @@ export const useSessionStore = create<SessionState>()(
 
       // CRUD Operations
       setSessions: (sessions) => {
-        console.log('🔧 [sessionStore] setSessions called with', sessions.length, 'sessions');
+        console.log("🔧 [sessionStore] setSessions called with", sessions.length, "sessions");
         set({ sessions });
       },
 
       setSelectedSession: (session) => set({ selectedSession: session }),
 
-      addSession: (session) => set((state) => ({
-        sessions: [session, ...state.sessions]
-      })),
+      addSession: (session) =>
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+        })),
 
-      updateSession: (sessionId, updates) => set((state) => ({
-        sessions: state.sessions.map(s =>
-          s.id === sessionId ? { ...s, ...updates } : s
-        )
-      })),
+      updateSession: (sessionId, updates) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) => (s.id === sessionId ? { ...s, ...updates } : s)),
+        })),
 
-      removeSession: (sessionId) => set((state) => ({
-        sessions: state.sessions.filter(s => s.id !== sessionId),
-        selectedSession: state.selectedSession?.id === sessionId ? null : state.selectedSession
-      })),
+      removeSession: (sessionId) =>
+        set((state) => ({
+          sessions: state.sessions.filter((s) => s.id !== sessionId),
+          selectedSession: state.selectedSession?.id === sessionId ? null : state.selectedSession,
+        })),
 
       // Session Protection System
       markSessionActive: (sessionId) => {
         if (!sessionId) return;
         set((state) => ({
-          activeSessions: new Set([...state.activeSessions, sessionId])
+          activeSessions: new Set([...state.activeSessions, sessionId]),
         }));
-        console.log('🔒 Session marked as active:', sessionId);
+        console.log("🔒 Session marked as active:", sessionId);
       },
 
       markSessionInactive: (sessionId) => {
@@ -70,7 +71,7 @@ export const useSessionStore = create<SessionState>()(
           newSet.delete(sessionId);
           return { activeSessions: newSet };
         });
-        console.log('🔓 Session marked as inactive:', sessionId);
+        console.log("🔓 Session marked as inactive:", sessionId);
       },
 
       isSessionActive: (sessionId) => get().activeSessions.has(sessionId),
@@ -78,9 +79,9 @@ export const useSessionStore = create<SessionState>()(
       markSessionProcessing: (sessionId) => {
         if (!sessionId) return;
         set((state) => ({
-          processingSessions: new Set([...state.processingSessions, sessionId])
+          processingSessions: new Set([...state.processingSessions, sessionId]),
         }));
-        console.log('⚙️ Session marked as processing:', sessionId);
+        console.log("⚙️ Session marked as processing:", sessionId);
       },
 
       markSessionNotProcessing: (sessionId) => {
@@ -90,7 +91,7 @@ export const useSessionStore = create<SessionState>()(
           newSet.delete(sessionId);
           return { processingSessions: newSet };
         });
-        console.log('✅ Session marked as not processing:', sessionId);
+        console.log("✅ Session marked as not processing:", sessionId);
       },
 
       isSessionProcessing: (sessionId) => get().processingSessions.has(sessionId),
@@ -101,8 +102,8 @@ export const useSessionStore = create<SessionState>()(
         const MIN_FETCH_INTERVAL = 100;
 
         // Prevent excessive fetches unless forced
-        if (!force && (now - get().lastFetchTime) < MIN_FETCH_INTERVAL) {
-          console.log('⏭️ Skipping fetch - too soon after last fetch');
+        if (!force && now - get().lastFetchTime < MIN_FETCH_INTERVAL) {
+          console.log("⏭️ Skipping fetch - too soon after last fetch");
           return;
         }
 
@@ -112,44 +113,54 @@ export const useSessionStore = create<SessionState>()(
         try {
           set({ isLoading: true, error: null });
 
-          console.log('📡 Fetching sessions from API...');
+          console.log("📡 Fetching sessions from API...");
           const response = await api.sessions(100);
           const data = await response.json();
           const sessionsArray = data.sessions || [];
 
-          console.log('📦 Received sessions from API:', sessionsArray.length, 'sessions');
+          console.log("📦 Received sessions from API:", sessionsArray.length, "sessions");
 
           // Optimize to preserve object references when data hasn't changed
           set((state) => {
             if (state.sessions.length === 0) {
-              console.log('✅ [refreshSessions] No previous sessions, setting', sessionsArray.length, 'sessions (NEW ARRAY REF)');
+              console.log(
+                "✅ [refreshSessions] No previous sessions, setting",
+                sessionsArray.length,
+                "sessions (NEW ARRAY REF)"
+              );
               return { sessions: sessionsArray, lastFetchTime: now };
             }
 
             // Check if sessions data has actually changed
-            const hasChanges = sessionsArray.some((newSession, index) => {
-              const prevSession = state.sessions[index];
-              if (!prevSession) return true;
+            const hasChanges =
+              sessionsArray.some((newSession, index) => {
+                const prevSession = state.sessions[index];
+                if (!prevSession) return true;
 
-              return (
-                newSession.id !== prevSession.id ||
-                newSession.title !== prevSession.title ||
-                newSession.created_at !== prevSession.created_at ||
-                newSession.updated_at !== prevSession.updated_at
-              );
-            }) || sessionsArray.length !== state.sessions.length;
+                return (
+                  newSession.id !== prevSession.id ||
+                  newSession.title !== prevSession.title ||
+                  newSession.created_at !== prevSession.created_at ||
+                  newSession.updated_at !== prevSession.updated_at
+                );
+              }) || sessionsArray.length !== state.sessions.length;
 
             if (hasChanges) {
-              console.log('✅ [refreshSessions] Sessions changed, updating to:', sessionsArray.length, 'sessions (NEW ARRAY REF)');
+              console.log(
+                "✅ [refreshSessions] Sessions changed, updating to:",
+                sessionsArray.length,
+                "sessions (NEW ARRAY REF)"
+              );
               return { sessions: sessionsArray, lastFetchTime: now };
             }
 
-            console.log('⏭️ [refreshSessions] No changes detected, keeping previous sessions array (SAME REF)');
+            console.log(
+              "⏭️ [refreshSessions] No changes detected, keeping previous sessions array (SAME REF)"
+            );
             return { lastFetchTime: now };
           });
-
         } catch (err) {
-          console.error('❌ Error fetching sessions:', err);
+          console.error("❌ Error fetching sessions:", err);
           set({ error: err.message });
         } finally {
           set({ isLoading: false });
@@ -166,9 +177,9 @@ export const useSessionStore = create<SessionState>()(
 
         try {
           await api.deleteSession(sessionId);
-          console.log('✅ Session deleted successfully:', sessionId);
+          console.log("✅ Session deleted successfully:", sessionId);
         } catch (err) {
-          console.error('❌ Error deleting session:', err);
+          console.error("❌ Error deleting session:", err);
           // Rollback
           set({ sessions: oldSessions });
           throw err;
@@ -180,8 +191,8 @@ export const useSessionStore = create<SessionState>()(
         if (!selectedSession) return true;
 
         const currentSessions = get().sessions;
-        const currentSelected = currentSessions?.find(s => s.id === selectedSession.id);
-        const updatedSelected = updatedSessions?.find(s => s.id === selectedSession.id);
+        const currentSelected = currentSessions?.find((s) => s.id === selectedSession.id);
+        const updatedSelected = updatedSessions?.find((s) => s.id === selectedSession.id);
 
         if (!currentSelected || !updatedSelected) return false;
 
@@ -194,60 +205,65 @@ export const useSessionStore = create<SessionState>()(
 
       // WebSocket Message Handlers
       handleSessionCreated: (sessionId) => {
-        console.log('📝 Session created via WebSocket:', sessionId);
+        console.log("📝 Session created via WebSocket:", sessionId);
         // In new warmup architecture, session is already created via HTTP API
         // This WebSocket message is just a confirmation
         // No migration needed - session was pre-created with real ID
       },
 
       handleSessionsUpdated: (updatedSessions) => {
-        console.log('📡 Sessions updated from WebSocket:', updatedSessions?.length || 0);
+        console.log("📡 Sessions updated from WebSocket:", updatedSessions?.length || 0);
 
         // Check for active sessions
         const { selectedSession, activeSessions } = get();
-        const hasActiveSession = (selectedSession && activeSessions.has(selectedSession.id)) ||
-          (activeSessions.size > 0 && Array.from(activeSessions).some(id => id.startsWith('new-session-')));
+        const hasActiveSession =
+          (selectedSession && activeSessions.has(selectedSession.id)) ||
+          (activeSessions.size > 0 &&
+            Array.from(activeSessions).some((id) => id.startsWith("new-session-")));
 
         if (hasActiveSession) {
           const isAdditiveUpdate = get().isUpdateAdditive(updatedSessions, selectedSession);
 
           if (!isAdditiveUpdate) {
-            console.log('⏭️ Skipping session update - protecting active session');
+            console.log("⏭️ Skipping session update - protecting active session");
             return;
           }
         }
 
         // Update sessions
         set((state) => {
-          const hasChanges = updatedSessions?.some((newSession, index) => {
-            const prevSession = state.sessions[index];
-            if (!prevSession) return true;
+          const hasChanges =
+            updatedSessions?.some((newSession, index) => {
+              const prevSession = state.sessions[index];
+              if (!prevSession) return true;
 
-            return (
-              newSession.id !== prevSession.id ||
-              newSession.title !== prevSession.title ||
-              newSession.updated_at !== prevSession.updated_at
-            );
-          }) || updatedSessions?.length !== state.sessions.length;
+              return (
+                newSession.id !== prevSession.id ||
+                newSession.title !== prevSession.title ||
+                newSession.updated_at !== prevSession.updated_at
+              );
+            }) || updatedSessions?.length !== state.sessions.length;
 
           if (hasChanges) {
-            console.log('✅ [handleSessionsUpdated] Sessions changed, updating (NEW ARRAY REF)');
+            console.log("✅ [handleSessionsUpdated] Sessions changed, updating (NEW ARRAY REF)");
             return { sessions: updatedSessions || [] };
           } else {
-            console.log('⏭️ [handleSessionsUpdated] No changes, keeping previous sessions (SAME REF)');
+            console.log(
+              "⏭️ [handleSessionsUpdated] No changes, keeping previous sessions (SAME REF)"
+            );
             return {};
           }
         });
       },
 
       handleAgentComplete: (sessionId) => {
-        console.log('✅ Agent complete for session:', sessionId);
+        console.log("✅ Agent complete for session:", sessionId);
         get().markSessionInactive(sessionId);
         get().markSessionNotProcessing(sessionId);
       },
 
       handleSessionAborted: (sessionId) => {
-        console.log('⚠️ Session aborted:', sessionId);
+        console.log("⚠️ Session aborted:", sessionId);
         get().markSessionInactive(sessionId);
         get().markSessionNotProcessing(sessionId);
       },
@@ -260,7 +276,7 @@ export const useSessionStore = create<SessionState>()(
         }
       },
     }),
-    { name: 'SessionStore' }
+    { name: "SessionStore" }
   )
 );
 
@@ -269,29 +285,29 @@ export const useSessionStore = create<SessionState>()(
 const registerHandlers = () => {
   const messageStore = useMessageStore.getState();
 
-  messageStore.registerHandler('session-created', (msg) => {
+  messageStore.registerHandler("session-created", (msg) => {
     useSessionStore.getState().handleSessionCreated(msg.sessionId);
   });
 
-  messageStore.registerHandler('sessions_updated', (msg) => {
+  messageStore.registerHandler("sessions_updated", (msg) => {
     useSessionStore.getState().handleSessionsUpdated(msg.sessions);
   });
 
-  messageStore.registerHandler('agent-complete', (msg) => {
-    const sessionId = msg.sessionId || sessionStorage.getItem('pendingSessionId');
+  messageStore.registerHandler("agent-complete", (msg) => {
+    const sessionId = msg.sessionId || sessionStorage.getItem("pendingSessionId");
     if (sessionId) {
       useSessionStore.getState().handleAgentComplete(sessionId);
     }
   });
 
-  messageStore.registerHandler('session-aborted', (msg) => {
+  messageStore.registerHandler("session-aborted", (msg) => {
     const sessionId = msg.sessionId;
     if (sessionId) {
       useSessionStore.getState().handleSessionAborted(sessionId);
     }
   });
 
-  messageStore.registerHandler('session-status', (msg) => {
+  messageStore.registerHandler("session-status", (msg) => {
     const sessionId = msg.sessionId;
     if (sessionId) {
       useSessionStore.getState().handleSessionStatus(sessionId, msg.isProcessing);
@@ -303,7 +319,7 @@ const registerHandlers = () => {
 registerHandlers();
 
 // Expose refreshSessions globally for backward compatibility
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.refreshSessions = () => {
     useSessionStore.getState().refreshSessions(true);
   };

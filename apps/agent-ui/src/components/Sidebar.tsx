@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollArea } from './ui/scroll-area';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
+import React, { useState, useEffect } from "react";
+import { ScrollArea } from "./ui/scroll-area";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
 
-import { MessageSquare, Clock, Trash2, Settings, RefreshCw, Search, X } from 'lucide-react';
-import { cn } from '../lib/utils';
-import AgentLogo from './AgentLogo';
+import { MessageSquare, Clock, Trash2, Settings, RefreshCw, Search, X } from "lucide-react";
+import { cn } from "../lib/utils";
+import AgentLogo from "./AgentLogo";
 
 // Move formatTimeAgo outside component to avoid recreation on every render
 const formatTimeAgo = (dateString, currentTime) => {
@@ -15,7 +15,7 @@ const formatTimeAgo = (dateString, currentTime) => {
 
   // Check if date is valid
   if (isNaN(date.getTime())) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const diffInMs = now.getTime() - date.getTime();
@@ -24,12 +24,12 @@ const formatTimeAgo = (dateString, currentTime) => {
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-  if (diffInSeconds < 60) return 'Just now';
-  if (diffInMinutes === 1) return '1 min ago';
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInMinutes === 1) return "1 min ago";
   if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
-  if (diffInHours === 1) return '1 hour ago';
+  if (diffInHours === 1) return "1 hour ago";
   if (diffInHours < 24) return `${diffInHours} hours ago`;
-  if (diffInDays === 1) return '1 day ago';
+  if (diffInDays === 1) return "1 day ago";
   if (diffInDays < 7) return `${diffInDays} days ago`;
   return date.toLocaleDateString();
 };
@@ -50,18 +50,18 @@ function Sidebar({
   onShowVersionModal,
   isPWA,
   isMobile,
-  onToggleSidebar
+  onToggleSidebar,
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [searchFilter, setSearchFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState(null);
 
   // Touch handler to prevent double-tap issues on iPad (only for buttons, not scroll areas)
   const handleTouchClick = (callback) => {
     return (e) => {
       // Only prevent default for buttons/clickable elements, not scrollable areas
-      if (e.target.closest('.overflow-y-auto') || e.target.closest('[data-scroll-container]')) {
+      if (e.target.closest(".overflow-y-auto") || e.target.closest("[data-scroll-container]")) {
         return;
       }
       e.preventDefault();
@@ -82,19 +82,19 @@ function Sidebar({
   const deleteSession = async (sessionId) => {
     // Prevent duplicate calls
     if (deletingSessionId === sessionId) {
-      console.log('⚠️ Delete already in progress for session:', sessionId);
+      console.log("⚠️ Delete already in progress for session:", sessionId);
       return;
     }
 
-    console.log('🗑️ Delete button clicked for session:', sessionId);
+    console.log("🗑️ Delete button clicked for session:", sessionId);
 
-    if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
-      console.log('❌ Delete cancelled by user');
+    if (!confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
+      console.log("❌ Delete cancelled by user");
       return;
     }
 
     // Mark as deleting
-    console.log('✅ Delete confirmed, delegating to parent...');
+    console.log("✅ Delete confirmed, delegating to parent...");
     setDeletingSessionId(sessionId);
 
     try {
@@ -103,8 +103,8 @@ function Sidebar({
         await onSessionDelete(sessionId);
       }
     } catch (error) {
-      console.error('Error deleting session:', error);
-      alert('Error deleting session. Please try again.');
+      console.error("Error deleting session:", error);
+      alert("Error deleting session. Please try again.");
     } finally {
       // Clear deleting state
       setDeletingSessionId(null);
@@ -112,24 +112,24 @@ function Sidebar({
   };
 
   // Filter sessions based on search input
-  const filteredSessions = (sessions || []).filter(session => {
+  const filteredSessions = (sessions || []).filter((session) => {
     if (!searchFilter.trim()) return true;
 
     const searchLower = searchFilter.toLowerCase();
-    const sessionName = (session.summary || 'New Session').toLowerCase();
+    const sessionName = (session.summary || "New Session").toLowerCase();
 
     return sessionName.includes(searchLower);
   });
 
   // Sort sessions by most recent activity
-  const sortedSessions = [...filteredSessions].sort((a, b) =>
-    new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+  const sortedSessions = [...filteredSessions].sort(
+    (a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
   );
 
   return (
     <div
       className="h-full flex flex-col bg-card md:select-none"
-      style={isPWA && isMobile ? { paddingTop: '44px' } : {}}
+      style={isPWA && isMobile ? { paddingTop: "44px" } : {}}
     >
       {/* Header */}
       <div className="md:p-4 md:border-b md:border-border">
@@ -152,13 +152,13 @@ function Sidebar({
               onClick={onToggleSidebar}
               title="Hide sidebar"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </Button>
           )}
@@ -167,7 +167,7 @@ function Sidebar({
         {/* Mobile Header */}
         <div
           className="md:hidden p-3 border-b border-border"
-          style={isPWA && isMobile ? { paddingTop: '16px' } : {}}
+          style={isPWA && isMobile ? { paddingTop: "16px" } : {}}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -192,7 +192,9 @@ function Sidebar({
                 }}
                 disabled={isRefreshing}
               >
-                <RefreshCw className={`w-4 h-4 text-foreground ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 text-foreground ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </button>
             </div>
           </div>
@@ -213,7 +215,7 @@ function Sidebar({
             />
             {searchFilter && (
               <button
-                onClick={() => setSearchFilter('')}
+                onClick={() => setSearchFilter("")}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-accent rounded"
               >
                 <X className="w-3 h-3 text-muted-foreground" />
@@ -249,7 +251,9 @@ function Sidebar({
                 disabled={isRefreshing}
                 title="Refresh sessions"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''} group-hover:rotate-180 transition-transform duration-300`} />
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""} group-hover:rotate-180 transition-transform duration-300`}
+                />
               </Button>
             </div>
           )}
@@ -264,10 +268,10 @@ function Sidebar({
               <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4 md:mb-3">
                 <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
               </div>
-              <h3 className="text-base font-medium text-foreground mb-2 md:mb-1">Loading sessions...</h3>
-              <p className="text-sm text-muted-foreground">
-                Fetching your Agent sessions
-              </p>
+              <h3 className="text-base font-medium text-foreground mb-2 md:mb-1">
+                Loading sessions...
+              </h3>
+              <p className="text-sm text-muted-foreground">Fetching your Agent sessions</p>
             </div>
           ) : sortedSessions.length === 0 ? (
             <div className="text-center py-12 md:py-8 px-4">
@@ -275,10 +279,12 @@ function Sidebar({
                 <MessageSquare className="w-6 h-6 text-muted-foreground" />
               </div>
               <h3 className="text-base font-medium text-foreground mb-2 md:mb-1">
-                {searchFilter ? 'No matching sessions' : 'No sessions found'}
+                {searchFilter ? "No matching sessions" : "No sessions found"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {searchFilter ? 'Try adjusting your search term' : 'Create a new session to get started'}
+                {searchFilter
+                  ? "Try adjusting your search term"
+                  : "Create a new session to get started"}
               </p>
             </div>
           ) : (
@@ -286,11 +292,13 @@ function Sidebar({
               {sortedSessions.map((session) => {
                 // Calculate if session is active (within last 10 minutes)
                 const sessionDate = new Date(session.lastActivity);
-                const diffInMinutes = Math.floor((currentTime.getTime() - sessionDate.getTime()) / (1000 * 60));
+                const diffInMinutes = Math.floor(
+                  (currentTime.getTime() - sessionDate.getTime()) / (1000 * 60)
+                );
                 const isActive = diffInMinutes < 10;
 
                 // Get session display values
-                const sessionName = session.summary || 'New Session';
+                const sessionName = session.summary || "New Session";
                 const sessionTime = session.lastActivity;
                 const messageCount = session.messageCount || 0;
 
@@ -309,15 +317,19 @@ function Sidebar({
                         className={cn(
                           "p-3 mx-3 my-1 rounded-lg bg-card border border-border/50 active:scale-[0.98] transition-all duration-150",
                           selectedSession?.id === session.id && "bg-primary/5 border-primary/20",
-                          isActive && selectedSession?.id !== session.id && "border-green-500/30 bg-green-50/5 dark:bg-green-900/5"
+                          isActive &&
+                            selectedSession?.id !== session.id &&
+                            "border-green-500/30 bg-green-50/5 dark:bg-green-900/5"
                         )}
                         onTouchEnd={handleTouchClick(() => onSessionSelect(session))}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0",
-                            selectedSession?.id === session.id ? "bg-primary/10" : "bg-muted/50"
-                          )}>
+                          <div
+                            className={cn(
+                              "w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0",
+                              selectedSession?.id === session.id ? "bg-primary/10" : "bg-muted/50"
+                            )}
+                          >
                             <AgentLogo className="w-3 h-3" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -441,8 +453,18 @@ function Sidebar({
               onClick={onShowVersionModal}
             >
               <div className="relative">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                <svg
+                  className="w-4 h-4 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                  />
                 </svg>
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
               </div>
@@ -462,8 +484,18 @@ function Sidebar({
               onClick={onShowVersionModal}
             >
               <div className="relative">
-                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                <svg
+                  className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                  />
                 </svg>
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
               </div>

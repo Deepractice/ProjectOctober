@@ -13,7 +13,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface SessionsResponse {
-  sessions: import('./session').Session[];
+  sessions: import("./session").Session[];
 }
 
 /**

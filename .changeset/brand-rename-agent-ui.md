@@ -11,18 +11,21 @@ Brand refresh that renames all user-facing "Claude" references to "Agent" to bet
 ### User-Facing Changes
 
 **Brand Identity**
+
 - Product name: `Claude Code UI` → `Agent UI`
 - CLI command: `claude-code-ui` → `agent-ui`
 - Package name: `@project-october/claudecodeui` → `@project-october/agent-ui`
 - All UI text, titles, and descriptions updated
 
 **Technical Changes**
+
 - WebSocket message types renamed:
   - `claude-command` → `agent-command`
   - `claude-response` → `agent-response`
   - `claude-complete` → `agent-complete`
 
 **File Renames**
+
 - `claude-sdk.js` → `agent-sdk.js`
 - `ClaudeLogo.tsx` → `AgentLogo.tsx`
 - `ClaudeStatus.tsx` → `AgentStatus.tsx`
@@ -47,6 +50,7 @@ Brand refresh that renames all user-facing "Claude" references to "Agent" to bet
 ## Migration Guide
 
 If you have existing installations:
+
 1. Uninstall old package: `npm uninstall -g @project-october/claudecodeui`
 2. Install new package: `npm install -g @project-october/agent-ui`
 3. Update any scripts or references from `claude-code-ui` to `agent-ui`

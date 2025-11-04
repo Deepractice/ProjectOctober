@@ -13,11 +13,13 @@ This document provides comprehensive documentation for all backend API endpoints
 All API endpoints (except `/api/auth/*`) require JWT token authentication.
 
 ### Headers
+
 ```
 Authorization: Bearer <JWT_TOKEN>
 ```
 
 ### WebSocket Authentication
+
 ```
 ws://localhost:3001/ws?token=<JWT_TOKEN>
 ws://localhost:3001/shell?token=<JWT_TOKEN>
@@ -30,11 +32,13 @@ ws://localhost:3001/shell?token=<JWT_TOKEN>
 ### 1. Authentication APIs (`/api/auth`)
 
 #### 1.1 Check Auth Status
+
 ```http
 GET /api/auth/status
 ```
 
 **Response**:
+
 ```json
 {
   "needsSetup": false,
@@ -43,11 +47,13 @@ GET /api/auth/status
 ```
 
 #### 1.2 Register User (Setup)
+
 ```http
 POST /api/auth/register
 ```
 
 **Request Body**:
+
 ```json
 {
   "username": "string (min 3 chars)",
@@ -56,6 +62,7 @@ POST /api/auth/register
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -68,16 +75,19 @@ POST /api/auth/register
 ```
 
 **Notes**:
+
 - Only allowed if no users exist (single-user system)
 - Uses bcrypt with 12 salt rounds
 - JWT token never expires
 
 #### 1.3 Login
+
 ```http
 POST /api/auth/login
 ```
 
 **Request Body**:
+
 ```json
 {
   "username": "string",
@@ -86,6 +96,7 @@ POST /api/auth/login
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -98,12 +109,14 @@ POST /api/auth/login
 ```
 
 #### 1.4 Get Current User
+
 ```http
 GET /api/auth/user
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "user": {
@@ -114,12 +127,14 @@ Authorization: Bearer <token>
 ```
 
 #### 1.5 Logout
+
 ```http
 POST /api/auth/logout
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -132,12 +147,14 @@ Authorization: Bearer <token>
 ### 2. Project APIs (`/api/projects`)
 
 #### 2.1 Get All Projects
+
 ```http
 GET /api/projects
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 [
   {
@@ -154,20 +171,24 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Automatically discovers projects from `~/.claude/projects/`
 - Includes Agent sessions
 
 #### 2.2 Get Project Sessions
+
 ```http
 GET /api/projects/:projectName/sessions?limit=5&offset=0
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `limit` (optional): Number of sessions to return (default: 5)
 - `offset` (optional): Offset for pagination (default: 0)
 
 **Response**:
+
 ```json
 {
   "sessions": [...],
@@ -179,16 +200,19 @@ Authorization: Bearer <token>
 ```
 
 #### 2.3 Get Session Messages
+
 ```http
 GET /api/projects/:projectName/sessions/:sessionId/messages?limit=100&offset=0
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `limit` (optional): Number of messages to return
 - `offset` (optional): Offset for pagination (default: 0)
 
 **Response**:
+
 ```json
 {
   "messages": [
@@ -209,12 +233,14 @@ Authorization: Bearer <token>
 ```
 
 #### 2.4 Get Token Usage for Session
+
 ```http
 GET /api/projects/:projectName/sessions/:sessionId/token-usage
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "used": 15000,
@@ -228,12 +254,14 @@ Authorization: Bearer <token>
 ```
 
 #### 2.5 Rename Project
+
 ```http
 PUT /api/projects/:projectName/rename
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "displayName": "New Project Name"
@@ -241,6 +269,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -248,12 +277,14 @@ Authorization: Bearer <token>
 ```
 
 #### 2.6 Delete Session
+
 ```http
 DELETE /api/projects/:projectName/sessions/:sessionId
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -261,12 +292,14 @@ Authorization: Bearer <token>
 ```
 
 #### 2.7 Delete Project
+
 ```http
 DELETE /api/projects/:projectName
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -274,15 +307,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Only deletes if project has no sessions
 
 #### 2.8 Create Project
+
 ```http
 POST /api/projects/create
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "path": "/absolute/path/to/project"
@@ -290,6 +326,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -305,12 +342,14 @@ Authorization: Bearer <token>
 ### 3. File APIs
 
 #### 3.1 Get File Tree
+
 ```http
 GET /api/projects/:projectName/files
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 [
   {
@@ -327,20 +366,24 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Excludes `node_modules`, `dist`, `build` directories
 - Max depth: 10 levels
 - Returns permissions in both octal and rwx format
 
 #### 3.2 Read File
+
 ```http
 GET /api/projects/:projectName/file?filePath=/path/to/file
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `filePath` (required): Relative or absolute file path
 
 **Response**:
+
 ```json
 {
   "content": "file contents here",
@@ -349,12 +392,14 @@ Authorization: Bearer <token>
 ```
 
 #### 3.3 Save File
+
 ```http
 PUT /api/projects/:projectName/file
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "filePath": "/path/to/file",
@@ -363,6 +408,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -372,6 +418,7 @@ Authorization: Bearer <token>
 ```
 
 #### 3.4 Serve Binary File (Images)
+
 ```http
 GET /api/projects/:projectName/files/content?path=/path/to/image.png
 Authorization: Bearer <token>
@@ -384,12 +431,14 @@ Authorization: Bearer <token>
 ### 4. Git APIs (`/api/git`)
 
 #### 4.1 Get Git Status
+
 ```http
 GET /api/git/status?project=project-name
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "branch": "main",
@@ -401,6 +450,7 @@ Authorization: Bearer <token>
 ```
 
 **Error Response**:
+
 ```json
 {
   "error": "Not a git repository. Initialize with: git init",
@@ -409,12 +459,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.2 Get File Diff
+
 ```http
 GET /api/git/diff?project=project-name&file=path/to/file
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "diff": "@@ -1,5 +1,6 @@\n-old line\n+new line"
@@ -422,17 +474,20 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - For untracked files: shows entire file as additions
 - For deleted files: shows entire file from HEAD as deletions
 - Strips git diff headers for cleaner output
 
 #### 4.3 Get File with Diff (for CodeEditor)
+
 ```http
 GET /api/git/file-with-diff?project=project-name&file=path/to/file
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "currentContent": "current file content",
@@ -443,12 +498,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.4 Commit Changes
+
 ```http
 POST /api/git/commit
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -458,6 +515,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -466,12 +524,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.5 Get Branches
+
 ```http
 GET /api/git/branches?project=project-name
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "branches": ["main", "develop", "feature/new-feature"]
@@ -479,12 +539,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.6 Checkout Branch
+
 ```http
 POST /api/git/checkout
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -493,6 +555,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -501,12 +564,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.7 Create Branch
+
 ```http
 POST /api/git/create-branch
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -515,6 +580,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -523,15 +589,18 @@ Authorization: Bearer <token>
 ```
 
 #### 4.8 Get Commits
+
 ```http
 GET /api/git/commits?project=project-name&limit=10
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `limit` (optional): Number of commits (default: 10)
 
 **Response**:
+
 ```json
 {
   "commits": [
@@ -548,12 +617,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.9 Get Commit Diff
+
 ```http
 GET /api/git/commit-diff?project=project-name&commit=abc123
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "diff": "full commit diff output"
@@ -561,12 +632,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.10 Generate Commit Message (AI)
+
 ```http
 POST /api/git/generate-commit-message
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -575,6 +648,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "message": "feat(auth): add JWT authentication\n\nImplemented JWT token-based authentication with bcrypt password hashing."
@@ -582,17 +656,20 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Uses Agent SDK to generate conventional commit messages
 - Analyzes git diffs to understand changes
 - Format: `type(scope): subject\n\nbody`
 
 #### 4.11 Get Remote Status
+
 ```http
 GET /api/git/remote-status?project=project-name
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "hasRemote": true,
@@ -607,12 +684,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.12 Fetch from Remote
+
 ```http
 POST /api/git/fetch
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name"
@@ -620,6 +699,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -629,12 +709,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.13 Pull from Remote
+
 ```http
 POST /api/git/pull
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name"
@@ -642,6 +724,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -652,16 +735,19 @@ Authorization: Bearer <token>
 ```
 
 **Error Responses**:
+
 - Merge conflicts: `{ "error": "Merge conflicts detected", "details": "..." }`
 - Uncommitted changes: `{ "error": "Uncommitted changes detected", "details": "..." }`
 
 #### 4.14 Push to Remote
+
 ```http
 POST /api/git/push
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name"
@@ -669,6 +755,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -679,12 +766,14 @@ Authorization: Bearer <token>
 ```
 
 #### 4.15 Publish Branch
+
 ```http
 POST /api/git/publish
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -693,6 +782,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -703,15 +793,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Sets upstream and pushes: `git push --set-upstream origin <branch>`
 
 #### 4.16 Discard Changes
+
 ```http
 POST /api/git/discard
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -720,6 +813,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -728,17 +822,20 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Untracked files: deletes the file
 - Modified/Deleted files: restores from HEAD
 - Added files: unstages the file
 
 #### 4.17 Delete Untracked File
+
 ```http
 POST /api/git/delete-untracked
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "project": "project-name",
@@ -747,6 +844,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -759,12 +857,14 @@ Authorization: Bearer <token>
 ### 5. MCP (Model Context Protocol) APIs (`/api/mcp`)
 
 #### 5.1 List MCP Servers (via CLI)
+
 ```http
 GET /api/mcp/cli/list
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -781,12 +881,14 @@ Authorization: Bearer <token>
 ```
 
 #### 5.2 Add MCP Server (via CLI)
+
 ```http
 POST /api/mcp/cli/add
 Authorization: Bearer <token>
 ```
 
 **Request Body (stdio)**:
+
 ```json
 {
   "name": "my-server",
@@ -802,6 +904,7 @@ Authorization: Bearer <token>
 ```
 
 **Request Body (http/sse)**:
+
 ```json
 {
   "name": "my-server",
@@ -815,6 +918,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -824,16 +928,19 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - `scope`: "user" (global) or "local" (project-specific)
 - Local scope requires `projectPath`
 
 #### 5.3 Add MCP Server (JSON format)
+
 ```http
 POST /api/mcp/cli/add-json
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "name": "my-server",
@@ -851,6 +958,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -860,15 +968,18 @@ Authorization: Bearer <token>
 ```
 
 #### 5.4 Remove MCP Server
+
 ```http
 DELETE /api/mcp/cli/remove/:name?scope=user
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `scope` (optional): "user" or "local"
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -878,15 +989,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Supports name format: `local:server-name` or `user:server-name`
 
 #### 5.5 Get MCP Server Details
+
 ```http
 GET /api/mcp/cli/get/:name
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -901,12 +1015,14 @@ Authorization: Bearer <token>
 ```
 
 #### 5.6 Read MCP Config (Direct)
+
 ```http
 GET /api/mcp/config/read
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -929,6 +1045,7 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Reads directly from `~/.claude.json` or `~/.claude/settings.json`
 - Returns both user-scoped and local-scoped servers
 
@@ -937,12 +1054,14 @@ Authorization: Bearer <token>
 ### 6. Command APIs (`/api/commands`)
 
 #### 6.1 List Commands
+
 ```http
 POST /api/commands/list
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "projectPath": "/path/to/project"
@@ -950,6 +1069,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "builtIn": [
@@ -979,6 +1099,7 @@ Authorization: Bearer <token>
 ```
 
 **Built-in Commands**:
+
 - `/help` - Show help documentation
 - `/clear` - Clear conversation history
 - `/model` - Switch or view current model
@@ -989,12 +1110,14 @@ Authorization: Bearer <token>
 - `/rewind [N]` - Rewind conversation by N steps
 
 #### 6.2 Load Command
+
 ```http
 POST /api/commands/load
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "commandPath": "/path/to/.claude/commands/my-command.md"
@@ -1002,6 +1125,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "path": "/path/to/.claude/commands/my-command.md",
@@ -1013,12 +1137,14 @@ Authorization: Bearer <token>
 ```
 
 #### 6.3 Execute Command
+
 ```http
 POST /api/commands/execute
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "commandName": "/help",
@@ -1033,6 +1159,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (Built-in)**:
+
 ```json
 {
   "type": "builtin",
@@ -1046,6 +1173,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (Custom)**:
+
 ```json
 {
   "type": "custom",
@@ -1058,6 +1186,7 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Replaces `$ARGUMENTS` with all args joined
 - Replaces `$1`, `$2`, etc. with positional arguments
 - Custom commands must be in `.claude/commands/` directory
@@ -1067,12 +1196,14 @@ Authorization: Bearer <token>
 ### 7. Settings APIs (`/api/settings`)
 
 #### 7.1 Get API Keys
+
 ```http
 GET /api/settings/api-keys
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "apiKeys": [
@@ -1089,15 +1220,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - API keys are truncated for security (first 10 chars + "...")
 
 #### 7.2 Create API Key
+
 ```http
 POST /api/settings/api-keys
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "keyName": "My API Key"
@@ -1105,6 +1239,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -1119,16 +1254,19 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Full API key is only returned on creation
 - API key format: `ccui_<random_64_chars>`
 
 #### 7.3 Delete API Key
+
 ```http
 DELETE /api/settings/api-keys/:keyId
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -1136,12 +1274,14 @@ Authorization: Bearer <token>
 ```
 
 #### 7.4 Toggle API Key Status
+
 ```http
 PATCH /api/settings/api-keys/:keyId/toggle
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "isActive": false
@@ -1149,6 +1289,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -1156,15 +1297,18 @@ Authorization: Bearer <token>
 ```
 
 #### 7.5 Get Credentials
+
 ```http
 GET /api/settings/credentials?type=github
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `type` (optional): Filter by credential type
 
 **Response**:
+
 ```json
 {
   "credentials": [
@@ -1182,15 +1326,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Credential values are NOT returned for security
 
 #### 7.6 Create Credential
+
 ```http
 POST /api/settings/credentials
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "credentialName": "GitHub Token",
@@ -1201,6 +1348,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -1216,15 +1364,18 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Credential value is encrypted in database
 
 #### 7.7 Delete Credential
+
 ```http
 DELETE /api/settings/credentials/:credentialId
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -1232,12 +1383,14 @@ Authorization: Bearer <token>
 ```
 
 #### 7.8 Toggle Credential Status
+
 ```http
 PATCH /api/settings/credentials/:credentialId/toggle
 Authorization: Bearer <token>
 ```
 
 **Request Body**:
+
 ```json
 {
   "isActive": false
@@ -1245,6 +1398,7 @@ Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true
@@ -1256,12 +1410,14 @@ Authorization: Bearer <token>
 ### 8. System APIs
 
 #### 8.1 Get Server Config
+
 ```http
 GET /api/config
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "serverPort": 3001,
@@ -1270,12 +1426,14 @@ Authorization: Bearer <token>
 ```
 
 #### 8.2 System Update
+
 ```http
 POST /api/system/update
 Authorization: Bearer <token>
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -1285,19 +1443,23 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Runs: `git checkout main && git pull && npm install`
 - Server restart required after update
 
 #### 8.3 Browse Filesystem
+
 ```http
 GET /api/browse-filesystem?path=/Users/user/Projects
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
+
 - `path` (optional): Directory path (defaults to home directory)
 
 **Response**:
+
 ```json
 {
   "path": "/Users/user/Projects",
@@ -1312,10 +1474,12 @@ Authorization: Bearer <token>
 ```
 
 **Notes**:
+
 - Returns only directories (max 20)
 - Prioritizes common directories (Desktop, Documents, Projects, etc.)
 
 #### 8.4 Upload Images
+
 ```http
 POST /api/projects/:projectName/upload-images
 Authorization: Bearer <token>
@@ -1323,9 +1487,11 @@ Content-Type: multipart/form-data
 ```
 
 **Form Data**:
+
 - `images`: File[] (max 5 files, 5MB each)
 
 **Response**:
+
 ```json
 {
   "images": [
@@ -1340,11 +1506,13 @@ Content-Type: multipart/form-data
 ```
 
 **Notes**:
+
 - Allowed types: JPEG, PNG, GIF, WebP, SVG
 - Returns base64-encoded images
 - Temporary files are cleaned up after processing
 
 #### 8.5 Audio Transcription
+
 ```http
 POST /api/transcribe
 Authorization: Bearer <token>
@@ -1352,10 +1520,12 @@ Content-Type: multipart/form-data
 ```
 
 **Form Data**:
+
 - `audio`: File (audio file)
 - `mode` (optional): "default" | "prompt" | "vibe" | "instructions" | "architect"
 
 **Response**:
+
 ```json
 {
   "text": "Transcribed text here"
@@ -1363,6 +1533,7 @@ Content-Type: multipart/form-data
 ```
 
 **Notes**:
+
 - Uses OpenAI Whisper API
 - `mode="prompt"`: Enhances text as an AI prompt
 - `mode="instructions"`: Formats as clear instructions
@@ -1375,13 +1546,15 @@ Content-Type: multipart/form-data
 #### 9.1 Chat WebSocket (`/ws`)
 
 **Connection**:
+
 ```javascript
-const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
+const ws = new WebSocket("ws://localhost:3001/ws?token=<JWT_TOKEN>");
 ```
 
 **Client → Server Messages**:
 
 1. **Agent Command**:
+
 ```json
 {
   "type": "agent-command",
@@ -1396,6 +1569,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 2. **Abort Session**:
+
 ```json
 {
   "type": "abort-session",
@@ -1404,6 +1578,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 3. **Check Session Status**:
+
 ```json
 {
   "type": "check-session-status",
@@ -1412,6 +1587,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 4. **Get Active Sessions**:
+
 ```json
 {
   "type": "get-active-sessions"
@@ -1421,6 +1597,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 **Server → Client Messages**:
 
 1. **Agent Response**:
+
 ```json
 {
   "type": "agent-response",
@@ -1438,6 +1615,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 2. **Session Started**:
+
 ```json
 {
   "type": "session-started",
@@ -1446,6 +1624,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 3. **Session Aborted**:
+
 ```json
 {
   "type": "session-aborted",
@@ -1455,6 +1634,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 4. **Session Status**:
+
 ```json
 {
   "type": "session-status",
@@ -1464,6 +1644,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 5. **Active Sessions**:
+
 ```json
 {
   "type": "active-sessions",
@@ -1472,6 +1653,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 6. **Projects Updated** (from file watcher):
+
 ```json
 {
   "type": "projects_updated",
@@ -1483,6 +1665,7 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 ```
 
 7. **Error**:
+
 ```json
 {
   "type": "error",
@@ -1493,13 +1676,15 @@ const ws = new WebSocket('ws://localhost:3001/ws?token=<JWT_TOKEN>');
 #### 9.2 Shell WebSocket (`/shell`)
 
 **Connection**:
+
 ```javascript
-const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
+const ws = new WebSocket("ws://localhost:3001/shell?token=<JWT_TOKEN>");
 ```
 
 **Client → Server Messages**:
 
 1. **Initialize Shell**:
+
 ```json
 {
   "type": "init",
@@ -1512,6 +1697,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ```
 
 2. **Send Input**:
+
 ```json
 {
   "type": "input",
@@ -1520,6 +1706,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ```
 
 3. **Resize Terminal**:
+
 ```json
 {
   "type": "resize",
@@ -1531,6 +1718,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 **Server → Client Messages**:
 
 1. **Output**:
+
 ```json
 {
   "type": "output",
@@ -1539,6 +1727,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ```
 
 2. **URL Open** (detected from terminal):
+
 ```json
 {
   "type": "url_open",
@@ -1547,6 +1736,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ```
 
 **Notes**:
+
 - Uses `node-pty` for real PTY
 - Supports ANSI color codes and terminal control sequences
 - Auto-detects URLs for browser opening
@@ -1556,6 +1746,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ## Error Handling
 
 ### Standard Error Response Format
+
 ```json
 {
   "error": "Error message",
@@ -1564,6 +1755,7 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ```
 
 ### Common HTTP Status Codes
+
 - `200 OK` - Success
 - `400 Bad Request` - Invalid request parameters
 - `401 Unauthorized` - Missing or invalid JWT token
@@ -1577,10 +1769,12 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ## Environment Variables
 
 ### Required
+
 - `PORT` - Server port (default: 3001)
 - `VITE_PORT` - Frontend dev server port (default: 5173)
 
 ### Optional
+
 - `JWT_SECRET` - JWT signing secret (default: "claude-ui-dev-secret-change-in-production")
 - `API_KEY` - Optional API key for additional security
 - `DATABASE_PATH` - Path to SQLite database (default: server/database/auth.db)
@@ -1594,19 +1788,25 @@ const ws = new WebSocket('ws://localhost:3001/shell?token=<JWT_TOKEN>');
 ## File System Security
 
 ### Path Traversal Protection
+
 All file operations validate that paths are within:
+
 - Project root directories
 - `~/.claude/` directory
 - `/tmp/` directory (for uploads)
 
 ### Git Repository Validation
+
 Git operations validate:
+
 - Directory is a git repository
 - Git root matches project path
 - No parent repository operations
 
 ### Command File Access
+
 Slash commands must be in:
+
 - `~/.claude/commands/` (user-level)
 - `<project>/.claude/commands/` (project-level)
 
@@ -1615,6 +1815,7 @@ Slash commands must be in:
 ## WebSocket Connection Lifecycle
 
 ### Chat WebSocket
+
 1. Client connects with JWT token in query parameter
 2. Server validates token and stores user info
 3. Client sends commands, server streams responses
@@ -1622,6 +1823,7 @@ Slash commands must be in:
 5. Connection closes on disconnect or auth failure
 
 ### Shell WebSocket
+
 1. Client connects with JWT token
 2. Client sends init message with project path
 3. Server spawns PTY process with appropriate shell
@@ -1633,14 +1835,17 @@ Slash commands must be in:
 ## Rate Limiting & Performance
 
 ### File Watcher Debouncing
+
 - Project updates debounced by 300ms
 - Prevents excessive notifications during bulk file operations
 
 ### Session Protection
+
 - Active sessions protected from automatic updates
 - Prevents message list clearing during conversations
 
 ### Token Context Management
+
 - Default context window: 160,000 tokens
 - Token usage tracked per session
 - Cache hit/miss tracking for optimization
@@ -1650,7 +1855,9 @@ Slash commands must be in:
 ## Development Notes
 
 ### Testing APIs
+
 Use tools like:
+
 - **Postman** - REST API testing
 - **wscat** - WebSocket testing: `wscat -c "ws://localhost:3001/ws?token=<TOKEN>"`
 - **curl** - Command-line testing
@@ -1658,6 +1865,7 @@ Use tools like:
 ### Example curl Commands
 
 **Login**:
+
 ```bash
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -1665,12 +1873,14 @@ curl -X POST http://localhost:3001/api/auth/login \
 ```
 
 **Get Projects**:
+
 ```bash
 curl http://localhost:3001/api/projects \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
 **Git Status**:
+
 ```bash
 curl "http://localhost:3001/api/git/status?project=my-project" \
   -H "Authorization: Bearer <TOKEN>"
@@ -1689,6 +1899,7 @@ curl "http://localhost:3001/api/git/status?project=my-project" \
 ## Support & Contributing
 
 For issues, feature requests, or contributions:
+
 - GitHub: https://github.com/siteboon/agent-ui
 - Documentation: https://agent-ui.siteboon.ai
 

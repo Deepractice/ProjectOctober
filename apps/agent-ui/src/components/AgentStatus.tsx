@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../lib/utils';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "../lib/utils";
 
-function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
+function AgentStatus({ status, onAbort, isLoading, provider = "claude" }) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
   const [fakeTokens, setFakeTokens] = useState(0);
@@ -34,14 +34,14 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
     if (!isLoading) return;
 
     const timer = setInterval(() => {
-      setAnimationPhase(prev => (prev + 1) % 4);
+      setAnimationPhase((prev) => (prev + 1) % 4);
     }, 500);
 
     return () => clearInterval(timer);
   }, [isLoading]);
 
   // Clever action words that cycle
-  const actionWords = ['Thinking', 'Processing', 'Analyzing', 'Working', 'Computing', 'Reasoning'];
+  const actionWords = ["Thinking", "Processing", "Analyzing", "Working", "Computing", "Reasoning"];
   const actionIndex = Math.floor(elapsedTime / 3) % actionWords.length;
 
   // Parse status data
@@ -50,7 +50,7 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
   const canInterrupt = status?.can_interrupt !== false;
 
   // Animation characters
-  const spinners = ['✻', '✹', '✸', '✶'];
+  const spinners = ["✻", "✹", "✸", "✶"];
   const currentSpinner = spinners[animationPhase];
 
   return (
@@ -62,67 +62,74 @@ function AgentStatus({ status, onAbort, isLoading, provider = 'claude' }) {
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{
             duration: 0.3,
-            ease: [0.4, 0, 0.2, 1]
+            ease: [0.4, 0, 0.2, 1],
           }}
           className="w-full mb-6"
         >
           <div className="flex items-center justify-between max-w-4xl mx-auto bg-gray-900 dark:bg-gray-950 text-white rounded-lg shadow-lg px-4 py-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            {/* Animated spinner */}
-            <motion.span
-              animate={{
-                rotate: [0, 90, 180, 270, 360],
-                scale: [1, 1.1, 1, 1.1, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="text-xl text-blue-400"
-            >
-              {currentSpinner}
-            </motion.span>
-            
-            {/* Status text - first line */}
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{statusText}...</span>
-                <span className="text-gray-400 text-sm">({elapsedTime}s)</span>
-                {tokens > 0 && (
-                  <>
-                    <span className="text-gray-400">·</span>
-                    <span className="text-gray-300 text-sm hidden sm:inline">⚒ {tokens.toLocaleString()} tokens</span>
-                    <span className="text-gray-300 text-sm sm:hidden">⚒ {tokens.toLocaleString()}</span>
-                  </>
-                )}
-                <span className="text-gray-400 hidden sm:inline">·</span>
-                <span className="text-gray-300 text-sm hidden sm:inline">esc to interrupt</span>
-              </div>
-              {/* Second line for mobile */}
-              <div className="text-xs text-gray-400 sm:hidden mt-1">
-                esc to interrupt
+              <div className="flex items-center gap-3">
+                {/* Animated spinner */}
+                <motion.span
+                  animate={{
+                    rotate: [0, 90, 180, 270, 360],
+                    scale: [1, 1.1, 1, 1.1, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="text-xl text-blue-400"
+                >
+                  {currentSpinner}
+                </motion.span>
+
+                {/* Status text - first line */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{statusText}...</span>
+                    <span className="text-gray-400 text-sm">({elapsedTime}s)</span>
+                    {tokens > 0 && (
+                      <>
+                        <span className="text-gray-400">·</span>
+                        <span className="text-gray-300 text-sm hidden sm:inline">
+                          ⚒ {tokens.toLocaleString()} tokens
+                        </span>
+                        <span className="text-gray-300 text-sm sm:hidden">
+                          ⚒ {tokens.toLocaleString()}
+                        </span>
+                      </>
+                    )}
+                    <span className="text-gray-400 hidden sm:inline">·</span>
+                    <span className="text-gray-300 text-sm hidden sm:inline">esc to interrupt</span>
+                  </div>
+                  {/* Second line for mobile */}
+                  <div className="text-xs text-gray-400 sm:hidden mt-1">esc to interrupt</div>
+                </div>
               </div>
             </div>
+
+            {/* Interrupt button */}
+            {canInterrupt && onAbort && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onAbort}
+                className="ml-3 text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 flex-shrink-0"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Stop</span>
+              </motion.button>
+            )}
           </div>
-        </div>
-        
-        {/* Interrupt button */}
-        {canInterrupt && onAbort && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onAbort}
-            className="ml-3 text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 flex-shrink-0"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="hidden sm:inline">Stop</span>
-          </motion.button>
-        )}
-      </div>
         </motion.div>
       )}
     </AnimatePresence>

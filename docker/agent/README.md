@@ -48,6 +48,7 @@ docker-compose down
 ## Port Specification
 
 Deepractice standard port allocation:
+
 - **5200**: Agent (complete application - frontend + backend + WebSocket)
 - 5201: Reserved (future: separate frontend)
 - 5202: Reserved (future: separate API)
@@ -56,6 +57,7 @@ Deepractice standard port allocation:
 ## Architecture
 
 Single container running:
+
 - **Frontend**: React app (built to static files)
 - **Backend**: Node.js Express server (serves frontend + API)
 - **Port**: 5200 (both UI and API)
@@ -98,18 +100,21 @@ Expected response: `{"status":"ok","service":"agent-service"}`
 ## Troubleshooting
 
 ### Port already in use
+
 ```bash
 # Use different port (map host port 8080 to container port 5200)
 docker run -p 8080:5200 ...
 ```
 
 ### Permission issues
+
 ```bash
 # Check project directory permissions
 ls -la $(pwd)
 ```
 
 ### View logs
+
 ```bash
 docker logs -f agent
 ```

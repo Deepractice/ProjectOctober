@@ -16,13 +16,30 @@ export default [
         sourceType: "module",
       },
       globals: {
+        // Console and process
         console: "readonly",
         process: "readonly",
+        // Node.js built-ins
         __dirname: "readonly",
         __filename: "readonly",
         Buffer: "readonly",
         module: "readonly",
         require: "readonly",
+        // Timers
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        setImmediate: "readonly",
+        clearImmediate: "readonly",
+        // Global objects
+        global: "readonly",
+        exports: "readonly",
+        // Web APIs available in Node.js
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
       },
     },
     plugins: {
@@ -36,10 +53,14 @@ export default [
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
         },
       ],
       "no-console": "off",
       "no-unused-vars": "off",
+      "no-undef": "error",
+      // Allow control characters in regex (for terminal escape codes)
+      "no-control-regex": "off",
     },
   },
   {

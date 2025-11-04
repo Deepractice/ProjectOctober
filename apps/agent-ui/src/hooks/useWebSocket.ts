@@ -23,9 +23,9 @@
  * Then access: ws.chatMessages, ws.isLoading, ws.setPermissionMode, etc.
  */
 
-import { useWebSocketState } from './useWebSocketState';
-import { useWebSocketHandlers } from './useWebSocketHandlers';
-import { useEffect } from 'react';
+import { useWebSocketState } from "./useWebSocketState";
+import { useWebSocketHandlers } from "./useWebSocketHandlers";
+import { useEffect } from "react";
 
 export function useWebSocket({
   // Project and session context
@@ -39,12 +39,12 @@ export function useWebSocket({
   // Scroll behavior
   scrollToBottom,
   isNearBottom,
-  autoScrollToBottom
+  autoScrollToBottom,
 }) {
   // Initialize state management
   const state = useWebSocketState({
     initialSessionId: selectedSession?.id || null,
-    initialPermissionMode: 'bypassPermissions' // Fixed to bypass mode
+    initialPermissionMode: "bypassPermissions", // Fixed to bypass mode
   });
 
   // Permission mode is locked to bypassPermissions
@@ -93,6 +93,6 @@ export function useWebSocket({
 
     // Refs (for streaming)
     streamBufferRef: state.streamBufferRef,
-    streamTimerRef: state.streamTimerRef
+    streamTimerRef: state.streamTimerRef,
   };
 }

@@ -1,8 +1,8 @@
-import React from 'react';
-import AgentStatus from '../../AgentStatus';
-import TokenUsagePie from '../../TokenUsagePie';
-import ImageAttachments from './ImageAttachments';
-import Textarea from './Textarea';
+import React from "react";
+import AgentStatus from "../../AgentStatus";
+import TokenUsagePie from "../../TokenUsagePie";
+import ImageAttachments from "./ImageAttachments";
+import Textarea from "./Textarea";
 
 /**
  * InputArea component - Main input area for the chat interface
@@ -63,12 +63,12 @@ function InputArea({
   setIsInputFocused,
   setCursorPosition,
   setFilteredCommands,
-  handleTranscript
+  handleTranscript,
 }) {
   return (
     <div
       className={`p-2 sm:p-4 md:p-4 flex-shrink-0 ${
-        isInputFocused ? 'pb-2 sm:pb-4 md:pb-6' : 'pb-2 sm:pb-4 md:pb-6'
+        isInputFocused ? "pb-2 sm:pb-4 md:pb-6" : "pb-2 sm:pb-4 md:pb-6"
       }`}
     >
       <div className="flex-1">
@@ -86,11 +86,7 @@ function InputArea({
           {/* Token usage pie chart */}
           <TokenUsagePie
             used={tokenBudget?.used || 0}
-            total={
-              tokenBudget?.total ||
-              parseInt(import.meta.env.VITE_CONTEXT_WINDOW) ||
-              160000
-            }
+            total={tokenBudget?.total || parseInt(import.meta.env.VITE_CONTEXT_WINDOW) || 160000}
           />
 
           {/* Clear input button - positioned to the right of token pie, only shows when there's input */}
@@ -100,9 +96,9 @@ function InputArea({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setInput('');
+                setInput("");
                 if (textareaRef.current) {
-                  textareaRef.current.style.height = 'auto';
+                  textareaRef.current.style.height = "auto";
                   textareaRef.current.focus();
                 }
                 setIsTextareaExpanded(false);
@@ -184,8 +180,8 @@ function InputArea({
           onBlur={() => setIsInputFocused(false)}
           onInput={(e) => {
             // Immediate resize on input for better UX
-            e.target.style.height = 'auto';
-            e.target.style.height = e.target.scrollHeight + 'px';
+            e.target.style.height = "auto";
+            e.target.style.height = e.target.scrollHeight + "px";
             setCursorPosition(e.target.selectionStart);
 
             // Check if textarea is expanded (more than 2 lines worth of height)
@@ -199,7 +195,7 @@ function InputArea({
           onToggleCommandMenu={() => {
             const isOpening = !showCommandMenu;
             setShowCommandMenu(isOpening);
-            setCommandQuery('');
+            setCommandQuery("");
             setSelectedCommandIndex(-1);
 
             // When opening, ensure all commands are shown
@@ -215,7 +211,7 @@ function InputArea({
           onCloseCommandMenu={() => {
             setShowCommandMenu(false);
             setSlashPosition(-1);
-            setCommandQuery('');
+            setCommandQuery("");
             setSelectedCommandIndex(-1);
           }}
           onTranscript={handleTranscript}

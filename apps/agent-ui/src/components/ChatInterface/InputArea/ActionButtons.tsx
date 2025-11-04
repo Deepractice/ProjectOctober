@@ -1,5 +1,5 @@
-import React from 'react';
-import { MicButton } from '../../MicButton.jsx';
+import React from "react";
+import { MicButton } from "../../MicButton.jsx";
 
 /**
  * ActionButtons component - All action buttons for the input area
@@ -21,7 +21,7 @@ function ActionButtons({
   onSubmit,
   isLoading = false,
   hasInput = false,
-  onTranscript
+  onTranscript,
 }) {
   return (
     <>
@@ -32,17 +32,27 @@ function ActionButtons({
         className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         title="Attach images"
       >
-        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg
+          className="w-5 h-5 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       </button>
 
       {/* Mic button - HIDDEN */}
-      <div className="absolute right-16 sm:right-16 top-1/2 transform -translate-y-1/2" style={{ display: 'none' }}>
-        <MicButton
-          onTranscript={onTranscript}
-          className="w-10 h-10 sm:w-10 sm:h-10"
-        />
+      <div
+        className="absolute right-16 sm:right-16 top-1/2 transform -translate-y-1/2"
+        style={{ display: "none" }}
+      >
+        <MicButton onTranscript={onTranscript} className="w-10 h-10 sm:w-10 sm:h-10" />
       </div>
 
       {/* Slash commands button */}
@@ -52,12 +62,7 @@ function ActionButtons({
         className="absolute right-14 sm:right-36 top-1/2 transform -translate-y-1/2 w-10 h-10 sm:w-10 sm:h-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:ring-offset-gray-800 relative z-10"
         title="Show all commands"
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -69,7 +74,7 @@ function ActionButtons({
         {commandCount > 0 && (
           <span
             className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-            style={{ fontSize: '10px' }}
+            style={{ fontSize: "10px" }}
           >
             {commandCount}
           </span>

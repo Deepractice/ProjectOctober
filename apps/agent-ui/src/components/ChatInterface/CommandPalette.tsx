@@ -1,5 +1,5 @@
-import React from 'react';
-import { useCommands } from '../../hooks/useCommands';
+import React from "react";
+import { useCommands } from "../../hooks/useCommands";
 
 /**
  * CommandPalette - Encapsulates all slash command functionality
@@ -26,7 +26,7 @@ function CommandPalette({
   onShowSettings,
 
   // Children (render prop pattern for UI customization)
-  children
+  children,
 }) {
   const {
     showCommandMenu,
@@ -45,7 +45,7 @@ function CommandPalette({
     selectCommand,
     handleCommandKeyDown,
     detectSlashCommand,
-    commandQueryTimerRef
+    commandQueryTimerRef,
   } = useCommands({
     selectedProject,
     input,
@@ -57,11 +57,11 @@ function CommandPalette({
     setSessionMessages,
     handleSubmitRef,
     onFileOpen,
-    onShowSettings
+    onShowSettings,
   });
 
   // Provide all command state and handlers to children via render prop
-  if (typeof children === 'function') {
+  if (typeof children === "function") {
     return children({
       // State
       showCommandMenu,
@@ -86,7 +86,7 @@ function CommandPalette({
       detectSlashCommand,
 
       // Refs
-      commandQueryTimerRef
+      commandQueryTimerRef,
     });
   }
 
