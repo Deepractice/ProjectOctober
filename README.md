@@ -196,7 +196,7 @@ pnpm build
 
 ## 🏢 About
 
-Built with ❤️ by [Deepractice](https://deepractice.ai)
+Built with ❤️ by [Deepractice](https://github.com/Deepractice)
 
 **Part of Deepractice AI Ecosystem:**
 
