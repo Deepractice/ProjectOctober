@@ -228,7 +228,7 @@ export const useMessageStore = create<MessageState>()(
           if (!messages) return {};
 
           const updated = messages.map((msg) =>
-            msg.toolId === toolId ? { ...msg, toolResult: result } : msg
+            msg.type === "assistant" && msg.toolId === toolId ? { ...msg, toolResult: result } : msg
           );
           newMap.set(sessionId, updated);
           return { sessionMessages: newMap };
