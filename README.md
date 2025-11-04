@@ -207,21 +207,6 @@ Deepractice Agent provides the interface, PromptX provides the intelligence. Tog
 
 ---
 
-## 🤝 Community & Support
-
-- 💬 [Discord Community](https://discord.gg/rdmPr54K) - Get help, share ideas, and discuss
-- 🐛 [GitHub Issues](https://github.com/Deepractice/Agent/issues) - Report bugs and request features
-- 📖 [Documentation](https://docs.deepractice.ai) - Guides and references
-- 🌐 [Official Website](https://deepractice.ai) - Learn more about Deepractice
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## ⭐ Star History
 
 <div align="center">
