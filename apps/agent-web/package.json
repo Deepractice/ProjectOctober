@@ -1,0 +1,44 @@
+{
+  "name": "@deepractice-ai/agent-web",
+  "version": "0.0.1",
+  "description": "Web application for AI Agent (Gateway + UI)",
+  "private": true,
+  "type": "module",
+  "homepage": "https://agent.deepractice.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deepractice/Agent/issues"
+  },
+  "scripts": {
+    "dev": "vite --host --logLevel error",
+    "dev:full": "concurrently --kill-others --raw --prefix none \"pnpm --filter @deepractice-ai/agent-service dev\" \"pnpm dev\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "web",
+    "gateway"
+  ],
+  "author": "Deepractice Team",
+  "license": "MIT",
+  "dependencies": {
+    "@deepractice-ai/agent-ui": "workspace:*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.6.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.0.4"
+  }
+}

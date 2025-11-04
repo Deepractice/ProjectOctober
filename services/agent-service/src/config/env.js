@@ -12,7 +12,8 @@ const __dirname = dirname(__filename);
 
 export function loadEnv() {
   try {
-    const envPath = path.join(__dirname, "../../.env");
+    // Load from monorepo root .env file
+    const envPath = path.join(__dirname, "../../../../.env");
     const envFile = fs.readFileSync(envPath, "utf8");
     envFile.split("\n").forEach((line) => {
       const trimmedLine = line.trim();

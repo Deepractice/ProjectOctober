@@ -1,35 +1,56 @@
 {
   "name": "@deepractice-ai/agent-ui",
   "version": "0.0.1",
-  "description": "A web-based UI for AI Agent",
+  "description": "UI component library for AI Agent",
   "private": true,
   "type": "module",
-  "homepage": "https://agent-ui.deepractice.ai",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./src": "./src/index.ts",
+    "./src/*": "./src/*",
+    "./styles.css": "./dist/agent-ui.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "homepage": "https://agent.deepractice.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepractice/ProjectOctober.git"
+    "url": "git+https://github.com/Deepractice/Agent.git"
   },
   "bugs": {
-    "url": "https://github.com/deepractice/ProjectOctober/issues"
+    "url": "https://github.com/Deepractice/Agent/issues"
   },
   "scripts": {
-    "dev": "vite --host --logLevel error",
-    "dev:full": "concurrently --kill-others --raw --prefix none \"pnpm --filter @deepractice-ai/agent-service dev\" \"pnpm dev\"",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "tsc -p tsconfig.build.json && vite build",
+    "build:watch": "vite build --watch",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch"
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai",
-    "anthropic",
+    "agent",
     "ui",
-    "mobile"
+    "react",
+    "components"
   ],
-  "author": "Agent UI Contributors",
+  "author": "Deepractice Team",
   "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "dependencies": {
     "@codemirror/commands": "^6.10.0",
     "@codemirror/lang-css": "^6.3.1",
@@ -55,8 +76,6 @@
     "framer-motion": "^12.23.24",
     "fuse.js": "^7.0.0",
     "lucide-react": "^0.515.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.8.1",
@@ -70,8 +89,9 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.16",
-    "concurrently": "^8.2.2",
     "postcss": "^8.4.32",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3",
     "vite": "^7.0.4"

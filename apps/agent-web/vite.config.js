@@ -2,27 +2,26 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-export default defineConfig(({ command, mode }) => {
-  // Load env file based on `mode` in the current working directory.
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
     plugins: [react()],
     resolve: {
       alias: {
-        "~": path.resolve(__dirname, "./src"),
+        "~": path.resolve(__dirname, "../../packages/agent-ui/src"),
       },
     },
     server: {
-      port: parseInt(env.VITE_PORT) || 3000,
+      port: parseInt(env.VITE_PORT) || 5200,
       proxy: {
-        "/api": `http://localhost:${env.PORT || 3001}`,
+        "/api": `http://localhost:${env.PORT || 5201}`,
         "/ws": {
-          target: `ws://localhost:${env.PORT || 3001}`,
+          target: `ws://localhost:${env.PORT || 5201}`,
           ws: true,
         },
         "/shell": {
-          target: `ws://localhost:${env.PORT || 3002}`,
+          target: `ws://localhost:${env.PORT || 5201}`,
           ws: true,
         },
       },
