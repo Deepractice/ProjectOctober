@@ -28,7 +28,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { parseJsonlSessions } from "./sessions.js";
-import { config } from "./config/index.js";
+import { config } from "./index.js";
 
 // Get current project from configuration
 function getCurrentProject() {

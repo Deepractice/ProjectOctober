@@ -9,21 +9,53 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
+import { getConfig } from "@deepractice-ai/agent-config";
 
-import { initConfig, config } from "./config/index.js";
 import { createApp } from "./app.js";
 import { handleChatConnection } from "./websocket/chat.js";
 import { handleShellConnection } from "./websocket/shell.js";
 import { setupSessionsWatcher } from "./watchers/sessions.js";
 import sessionManager from "./core/SessionManager.js";
 import { getCurrentProject } from "./projects.js";
+import { logger } from "./utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Initialize configuration
-await initConfig();
-const PORT = config().port;
+// From src/index.js, monorepo root is 3 levels up: ../../../.env
+const envPath = path.resolve(__dirname, "../../../.env");
+
+logger.info({ __dirname, envPath }, "Resolving .env path");
+logger.info(
+  {
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY
+      ? `${process.env.ANTHROPIC_API_KEY.substring(0, 6)}***`
+      : undefined,
+    anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL,
+    port: process.env.PORT,
+  },
+  "Environment variables from process.env"
+);
+
+const configInstance = await getConfig({ envPath });
+
+logger.info({ envPath }, "Configuration loaded from file");
+logger.info(
+  {
+    anthropicApiKey: configInstance.anthropicApiKey
+      ? `${configInstance.anthropicApiKey.substring(0, 6)}***`
+      : undefined,
+    anthropicBaseUrl: configInstance.anthropicBaseUrl,
+    port: configInstance.port,
+  },
+  "Final configuration values"
+);
+
+// Export config for other modules
+export const config = () => configInstance;
+
+const PORT = configInstance.port;
 
 // Track connected WebSocket clients for session updates
 const connectedClients = new Set();

@@ -377,7 +377,14 @@ function ChatInterface({
   useEffect(() => {
     const sessionId = selectedSession?.id;
 
+    // Wait for WebSocket to be fully connected before sending
     if (!sessionId || !ws || !sendMessage || isSystemSessionChange) return;
+
+    // Check if WebSocket is actually connected (not just exists)
+    if (ws.readyState !== WebSocket.OPEN) {
+      console.log("⏳ WebSocket not ready yet, will check session status when connected");
+      return;
+    }
 
     const provider = localStorage.getItem("selected-provider") || "claude";
     sendMessage({

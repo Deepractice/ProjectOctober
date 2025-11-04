@@ -17,7 +17,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { logger } from "./utils/logger.js";
-import { config } from "./config/index.js";
+import { config } from "./index.js";
 
 // Session tracking: Map of session IDs to active query instances
 const activeSessions = new Map();

@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-import { config } from "./config/index.js";
+import { config } from "./index.js";
 import mcpRoutes from "./routes/mcp.js";
 import commandsRoutes from "./routes/commands.js";
 import sessionsRoutes from "./routes/sessions.js";
