@@ -5,16 +5,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "turbo dev",
-    "dev:smart": "node scripts/error-summarizer.js",
-    "dev:quiet": "./scripts/dev-quiet.sh",
-    "dev:verbose": "turbo dev",
-    "dev:original": "turbo dev",
+    "dev": "turbo run dev --filter=@deepractice-ai/agent-service --filter=@deepractice-ai/agent-web",
     "build": "turbo build",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "turbo typecheck",
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules",
     "prepare": "lefthook install"

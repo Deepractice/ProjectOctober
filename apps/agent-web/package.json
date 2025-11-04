@@ -14,7 +14,6 @@
   },
   "scripts": {
     "dev": "vite --host --logLevel error",
-    "dev:full": "concurrently --kill-others --raw --prefix none \"pnpm --filter @deepractice-ai/agent-service dev\" \"pnpm dev\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
