@@ -73,6 +73,22 @@ importers:
         specifier: ^7.0.4
         version: 7.1.12(@types/node@24.9.2)(jiti@2.6.1)
 
+  packages/agent-config:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^24.9.2
+        version: 24.9.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/agent-ui:
     dependencies:
       '@codemirror/commands':
@@ -205,6 +221,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.29
         version: 0.1.30(zod@3.25.76)
+      '@deepractice-ai/agent-config':
+        specifier: workspace:*
+        version: link:../../packages/agent-config
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
@@ -1610,6 +1629,10 @@ packages:
   dot-prop@5.3.0:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -5014,6 +5037,8 @@ snapshots:
   dot-prop@5.3.0:
     dependencies:
       is-obj: 2.0.0
+
+  dotenv@16.6.1: {}
 
   dunder-proto@1.0.1:
     dependencies:

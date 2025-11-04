@@ -37,9 +37,13 @@
     "NODE_ENV",
     "PORT",
     "VITE_PORT",
-    "JWT_SECRET",
-    "DATABASE_PATH",
+    "FRONTEND_URL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_BASE_URL",
+    "PROJECT_PATH",
     "CONTEXT_WINDOW",
+    "LOG_LEVEL",
+    "DATABASE_PATH",
     "VITE_CONTEXT_WINDOW"
   ]
 }

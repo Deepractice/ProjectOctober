@@ -17,6 +17,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { logger } from "./utils/logger.js";
+import { config } from "./config/index.js";
 
 // Session tracking: Map of session IDs to active query instances
 const activeSessions = new Map();
@@ -172,9 +173,9 @@ function extractTokenBudget(resultMessage) {
   // Total used = input + output + cache tokens
   const totalUsed = inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens;
 
-  // Use configured context window budget from environment (default 160000)
+  // Use configured context window budget (default 160000)
   // This is the user's budget limit, not the model's context window
-  const contextWindow = parseInt(process.env.CONTEXT_WINDOW) || 160000;
+  const contextWindow = config().contextWindow;
 
   logger.info(
     `📊 Token calculation: input=${inputTokens}, output=${outputTokens}, cache=${cacheReadTokens + cacheCreationTokens}, total=${totalUsed}/${contextWindow}`

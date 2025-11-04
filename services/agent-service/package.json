@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.29",
+    "@deepractice-ai/agent-config": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
     "bcrypt": "^6.0.0",
     "chokidar": "^4.0.3",

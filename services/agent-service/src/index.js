@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 
-import { loadEnv } from "./config/env.js";
+import { initConfig, config } from "./config/index.js";
 import { createApp } from "./app.js";
 import { handleChatConnection } from "./websocket/chat.js";
 import { handleShellConnection } from "./websocket/shell.js";
@@ -21,10 +21,9 @@ import { getCurrentProject } from "./projects.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
-loadEnv();
-
-const PORT = process.env.PORT || 5200;
+// Initialize configuration
+await initConfig();
+const PORT = config().port;
 
 // Track connected WebSocket clients for session updates
 const connectedClients = new Set();

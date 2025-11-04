@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
+import { config } from "./config/index.js";
 import mcpRoutes from "./routes/mcp.js";
 import commandsRoutes from "./routes/commands.js";
 import sessionsRoutes from "./routes/sessions.js";
@@ -27,7 +28,7 @@ export function createApp(wss) {
   // CORS - Allow frontend origin
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: config().frontendUrl,
       credentials: true,
     })
   );
@@ -52,7 +53,7 @@ export function createApp(wss) {
 
   // Static files in production
   const distPath = path.join(__dirname, "../dist");
-  const isProduction = process.env.NODE_ENV === "production" && fs.existsSync(distPath);
+  const isProduction = config().nodeEnv === "production" && fs.existsSync(distPath);
 
   if (isProduction) {
     console.log("📦 Serving static files from:", distPath);

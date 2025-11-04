@@ -28,10 +28,11 @@ import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
 import { parseJsonlSessions } from "./sessions.js";
+import { config } from "./config/index.js";
 
-// Get current project from PROJECT_PATH environment variable
+// Get current project from configuration
 function getCurrentProject() {
-  const projectPath = process.env.PROJECT_PATH;
+  const projectPath = config().projectPath;
 
   if (!projectPath) {
     throw new Error(
