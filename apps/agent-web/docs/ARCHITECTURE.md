@@ -1,6 +1,6 @@
 # Agent Web Architecture
 
-**EventBus-Driven Business Layer with assistant-ui Components**
+**EventBus-Driven Business Layer with Migrated agent-ui Components**
 
 ## Overview
 
@@ -9,28 +9,21 @@ agent-web implements a clean, layered architecture that separates business logic
 - **EventBus**: Unified RxJS Subject for all application events
 - **Stores**: Zustand stores subscribed to EventBus
 - **API Layer**: WebSocket + REST clients
-- **UI Layer**: assistant-ui primitives for chat interface
+- **UI Layer**: Migrated components from agent-ui package
 - **Type System**: Shared type definitions for type safety
 
 ## Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────┐
-│ UI Layer (assistant-ui primitives)     │
-│ - Thread, Composer, Message components │
+│ UI Layer (Migrated Components)          │
+│ - Sidebar, ChatInterface, MessagesArea │
+│ - InputArea, MessageRenderer           │
 │ - Pure, composable React components    │
-│ - Accepts runtime props                │
 └─────────────────────────────────────────┘
-         ↑ Runtime / ↓ Callbacks
+         ↑ Props / ↓ Events
 ┌─────────────────────────────────────────┐
 │ agent-web (Business Layer)              │
-│ ┌─────────────────────────────────────┐ │
-│ │ AgentRuntimeProvider                │ │
-│ │ - Adapts stores to assistant-ui     │ │
-│ │ - Message format conversion         │ │
-│ │ - Event handling                    │ │
-│ └─────────────────────────────────────┘ │
-│         ↓                                │
 │ ┌─────────────────────────────────────┐ │
 │ │ EventBus (RxJS Subject)             │ │
 │ │ - Unified event stream              │ │
@@ -62,55 +55,57 @@ agent-web implements a clean, layered architecture that separates business logic
 ### UI Components (`components/`)
 
 **Layout Components:**
-
 - `Layout.tsx` - Two-column layout (Sidebar + Main)
-- `SessionList.tsx` - Session management (CRUD)
-- `ChatArea.tsx` - Chat interface using assistant-ui
+- `Sidebar/` - Session management with sub-components:
+  - `SidebarHeader.tsx` - Logo and branding
+  - `SessionSearchBar.tsx` - Search and actions
+  - `SessionList.tsx` - Session list container
+  - `SessionItem.tsx` - Individual session card
+- `ChatInterface.tsx` - Main chat container
 
-**Runtime Provider:**
+**Chat Components:**
+- `MessagesArea/` - Message list with pagination
+- `MessageRenderer/` - Message rendering with sub-components:
+  - `UserMessage.tsx` - User message bubble
+  - `AssistantMessage.tsx` - AI response with thinking
+  - `MessageHeader.tsx` - Message metadata
+  - `ThinkingSection.tsx` - Collapsible reasoning
+  - `JSONRenderer.tsx` - Formatted JSON display
+  - `ToolUseDisplay.tsx` - Tool execution visualization
+  - `DiffDisplay.tsx` - File diff rendering
+  - `ToolIndicators/` - Read/Todo tool indicators
+- `InputArea/` - User input with sub-components:
+  - `Textarea.tsx` - Auto-resizing textarea
+  - `ActionButtons.tsx` - Submit, image upload, etc.
+  - `ImageAttachments.tsx` - Image preview and drag-drop
 
-- `AgentRuntimeProvider.tsx` - Bridges Zustand stores to assistant-ui
+**Utility Components:**
+- `AgentLogo.tsx` - Branding logo
+- `AgentStatus.tsx` - Thinking/processing indicator with framer-motion
+- `TodoList.tsx` - Task list visualization
+- `TokenUsagePie.tsx` - Token usage pie chart
+- `CommandMenu.tsx` - Slash command autocomplete
+- `MicButton.tsx` - Voice input with Whisper API
+- `CodeEditor.tsx` - Code editing (requires CodeMirror packages)
+- `DiffViewer.tsx` - Diff visualization
+- `ImageAttachment.tsx` - Image preview card
 
 All UI components are **pure** - they receive data via props/hooks and emit events via callbacks.
-
-### assistant-ui Integration
-
-We use **assistant-ui's External Store pattern**:
-
-```typescript
-// AgentRuntimeProvider.tsx
-const runtime = useExternalStoreRuntime({
-  messages,        // From messageStore
-  setMessages,     // Updates messageStore
-  onNew,          // Handles user input
-});
-
-<AssistantRuntimeProvider runtime={runtime}>
-  <ChatArea />
-</AssistantRuntimeProvider>
-```
-
-**Benefits:**
-
-- Production-grade AI chat UX (streaming, auto-scroll, accessibility)
-- Composable primitives (Thread, Composer, Message)
-- Fully customizable with Tailwind CSS
-- No business logic coupling
 
 ## Data Flow
 
 ### 1. User Sends Message
 
 ```
-User types in Composer
+User types in InputArea
     ↓
-assistant-ui calls onNew()
-    ↓
-AgentRuntimeProvider.onNew()
-    ↓
-messageStore.addUserMessage()
+handleSubmit()
     ↓
 api/agent.sendMessage()
+    ↓
+EventBus.emit({ type: 'message.user' })
+    ↓
+messageStore.addUserMessage()
     ↓
 WebSocket.send({ type: 'agent-command' })
 ```
@@ -120,31 +115,29 @@ WebSocket.send({ type: 'agent-command' })
 ```
 WebSocket receives message
     ↓
-websocketAdapter.adaptWebSocketToEventBus()
+websocketAdapter processes
     ↓
 EventBus.emit({ type: 'message.assistant', content })
     ↓
 messageStore subscribes and updates
     ↓
-Runtime detects store change
-    ↓
-assistant-ui re-renders with new message
+ChatInterface re-renders with new message
 ```
 
 ### 3. Session Management
 
 ```
-User clicks "New Session"
+User clicks "New Session" in Sidebar
     ↓
-SessionList.handleNewSession()
+EventBus.emit({ type: 'session.create' })
+    ↓
+sessionStore handles event
     ↓
 api/agent.createSession()
     ↓
-EventBus.emit({ type: 'session.created' })
+Sessions list refreshed
     ↓
-sessionStore.addSession()
-    ↓
-UI re-renders with new session
+Navigate to new session
 ```
 
 ## Core Systems
@@ -161,99 +154,112 @@ eventBus.emit({
 });
 
 // Subscribe to events
-eventBus.on(isSessionEvent).subscribe((event) => {
+eventBus.stream().subscribe((event: AppEvent) => {
   // Handle event
 });
 ```
 
 **Features:**
-
 - Type-safe event types
 - Automatic debug logging in dev
-- Filter by event type with type guards
+- Observable-based subscriptions
 
 ### Event Types (`core/events.ts`)
 
 Type-safe event definitions:
 
-- `SessionEvent` - Session lifecycle (created, updated, deleted, selected)
-- `MessageEvent` - Message flow (user, assistant, streaming, complete)
+- `SessionEvent` - Session lifecycle (create, created, updated, deleted, selected, refresh)
+- `MessageEvent` - Message flow (user, assistant, streaming, complete, tool, toolResult, error)
 - `UIEvent` - UI state (thinking status, errors)
-- `ErrorEvent` - Error handling
 
 ### Stores (`stores/`)
 
 Zustand stores subscribed to EventBus:
 
 **sessionStore:**
-
 - Sessions list
 - Selected session
 - Loading/error states
+- **NEW**: Handles session CRUD via EventBus events
+  - `session.create` → calls API → refreshes list
+  - `session.delete` → calls API → removes from list
+  - `session.refresh` → reloads sessions
 
 **messageStore:**
-
 - Messages per session (Map<sessionId, ChatMessage[]>)
 - Add/update/clear operations
 - Streaming message handling
+- Tool use tracking
+- Automatically subscribes to message events
 
 **uiStore:**
-
-- UI preferences
+- UI preferences (autoExpandTools, showRawParameters, showThinking)
 - Persisted to localStorage
 
 ### API Layer (`api/`)
 
 **websocket.ts:**
-
 - WebSocket client with reconnection
 - Message queue during disconnect
 - Connection state management
 
 **rest.ts:**
-
 - REST API client with auth
 - Session CRUD operations
 - Message history loading
+- File operations
+- Whisper transcription
 
 **agent.ts:**
-
 - High-level API facade
-- Combines WebSocket + REST
-- Event emission
+- `sendMessage()` - Send user message
+- `createSession()` - Create new session
+- `deleteSession()` - Delete session
+- `loadSessions()` - Load session list
+- `connectWebSocket()` / `disconnectWebSocket()`
 
 ### Type System (`types/`)
 
-Shared type definitions copied from original agent-ui:
-
-- `Session` - Session metadata
-- `ChatMessage` - User/Assistant/Error messages
+Shared type definitions:
+- `Session` - Session metadata (id, title, created_at, updated_at, summary, lastActivity, messageCount)
+- `ChatMessage` - User/Assistant/Error/Tool messages
+- `ProjectInfo` - Project metadata
 - `WebSocketMessage` - WebSocket protocol types
 
 ## Key Design Decisions
 
-### Why assistant-ui?
+### Why Migrate from assistant-ui to agent-ui Components?
 
-**Problem**: Building production-grade chat UI is complex (streaming, auto-scroll, accessibility, branching, etc.)
+**Problem**: assistant-ui has high adaptation costs and lacks many needed components
 
-**Solution**: Use assistant-ui's proven, composable primitives
+**Solution**: Gradually migrate agent-ui components, transforming them to work with EventBus + Zustand
 
 **Benefits:**
+- Full control over UI behavior
+- All needed components (TodoList, DiffDisplay, ToolUseDisplay, etc.)
+- Easier customization
+- No adapter layer needed
+- Incremental migration path
 
-- Battle-tested UX patterns
-- Radix-style composability
-- Zero business logic coupling
-- Full styling control
-- Active maintenance (200k+ monthly downloads)
+### Migration Strategy
 
-### Why External Store Pattern?
+1. **Phase 1**: Migrate core components (Sidebar, ChatInterface, MessagesArea, InputArea)
+2. **Refactor**: Split large components into smaller, single-responsibility components
+3. **Transform**: Convert from Context API to Zustand + EventBus
+4. **Result**: Pure components that receive props and emit events
 
-assistant-ui supports multiple patterns. We chose **External Store** because:
+### Component Refactoring Principles
 
-1. **We already have stores** (Zustand)
-2. **EventBus architecture** is our source of truth
-3. **Backend owns state** (WebSocket messages)
-4. **Full control** over data flow
+- **One file, one component**: Each component in its own file
+- **Single responsibility**: Components do one thing well
+- **Composition over monoliths**: Build complex UIs from simple pieces
+- **Props down, events up**: Unidirectional data flow
+
+Example: Sidebar was split into:
+- `SidebarHeader` - Branding
+- `SessionSearchBar` - Search + Actions
+- `SessionList` - List container
+- `SessionItem` - Individual item
 
 ### Why EventBus?
 
@@ -262,20 +268,10 @@ assistant-ui supports multiple patterns. We chose **External Store** because:
 **Solution**: Single event stream with type-safe subscriptions
 
 **Benefits:**
-
 - Unified data flow (easy to trace)
 - Type safety (compile-time guarantees)
 - Testability (mock EventBus)
 - Debug visibility (log all events)
-
-### Why RxJS?
-
-RxJS aligns with backend's Observable API:
-
-```
-Backend: agent-sdk Observable → agent-service → WebSocket
-Frontend: WebSocket → EventBus (RxJS) → Stores → UI
-```
 
 ### Why Zustand?
 
@@ -283,6 +279,7 @@ Frontend: WebSocket → EventBus (RxJS) → Stores → UI
 - Performance (selective subscriptions)
 - DevTools support
 - React 18 compatible
+- Works great with EventBus pattern
 
 ## Implementation Status
 
@@ -292,28 +289,34 @@ Frontend: WebSocket → EventBus (RxJS) → Stores → UI
 - Zustand stores (session, message, ui)
 - WebSocket adapter
 - REST API client
-- assistant-ui integration
-- AgentRuntimeProvider
-- Basic UI components (Layout, SessionList, ChatArea)
+- **Component migration:**
+  - Sidebar with sub-components
+  - ChatInterface
+  - MessagesArea
+  - MessageRenderer with sub-components
+  - InputArea with sub-components
+  - Utility components (AgentStatus, TodoList, TokenUsagePie, CommandMenu, MicButton, ImageAttachment)
 - Type system migration
-- TypeScript strict mode compliance
+- Session CRUD via EventBus
+- Message display and streaming
+- Framer Motion animations
 
 ### 🚧 In Progress
 
-- Tailwind CSS styling
-- Error handling UI
-- Loading states
-- Session history loading
+- CodeEditor (missing CodeMirror packages)
+- Error boundaries
+- Loading states polish
+- Auto-scroll to bottom
 
 ### 📋 Future Enhancements
 
 - Message editing/branching
-- File attachments
-- Tool use visualization
-- Streaming indicators
-- Markdown rendering
-- Code syntax highlighting
-- Dark mode
+- Complete file attachment support
+- Enhanced tool use visualization
+- Dark mode toggle
+- Keyboard shortcuts
+- Search in messages
+- Export conversations
 
 ## Development Guide
 
@@ -334,111 +337,80 @@ pnpm --filter @deepractice-ai/agent-web build
 ```
 
 **Access:**
-
 - Frontend: http://localhost:5200
 - Backend: http://localhost:5201
 
-### Adding a New Event Type
+### Adding a New Component
 
-1. Define event in `core/events.ts`:
-
-```typescript
-export type MyEvent = {
-  type: "my.event";
-  data: string
-};
-export type AppEvent = ... | MyEvent;
-```
-
-2. Add type guard:
-
-```typescript
-export const isMyEvent = (e: AppEvent): e is MyEvent => e.type.startsWith("my.");
-```
-
-3. Subscribe in store:
-
-```typescript
-eventBus.on(isMyEvent).subscribe((event) => {
-  // Handle event
-});
-```
-
-### Adding a New UI Component
-
-1. Create component in `components/`:
+1. Create component file in `components/`:
 
 ```typescript
 // components/MyComponent.tsx
-export function MyComponent() {
-  const data = useSessionStore((s) => s.someData);
+export function MyComponent({ data, onAction }: MyComponentProps) {
+  return (
+    <div onClick={() => onAction(data.id)}>
+      {data.content}
+    </div>
+  );
+}
 
-  return <div>{data}</div>;
+export default MyComponent;
+```
+
+2. Use in parent component:
+
+```typescript
+import MyComponent from "~/components/MyComponent";
+
+<MyComponent data={item} onAction={handleAction} />
+```
+
+### Connecting to Stores
+
+```typescript
+import { useSessionStore } from "~/stores/sessionStore";
+import { useMessageStore } from "~/stores/messageStore";
+
+function MyComponent() {
+  // Subscribe to specific state
+  const sessions = useSessionStore((state) => state.sessions);
+  const getMessages = useMessageStore((state) => state.getMessages);
+
+  const messages = getMessages(sessionId);
+
+  return <div>{/* ... */}</div>;
 }
 ```
 
-2. Import and use in App:
+### Emitting Events
 
 ```typescript
-import { MyComponent } from "~/components/MyComponent";
-```
+import { eventBus } from "~/core/eventBus";
 
-### Message Format Conversion
-
-assistant-ui uses `ThreadMessageLike` format. We convert:
-
-**Our format → assistant-ui:**
-
-```typescript
-{
-  type: "user",
-  content: "Hello",
-  timestamp: "2025-11-05T..."
-}
-// ↓
-{
-  role: "user",
-  content: [{ type: "text", text: "Hello" }]
-}
-```
-
-**assistant-ui → Our format:**
-
-```typescript
-{
-  role: "assistant",
-  content: [{ type: "text", text: "Hi" }]
-}
-// ↓
-{
-  type: "assistant",
-  content: "Hi",
-  timestamp: "2025-11-05T..."
+function handleAction() {
+  eventBus.emit({
+    type: "session.create"
+  });
 }
 ```
 
 ### Debugging
 
-**EventBus logging:**
-
+**EventBus logging** (auto-enabled in dev):
 ```
-[EventBus] session.created { type: 'session.created', sessionId: 'abc123' }
+[EventBus] session.create { type: 'session.create' }
+[EventBus] message.user { type: 'message.user', sessionId: '...', content: '...' }
 ```
 
 **Store logging:**
-
-```typescript
-// Enable Zustand devtools
-const useSessionStore = create(
-  devtools(
-    (set) => ({...}),
-    { name: 'SessionStore' }
-  )
-);
+```
+[SessionStore] Creating new session...
+[SessionStore] Session created: abc123
+[MessageStore] User message added: abc123
 ```
 
-**WebSocket logging:**
-Check browser console for WebSocket messages.
+**React DevTools:**
+- Use Zustand DevTools extension to inspect store state
 
 ## Architecture Principles
 
@@ -451,47 +423,109 @@ Check browser console for WebSocket messages.
 ### 2. Unidirectional Data Flow
 
 ```
-User Action → API → Backend → WebSocket →
-EventBus → Stores → UI Re-render
+User Action → Event → Store → UI Re-render
+     ↓
+   API → Backend → WebSocket → Event → Store → UI
 ```
 
 ### 3. Type Safety
 
 Every layer is fully typed:
-
-- Events have union types
-- Stores have interfaces
+- Events have discriminated union types
+- Stores have TypeScript interfaces
 - API has typed responses
 - Components have typed props
 
-### 4. Testability
+### 4. Component Composition
 
-- Mock EventBus for store tests
-- Mock stores for component tests
-- Mock WebSocket for integration tests
+Build complex UIs from simple, reusable pieces:
+- Sidebar = Header + SearchBar + List
+- MessageRenderer = Header + (UserMessage | AssistantMessage | ToolUse)
+- InputArea = Textarea + ActionButtons + ImageAttachments
 
 ### 5. Performance
 
 - Selective Zustand subscriptions (only re-render what changed)
-- assistant-ui optimizations (virtualization, memoization)
+- Component memoization where needed
+- Efficient message list rendering
 - WebSocket message batching
 
-## Migration from agent-ui
+## Migration from agent-ui Package
 
-We replaced the monolithic `agent-ui` package with:
+We migrated components from the monolithic `agent-ui` package:
 
-1. **assistant-ui** - UI components
-2. **Local types** - Type definitions in `agent-web/src/types/`
-3. **Pure components** - No stores, hooks, or utils
+**Strategy:**
+1. Copy components from `packages/agent-ui/src/components`
+2. Refactor into smaller sub-components
+3. Convert Context API → Zustand hooks
+4. Convert callbacks → EventBus events
+5. Update imports to use `~/` alias
+6. Add TypeScript types
 
 **Benefits:**
-
-- Smaller bundle size
-- Better maintainability
-- Production-grade UI patterns
+- Full control over components
+- Better maintainability (smaller files)
 - Clear architecture boundaries
+- EventBus-driven data flow
+- Incremental migration path
+
+**Example Migration:**
+
+Before (agent-ui):
+```typescript
+// Large monolithic component with Context
+function Sidebar() {
+  const { sessions, selectSession } = useSessionContext();
+  // 200+ lines of code...
+}
+```
+
+After (agent-web):
+```typescript
+// Split into focused components
+function Sidebar() {
+  const sessions = useSessionStore(s => s.sessions);
+
+  const handleSelect = (session) => {
+    eventBus.emit({ type: 'session.selected', sessionId: session.id });
+  };
+
+  return (
+    <>
+      <SidebarHeader />
+      <SessionSearchBar />
+      <SessionList sessions={sessions} onSelect={handleSelect} />
+    </>
+  );
+}
+```
+
+## Dependencies
+
+**UI & Styling:**
+- React 18.2
+- Tailwind CSS
+- Framer Motion 12.x (animations)
+- Lucide React (icons)
+- class-variance-authority, clsx, tailwind-merge (styling utilities)
+
+**State & Data:**
+- Zustand 5.x (state management)
+- RxJS 7.x (EventBus)
+- React Router DOM 6.x (routing)
+
+**Markdown & Content:**
+- react-markdown 10.x
+- remark-gfm 4.x
+
+**Search:**
+- fuse.js 7.x (fuzzy search)
+
+**Missing (TODO):**
+- CodeMirror packages (for CodeEditor component)
 
 ---
 
 **Last Updated**: 2025-11-05
-**Status**: ✅ Phase 1 Complete - MVP functional
+**Status**: ✅ Phase 1 Complete - Core components migrated and functional
+**Next**: Polish UI/UX, add missing features (CodeEditor, enhanced error handling)

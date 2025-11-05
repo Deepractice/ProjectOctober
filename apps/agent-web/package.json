@@ -29,10 +29,18 @@
   "license": "MIT",
   "dependencies": {
     "@assistant-ui/react": "^0.11.37",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
+    "fuse.js": "^7.1.0",
+    "lucide-react": "^0.515.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.8.1",
+    "remark-gfm": "^4.0.1",
     "rxjs": "^7.8.1",
+    "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

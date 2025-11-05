@@ -123,10 +123,53 @@ export const useSessionStore = create<SessionState>()(
 );
 
 // Subscribe to EventBus (auto-setup on module load)
-eventBus.on(isSessionEvent).subscribe((event) => {
+eventBus.on(isSessionEvent).subscribe(async (event) => {
   const store = useSessionStore.getState();
 
   switch (event.type) {
+    case "session.create":
+      // Handle session creation request
+      try {
+        console.log("[SessionStore] Creating new session...");
+        const { createSession } = await import("~/api/agent");
+        const sessionId = await createSession();
+        console.log("[SessionStore] Session created:", sessionId);
+
+        // Reload sessions to get the new one
+        const { loadSessions } = await import("~/api/agent");
+        await loadSessions();
+
+        // Emit event to navigate to new session
+        eventBus.emit({ type: "session.selected", sessionId });
+      } catch (error) {
+        console.error("[SessionStore] Failed to create session:", error);
+        store.setError((error as Error).message);
+      }
+      break;
+
+    case "session.refresh":
+      // Handle session refresh request
+      try {
+        console.log("[SessionStore] Refreshing sessions...");
+        const { loadSessions } = await import("~/api/agent");
+        await loadSessions();
+      } catch (error) {
+        console.error("[SessionStore] Failed to refresh sessions:", error);
+      }
+      break;
+
+    case "session.delete":
+      // Handle session deletion request
+      try {
+        console.log("[SessionStore] Deleting session:", event.sessionId);
+        const { deleteSession } = await import("~/api/agent");
+        await deleteSession(event.sessionId);
+        // The API already emits session.deleted event
+      } catch (error) {
+        console.error("[SessionStore] Failed to delete session:", error);
+      }
+      break;
+
     case "session.created":
       console.log("[SessionStore] Session created:", event.sessionId);
       break;

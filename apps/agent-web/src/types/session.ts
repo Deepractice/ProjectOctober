@@ -5,8 +5,11 @@
 export interface Session {
   id: string;
   title: string;
+  summary?: string; // Session summary for display
   created_at: string;
   updated_at: string;
+  lastActivity: string; // Last activity timestamp
+  messageCount?: number; // Number of messages in session
   __provider?: "claude" | "cursor";
 }
 
