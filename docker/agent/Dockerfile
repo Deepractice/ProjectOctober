@@ -117,6 +117,9 @@ ENV NODE_ENV=production \
 # - ANTHROPIC_API_KEY (required)
 # - ANTHROPIC_BASE_URL (optional)
 
+# Create project directory (fix for spawn ENOENT when cwd doesn't exist)
+RUN mkdir -p /project && chown node:node /project
+
 # Switch to non-root user
 USER node
 

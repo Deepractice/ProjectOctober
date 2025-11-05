@@ -28,8 +28,14 @@ export class ClaudeAdapter {
   async *stream(prompt: string, options: SessionOptions = {}): AsyncGenerator<SDKMessage> {
     const sdkOptions = this.mapOptions(options);
 
-    this.logger.debug(
-      { promptLength: prompt.length, model: sdkOptions.model, resume: !!options.resume },
+    this.logger.info(
+      {
+        promptLength: prompt.length,
+        model: sdkOptions.model,
+        resume: !!options.resume,
+        hasEnv: !!sdkOptions.env,
+        envPath: sdkOptions.env?.PATH?.substring(0, 100),
+      },
       "Starting Claude SDK stream"
     );
 
@@ -60,8 +66,11 @@ export class ClaudeAdapter {
       resume: options.resume,
       mcpServers: this.config.mcpServers,
       permissionMode: "bypassPermissions",
-      // Explicitly pass environment to ensure PATH is available for spawning processes
+      // Explicitly pass env to ensure PATH is inherited by spawned processes
       env: process.env,
+      // Use absolute path for node executable in containerized environments
+      // to avoid spawn ENOENT errors when PATH lookup fails
+      executable: "/usr/bin/node",
     };
   }
 
