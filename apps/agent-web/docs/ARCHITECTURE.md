@@ -15,39 +15,54 @@ agent-web implements a clean, layered architecture that separates business logic
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────┐
-│ UI Layer (Migrated Components)          │
-│ - Sidebar, ChatInterface, MessagesArea │
-│ - InputArea, MessageRenderer           │
-│ - Pure, composable React components    │
-└─────────────────────────────────────────┘
-         ↑ Props / ↓ Events
-┌─────────────────────────────────────────┐
-│ agent-web (Business Layer)              │
-│ ┌─────────────────────────────────────┐ │
-│ │ EventBus (RxJS Subject)             │ │
-│ │ - Unified event stream              │ │
-│ │ - Type-safe events                  │ │
-│ └─────────────────────────────────────┘ │
-│         ↓                                │
-│ ┌─────────────────────────────────────┐ │
-│ │ Stores (Zustand)                    │ │
-│ │ - sessionStore                      │ │
-│ │ - messageStore                      │ │
-│ │ - uiStore                           │ │
-│ └─────────────────────────────────────┘ │
-│         ↓                                │
-│ ┌─────────────────────────────────────┐ │
-│ │ API Layer                           │ │
-│ │ - WebSocket client                  │ │
-│ │ - REST API client                   │ │
-│ │ - Agent API facade                  │ │
-│ └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│ UI Layer (Migrated Components)                         │
+│ - HeaderNav, Sidebar, ChatInterface, MessagesArea     │
+│ - InputArea, MessageRenderer, AgentStatus             │
+│ - Pure, composable React components                   │
+└────────────────────────────────────────────────────────┘
+         ↑ Props (from stores) / ↓ Events (to EventBus)
+┌────────────────────────────────────────────────────────┐
+│ agent-web (Business Layer)                             │
+│ ┌────────────────────────────────────────────────────┐ │
+│ │ EventBus (RxJS Subject)                            │ │
+│ │ - Unified event stream for all events              │ │
+│ │ - Type-safe discriminated unions                   │ │
+│ └────────────────────────────────────────────────────┘ │
+│         ↓ subscribe & emit                             │
+│ ┌────────────────────────────────────────────────────┐ │
+│ │ Stores (Zustand) - Subscribe to EventBus           │ │
+│ │ ┌────────────────────────────────────────────────┐ │ │
+│ │ │ sessionStore                                   │ │ │
+│ │ │ - Sessions list & selected session             │ │ │
+│ │ │ - processingSessions: Set<SessionId>           │ │ │
+│ │ │ - activeSessions protection                    │ │ │
+│ │ └────────────────────────────────────────────────┘ │ │
+│ │ ┌────────────────────────────────────────────────┐ │ │
+│ │ │ messageStore                                   │ │ │
+│ │ │ - Messages per session Map<sessionId, msgs[]>  │ │ │
+│ │ │ - Streaming, tool use, content handling        │ │ │
+│ │ └────────────────────────────────────────────────┘ │ │
+│ │ ┌────────────────────────────────────────────────┐ │ │
+│ │ │ uiStore                                        │ │ │
+│ │ │ - UI preferences (persisted to localStorage)   │ │ │
+│ │ │ - agentStatus (for current session, NOT saved) │ │ │
+│ │ │ - provider ("claude" | "cursor")               │ │ │
+│ │ └────────────────────────────────────────────────┘ │ │
+│ └────────────────────────────────────────────────────┘ │
+│         ↓ API calls                                    │
+│ ┌────────────────────────────────────────────────────┐ │
+│ │ API Layer                                          │ │
+│ │ - WebSocket client (reconnection, message queue)   │ │
+│ │ - WebSocket adapter (converts WS → EventBus)       │ │
+│ │ - REST API client (auth, CRUD operations)          │ │
+│ │ - Agent API facade (high-level operations)         │ │
+│ └────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────┘
          ↓ WebSocket / HTTP
-┌─────────────────────────────────────────┐
-│ agent-service (Backend)                 │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│ agent-service (Backend)                                │
+└────────────────────────────────────────────────────────┘
 ```
 
 ## Component Structure
@@ -55,7 +70,8 @@ agent-web implements a clean, layered architecture that separates business logic
 ### UI Components (`components/`)
 
 **Layout Components:**
-- `Layout.tsx` - Two-column layout (Sidebar + Main)
+- `App.tsx` - Main layout (Sidebar left, HeaderNav + Content right)
+- `HeaderNav.tsx` - Top navigation bar with session title and tab switching (Chat/Shell/Files)
 - `Sidebar/` - Session management with sub-components:
   - `SidebarHeader.tsx` - Logo and branding
   - `SessionSearchBar.tsx` - Search and actions
@@ -81,7 +97,8 @@ agent-web implements a clean, layered architecture that separates business logic
 
 **Utility Components:**
 - `AgentLogo.tsx` - Branding logo
-- `AgentStatus.tsx` - Thinking/processing indicator with framer-motion
+- `AgentStatus.tsx` - Thinking/processing indicator with countdown timer and framer-motion animations
+- `AgentStatusBar.tsx` - Status bar wrapper component
 - `TodoList.tsx` - Task list visualization
 - `TokenUsagePie.tsx` - Token usage pie chart
 - `CommandMenu.tsx` - Slash command autocomplete
@@ -91,6 +108,77 @@ agent-web implements a clean, layered architecture that separates business logic
 - `ImageAttachment.tsx` - Image preview card
 
 All UI components are **pure** - they receive data via props/hooks and emit events via callbacks.
+
+## Agent Status Architecture
+
+### Multi-Session Agent Status Management
+
+**Problem**: How to manage agent processing state across multiple sessions?
+
+**Solution**: Two-tier architecture
+
+1. **SessionStore** - Tracks processing state for ALL sessions
+   - `processingSessions: Set<SessionId>` - which sessions are being processed
+   - Persistent across session switches
+   - Each session's processing state is independent
+
+2. **UIStore** - Displays status for CURRENT session only
+   - `agentStatus: AgentStatus | null` - status text, tokens, can_interrupt
+   - `provider: "claude" | "cursor"` - which AI provider
+   - Temporary display state (not persisted)
+   - Cleared when switching sessions
+
+### Agent Status Flow
+
+```
+User sends message in Session A
+  ↓
+EventBus emit "message.user" (sessionId: A)
+  ↓
+UIStore: set agentStatus = { text: "Thinking..." }
+SessionStore: add A to processingSessions
+  ↓
+WebSocket receives "agent.processing" (sessionId: A, status, tokens)
+  ↓
+UIStore: update agentStatus = { text: status, tokens }
+  ↓
+Agent completes → "agent.complete" (sessionId: A)
+  ↓
+UIStore: clear agentStatus
+SessionStore: remove A from processingSessions
+```
+
+### Multi-Session Scenario
+
+```
+Scenario: User has Session A processing, switches to Session B
+
+1. Session A starts processing:
+   - SessionStore.processingSessions = { A }
+   - UIStore.agentStatus = { text: "Thinking...", ... }
+
+2. User clicks Session B:
+   - EventBus emit "session.selected" (sessionId: B)
+   - UIStore.agentStatus = null (cleared)
+   - SessionStore.processingSessions = { A } (unchanged)
+
+3. Session A completes in background:
+   - EventBus emit "agent.complete" (sessionId: A)
+   - SessionStore.processingSessions = {} (A removed)
+   - UIStore.agentStatus = null (unchanged, B is selected)
+
+4. User switches back to Session A:
+   - isSessionProcessing(A) = false
+   - No loading indicator shown
+```
+
+### Benefits
+
+✅ Each session's processing state is independent
+✅ UI only shows current session's status
+✅ Background sessions can complete without affecting UI
+✅ No state confusion when switching sessions
+✅ Scalable to many concurrent sessions
 
 ## Data Flow
 
@@ -168,9 +256,11 @@ eventBus.stream().subscribe((event: AppEvent) => {
 
 Type-safe event definitions:
 
-- `SessionEvent` - Session lifecycle (create, created, updated, deleted, selected, refresh)
+- `SessionEvent` - Session lifecycle (create, created, updated, deleted, selected, refresh, processing, aborted)
 - `MessageEvent` - Message flow (user, assistant, streaming, complete, tool, toolResult, error)
-- `UIEvent` - UI state (thinking status, errors)
+- `AgentEvent` - Agent processing state (thinking, processing, complete, error, abort)
+- `UIEvent` - UI state (loading, thinking, toast)
+- `ErrorEvent` - Error handling (websocket, api, unknown)
 
 ### Stores (`stores/`)
 
@@ -180,10 +270,14 @@ Zustand stores subscribed to EventBus:
 - Sessions list
 - Selected session
 - Loading/error states
-- **NEW**: Handles session CRUD via EventBus events
+- **Session processing state** (`processingSessions: Set<SessionId>`) - tracks which sessions are being processed by agent
+- **Session protection system** (`activeSessions`) - prevents accidental deletion
+- Handles session CRUD via EventBus events:
   - `session.create` → calls API → refreshes list
   - `session.delete` → calls API → removes from list
   - `session.refresh` → reloads sessions
+  - `session.processing` → updates processing state
+  - `session.aborted` → clears processing state
 
 **messageStore:**
 - Messages per session (Map<sessionId, ChatMessage[]>)
@@ -193,8 +287,9 @@ Zustand stores subscribed to EventBus:
 - Automatically subscribes to message events
 
 **uiStore:**
-- UI preferences (autoExpandTools, showRawParameters, showThinking)
-- Persisted to localStorage
+- UI preferences (autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, sidebarVisible)
+- **Agent status display** (agentStatus, provider) - for current session only
+- Persisted to localStorage (preferences only, not agent status)
 
 ### API Layer (`api/`)
 
@@ -287,15 +382,22 @@ Example: Sidebar was split into:
 
 - EventBus architecture with RxJS
 - Zustand stores (session, message, ui)
-- WebSocket adapter
+- **Agent Status Architecture:**
+  - Multi-session processing state management
+  - SessionStore tracks all processing sessions
+  - UIStore displays current session status only
+  - AgentStatus component with countdown timer
+  - Agent events (thinking, processing, complete, error, abort)
+- WebSocket adapter with agent event emission
 - REST API client
 - **Component migration:**
+  - HeaderNav with tab switching (Chat/Shell/Files)
   - Sidebar with sub-components
   - ChatInterface
   - MessagesArea
-  - MessageRenderer with sub-components
+  - MessageRenderer with sub-components (including ThinkingSection)
   - InputArea with sub-components
-  - Utility components (AgentStatus, TodoList, TokenUsagePie, CommandMenu, MicButton, ImageAttachment)
+  - Utility components (AgentStatus, AgentStatusBar, TodoList, TokenUsagePie, CommandMenu, MicButton, ImageAttachment)
 - Type system migration
 - Session CRUD via EventBus
 - Message display and streaming
@@ -527,5 +629,17 @@ function Sidebar() {
 ---
 
 **Last Updated**: 2025-11-05
-**Status**: ✅ Phase 1 Complete - Core components migrated and functional
-**Next**: Polish UI/UX, add missing features (CodeEditor, enhanced error handling)
+**Status**: ✅ Phase 1.5 Complete - Core components + Agent Status + HeaderNav
+**Architecture Highlights**:
+
+- EventBus-driven reactive architecture
+- Multi-session agent status management
+- Type-safe event system
+- Clean separation of concerns (UI / Business / Data)
+
+**Next**:
+
+- Shell tab integration (xterm.js)
+- Files tab (file browser)
+- Code editor polish (CodeMirror deps)
+- Enhanced error handling

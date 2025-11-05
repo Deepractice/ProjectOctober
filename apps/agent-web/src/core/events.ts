@@ -24,6 +24,14 @@ export type MessageEvent =
   | { type: "message.toolResult"; sessionId: string; toolId: string; result: any }
   | { type: "message.error"; sessionId: string; error: Error };
 
+// Agent Events
+export type AgentEvent =
+  | { type: "agent.thinking"; sessionId: string }
+  | { type: "agent.processing"; sessionId: string; status?: string; tokens?: number }
+  | { type: "agent.complete"; sessionId: string }
+  | { type: "agent.error"; sessionId: string; error: Error }
+  | { type: "agent.abort"; sessionId: string; timestamp: number };
+
 // UI Events
 export type UIEvent =
   | { type: "ui.loading"; isLoading: boolean }
@@ -37,10 +45,11 @@ export type ErrorEvent =
   | { type: "error.unknown"; error: Error };
 
 // Union Type
-export type AppEvent = SessionEvent | MessageEvent | UIEvent | ErrorEvent;
+export type AppEvent = SessionEvent | MessageEvent | AgentEvent | UIEvent | ErrorEvent;
 
 // Type Guards
 export const isSessionEvent = (e: AppEvent): e is SessionEvent => e.type.startsWith("session.");
 export const isMessageEvent = (e: AppEvent): e is MessageEvent => e.type.startsWith("message.");
+export const isAgentEvent = (e: AppEvent): e is AgentEvent => e.type.startsWith("agent.");
 export const isUIEvent = (e: AppEvent): e is UIEvent => e.type.startsWith("ui.");
 export const isErrorEvent = (e: AppEvent): e is ErrorEvent => e.type.startsWith("error.");

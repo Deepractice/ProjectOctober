@@ -9,12 +9,13 @@ import InputArea from "~/components/InputArea";
 import { useSessionStore } from "~/stores/sessionStore";
 import { useMessageStore } from "~/stores/messageStore";
 import { useUIStore } from "~/stores/uiStore";
-import { sendMessage } from "~/api/agent";
+import { sendMessage, abortSession } from "~/api/agent";
 import type { ChatMessage } from "~/types";
 
 export function ChatInterface() {
   const selectedSession = useSessionStore((state) => state.selectedSession);
-  const { autoExpandTools, showRawParameters, showThinking } = useUIStore();
+  const isSessionProcessing = useSessionStore((state) => state.isSessionProcessing);
+  const { autoExpandTools, showRawParameters, showThinking, agentStatus, provider } = useUIStore();
   const getMessages = useMessageStore((state) => state.getMessages);
 
   // Refs
@@ -25,11 +26,13 @@ export function ChatInterface() {
 
   // Local state
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
 
   // Get messages from store for current session
   const chatMessages = selectedSession ? getMessages(selectedSession.id) : [];
+
+  // Check if current session is loading
+  const isLoading = selectedSession ? isSessionProcessing(selectedSession.id) : false;
 
   // Subscribe to message store changes to trigger re-render
   useEffect(() => {
@@ -48,14 +51,11 @@ export function ChatInterface() {
 
     const messageContent = input.trim();
     setInput("");
-    setIsLoading(true);
 
     try {
       await sendMessage(selectedSession.id, messageContent);
     } catch (error) {
       console.error("Failed to send message:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -90,6 +90,7 @@ export function ChatInterface() {
         visibleMessages={chatMessages}
         isLoading={isLoading}
         setProvider={() => {}}
+        provider={provider}
         textareaRef={textareaRef}
         loadEarlierMessages={() => {}}
         createDiff={(old, newContent) => ""}
@@ -114,8 +115,8 @@ export function ChatInterface() {
         imageErrors={{}}
         permissionMode="auto"
         selectedSession={selectedSession}
-        claudeStatus={null}
-        provider="claude"
+        claudeStatus={agentStatus}
+        provider={provider}
         showThinking={showThinking}
         tokenBudget={null}
         isTextareaExpanded={false}
@@ -131,7 +132,7 @@ export function ChatInterface() {
         commandQuery=""
         frequentCommands={[]}
         sendByCtrlEnter={false}
-        handleAbortSession={() => {}}
+        handleAbortSession={() => selectedSession && abortSession(selectedSession.id)}
         handleModeSwitch={() => {}}
         scrollToBottom={() => {}}
         setInput={setInput}

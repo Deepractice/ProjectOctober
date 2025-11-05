@@ -1,10 +1,20 @@
 /**
- * UI Store - UI Preferences
+ * UI Store - UI Preferences and Agent Status Display
  * Manages UI state with localStorage persistence
+ * Agent status display for current session (not persisted)
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { eventBus } from "~/core/eventBus";
+import { useSessionStore } from "./sessionStore";
+import type { AppEvent } from "~/core/events";
+
+export interface AgentStatus {
+  text?: string;
+  tokens?: number;
+  can_interrupt?: boolean;
+}
 
 export interface UIState {
   // Preferences
@@ -14,6 +24,10 @@ export interface UIState {
   autoScrollToBottom: boolean;
   sendByCtrlEnter: boolean;
   sidebarVisible: boolean;
+
+  // Agent Status Display (for current session only)
+  agentStatus: AgentStatus | null;
+  provider: "claude" | "cursor";
 
   // Actions
   toggleAutoExpandTools: () => void;
@@ -29,6 +43,11 @@ export interface UIState {
   setAutoScrollToBottom: (value: boolean) => void;
   setSendByCtrlEnter: (value: boolean) => void;
   setSidebarVisible: (value: boolean) => void;
+
+  // Agent Status Actions
+  setAgentStatus: (status: AgentStatus | null) => void;
+  setProvider: (provider: "claude" | "cursor") => void;
+  clearAgentStatus: () => void;
 
   resetPreferences: () => void;
 }
@@ -46,6 +65,10 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       ...defaultPreferences,
+
+      // Agent Status (not persisted)
+      agentStatus: null,
+      provider: "claude",
 
       // Toggle actions
       toggleAutoExpandTools: () => set((state) => ({ autoExpandTools: !state.autoExpandTools })),
@@ -65,6 +88,11 @@ export const useUIStore = create<UIState>()(
       setSendByCtrlEnter: (value) => set({ sendByCtrlEnter: value }),
       setSidebarVisible: (value) => set({ sidebarVisible: value }),
 
+      // Agent Status Actions
+      setAgentStatus: (status) => set({ agentStatus: status }),
+      setProvider: (provider) => set({ provider }),
+      clearAgentStatus: () => set({ agentStatus: null }),
+
       // Reset
       resetPreferences: () => set(defaultPreferences),
     }),
@@ -73,3 +101,67 @@ export const useUIStore = create<UIState>()(
     }
   )
 );
+
+// Subscribe to EventBus for agent status updates
+eventBus.stream().subscribe((event: AppEvent) => {
+  const uiStore = useUIStore.getState();
+  const sessionStore = useSessionStore.getState();
+  const currentSessionId = sessionStore.selectedSession?.id;
+
+  if (!currentSessionId) return;
+
+  switch (event.type) {
+    // When user sends a message in current session
+    case "message.user":
+      if (event.sessionId === currentSessionId) {
+        uiStore.setAgentStatus({
+          text: "Thinking",
+          can_interrupt: true,
+        });
+        sessionStore.markSessionProcessing(currentSessionId);
+      }
+      break;
+
+    // Agent is processing
+    case "agent.processing":
+      if (event.sessionId === currentSessionId) {
+        uiStore.setAgentStatus({
+          text: event.status || "Processing",
+          tokens: event.tokens,
+          can_interrupt: true,
+        });
+        sessionStore.markSessionProcessing(currentSessionId);
+      }
+      break;
+
+    // Agent completed
+    case "agent.complete":
+      if (event.sessionId === currentSessionId) {
+        uiStore.clearAgentStatus();
+      }
+      sessionStore.markSessionNotProcessing(event.sessionId);
+      break;
+
+    // Agent error
+    case "agent.error":
+      if (event.sessionId === currentSessionId) {
+        uiStore.clearAgentStatus();
+      }
+      sessionStore.markSessionNotProcessing(event.sessionId);
+      break;
+
+    // Session aborted
+    case "session.aborted":
+      if (event.sessionId === currentSessionId) {
+        uiStore.clearAgentStatus();
+      }
+      sessionStore.markSessionNotProcessing(event.sessionId);
+      break;
+
+    // Session selected - clear status for new session
+    case "session.selected":
+      // Clear status when switching sessions
+      uiStore.clearAgentStatus();
+      break;
+  }
+});

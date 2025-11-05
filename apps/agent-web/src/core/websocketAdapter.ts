@@ -34,8 +34,16 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
               : wsMessage.data
             : null;
 
+        // Handle streaming start - emit agent.processing
+        if (messageData?.type === "content_block_start") {
+          eventBus.emit({
+            type: "agent.processing",
+            sessionId: wsMessage.sessionId || "",
+            status: "Generating response",
+          });
+        }
         // Handle streaming delta
-        if (messageData?.type === "content_block_delta" && messageData.delta?.text) {
+        else if (messageData?.type === "content_block_delta" && messageData.delta?.text) {
           eventBus.emit({
             type: "message.streaming",
             sessionId: wsMessage.sessionId || "",
@@ -109,6 +117,12 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         break;
 
       case "claude-error":
+        // Emit agent error event
+        eventBus.emit({
+          type: "agent.error",
+          sessionId: wsMessage.sessionId || "",
+          error: new Error(("error" in wsMessage && wsMessage.error) || "Unknown error"),
+        });
         eventBus.emit({
           type: "message.error",
           sessionId: wsMessage.sessionId || "",
@@ -117,6 +131,11 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         break;
 
       case "agent-complete":
+        // Emit agent complete event
+        eventBus.emit({
+          type: "agent.complete",
+          sessionId: wsMessage.sessionId || "",
+        });
         eventBus.emit({
           type: "session.processing",
           sessionId: wsMessage.sessionId || "",
@@ -166,8 +185,9 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
             statusText = statusData;
           }
 
+          // Emit agent processing event (replaces ui.thinking)
           eventBus.emit({
-            type: "ui.thinking",
+            type: "agent.processing",
             sessionId: wsMessage.sessionId || "",
             status: statusText,
             tokens,
