@@ -55,6 +55,16 @@ export function ChatInterface() {
   // Check if current session is loading
   const isLoading = selectedSession ? isSessionProcessing(selectedSession.id) : false;
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current && chatMessages.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [chatMessages.length]);
+
   // Note: Message loading is handled by sessionStore when session.selected event is emitted
   // No need for UI component to manage loading logic
 

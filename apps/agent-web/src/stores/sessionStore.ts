@@ -87,10 +87,17 @@ export const useSessionStore = create<SessionState>()(
 
       // Session Protection
       markSessionActive: (sessionId) => {
-        set((state) => ({
-          activeSessions: new Set([...state.activeSessions, sessionId]),
-        }));
-        console.log("[SessionStore] Session marked active:", sessionId);
+        set((state) => {
+          // Update lastActivity when marking session as active
+          const updatedSessions = state.sessions.map((s) =>
+            s.id === sessionId ? { ...s, lastActivity: new Date().toISOString() } : s
+          );
+          return {
+            activeSessions: new Set([...state.activeSessions, sessionId]),
+            sessions: updatedSessions,
+          };
+        });
+        console.log("[SessionStore] Session marked active and lastActivity updated:", sessionId);
       },
 
       markSessionInactive: (sessionId) => {

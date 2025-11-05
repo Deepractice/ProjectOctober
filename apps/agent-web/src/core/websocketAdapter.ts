@@ -57,6 +57,16 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
             sessionId: wsMessage.sessionId || "",
           });
         }
+        // NEW: Handle tool use message (from SDK transform)
+        else if (messageData?.isToolUse && messageData.toolName) {
+          eventBus.emit({
+            type: "message.tool",
+            sessionId: wsMessage.sessionId || "",
+            toolName: messageData.toolName,
+            toolInput: messageData.toolInput || "",
+            toolId: messageData.toolId || "",
+          });
+        }
         // Handle content array
         else if (Array.isArray(messageData?.content)) {
           for (const part of messageData.content) {

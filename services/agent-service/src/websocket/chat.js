@@ -23,6 +23,7 @@ export function handleChatConnection(ws, connectedClients) {
 
         try {
           let session;
+          let isNewSession = false;
 
           if (sessionId) {
             // Resume existing session
@@ -41,6 +42,7 @@ export function handleChatConnection(ws, connectedClients) {
             session = await agent.createSession({
               model: data.options?.model,
             });
+            isNewSession = true;
 
             console.log("🔵 [WebSocket] New session created:", session.id);
 
@@ -53,11 +55,24 @@ export function handleChatConnection(ws, connectedClients) {
             );
           }
 
-          // Subscribe to messages
+          // Track messages we've already sent to avoid duplicates
+          const messagesBefore = session.getMessages().length;
+
+          // Subscribe to NEW messages only (skip existing messages)
           console.log("🔵 [WebSocket] Subscribing to session messages stream");
           const subscription = session.messages$().subscribe({
             next: (msg) => {
-              console.log("🔵 [WebSocket] Received message from stream:", {
+              // For existing sessions, skip messages that were already there
+              const currentMessages = session.getMessages();
+              const msgIndex = currentMessages.findIndex((m) => m.id === msg.id);
+
+              if (!isNewSession && msgIndex < messagesBefore) {
+                // This is an old message, skip it
+                console.log("🔵 [WebSocket] Skipping old message:", msg.id);
+                return;
+              }
+
+              console.log("🔵 [WebSocket] Received NEW message from stream:", {
                 sessionId: session.id,
                 messageType: msg.type,
                 messageId: msg.id,
@@ -87,7 +102,6 @@ export function handleChatConnection(ws, connectedClients) {
 
           // Send message
           console.log("🔵 [WebSocket] Calling session.send()...");
-          const messagesBefore = session.getMessages().length;
           await session.send(data.command);
           const messagesAfter = session.getMessages().length;
 
@@ -97,6 +111,10 @@ export function handleChatConnection(ws, connectedClients) {
             messagesAfter,
             messagesAdded: messagesAfter - messagesBefore,
           });
+
+          // Unsubscribe to prevent duplicate subscriptions
+          subscription.unsubscribe();
+          console.log("🔵 [WebSocket] Unsubscribed from message stream");
 
           // After send completes, notify frontend
           ws.send(

@@ -8,7 +8,31 @@ ARG RUNTIME_VERSION=latest
 FROM deepracticexs/agent-runtime:${RUNTIME_VERSION} AS base
 
 #
-# Stage 1: Build Frontend
+# Stage 1: Build Packages (agent-sdk, agent-config)
+#
+FROM base AS packages-builder
+
+# Switch to root for build operations
+USER root
+
+WORKDIR /build
+
+# Copy workspace config and package.json files first (for better caching)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY packages/agent-config/package.json ./packages/agent-config/
+COPY packages/agent-sdk/package.json ./packages/agent-sdk/
+
+# Install dependencies for packages
+RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-config... --filter @deepractice-ai/agent-sdk...
+
+# Copy source code and build packages
+COPY packages/agent-config ./packages/agent-config
+COPY packages/agent-sdk ./packages/agent-sdk
+RUN pnpm --filter @deepractice-ai/agent-config build && \
+    pnpm --filter @deepractice-ai/agent-sdk build
+
+#
+# Stage 2: Build Frontend
 #
 FROM base AS frontend-builder
 
@@ -17,19 +41,23 @@ USER root
 
 WORKDIR /build
 
-# Copy workspace config and package.json files first (for better caching)
+# Copy workspace config and built packages
+COPY --from=packages-builder /build/node_modules ./node_modules
+COPY --from=packages-builder /build/packages ./packages
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
-COPY apps/agent-ui/package.json ./apps/agent-ui/
 
-# Install dependencies (this layer will be cached if package.json doesn't change)
-RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-ui...
+# Copy frontend package.json
+COPY apps/agent-web/package.json ./apps/agent-web/
+
+# Install frontend dependencies (this layer will be cached if package.json doesn't change)
+RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-web...
 
 # Copy source code and build
-COPY apps/agent-ui ./apps/agent-ui
-RUN pnpm --filter @deepractice-ai/agent-ui build
+COPY apps/agent-web ./apps/agent-web
+RUN pnpm --filter @deepractice-ai/agent-web build
 
 #
-# Stage 2: Backend Dependencies
+# Stage 3: Backend Dependencies
 #
 FROM base AS backend-deps
 
@@ -38,8 +66,12 @@ USER root
 
 WORKDIR /build
 
-# Copy workspace config and package.json files first (for better caching)
+# Copy workspace config and built packages
+COPY --from=packages-builder /build/node_modules ./node_modules
+COPY --from=packages-builder /build/packages ./packages
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+
+# Copy backend package.json
 COPY services/agent-service/package.json ./services/agent-service/
 
 # Install production dependencies (this layer will be cached)
@@ -49,7 +81,7 @@ RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-service... --p
 COPY services/agent-service ./services/agent-service
 
 #
-# Stage 3: Production Image
+# Stage 4: Production Image
 #
 FROM base AS production
 
@@ -58,11 +90,14 @@ WORKDIR /app
 # Copy node_modules from backend deps (pnpm workspace root)
 COPY --from=backend-deps --chown=node:node /build/node_modules ./node_modules
 
+# Copy built packages (agent-sdk, agent-config)
+COPY --from=backend-deps --chown=node:node /build/packages ./packages
+
 # Copy backend source
 COPY --from=backend-deps --chown=node:node /build/services/agent-service ./services/agent-service
 
 # Copy frontend dist from builder
-COPY --from=frontend-builder --chown=node:node /build/apps/agent-ui/dist ./services/agent-service/dist
+COPY --from=frontend-builder --chown=node:node /build/apps/agent-web/dist ./services/agent-service/dist
 
 # Environment variables
 ENV NODE_ENV=production \

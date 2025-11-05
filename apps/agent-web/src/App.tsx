@@ -25,6 +25,20 @@ function AppContent() {
   const { sessionId } = useParams();
   const { sessions, selectedSession, setSelectedSession, refreshSessions } = useSessionStore();
   const [activeTab, setActiveTab] = useState<TabType>("chat");
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Initialize WebSocket and load sessions (only once on mount)
   useEffect(() => {
@@ -66,12 +80,16 @@ function AppContent() {
         const session = sessions.find((s) => s.id === event.sessionId);
         if (session) {
           navigate(`/session/${session.id}`);
+          // Close mobile sidebar when session is selected
+          if (isMobile) {
+            setSidebarOpen(false);
+          }
         }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [sessions, navigate]);
+  }, [sessions, navigate, isMobile]);
 
   // Temporary project info (until we have proper project management)
   const selectedProject = selectedSession
@@ -80,10 +98,36 @@ function AppContent() {
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* Left Sidebar - Full Height */}
-      <aside className="w-64 border-r border-border flex-shrink-0 overflow-y-auto bg-background">
-        <Sidebar isMobile={false} isPWA={false} />
-      </aside>
+      {/* Desktop Sidebar - Fixed on left */}
+      {!isMobile && (
+        <aside className="w-64 border-r border-border flex-shrink-0 overflow-y-auto bg-background">
+          <Sidebar isMobile={false} isPWA={false} />
+        </aside>
+      )}
+
+      {/* Mobile Sidebar - Overlay */}
+      {isMobile && (
+        <div
+          className={`fixed inset-0 z-50 flex transition-all duration-150 ease-out ${
+            sidebarOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
+        >
+          <button
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-150 ease-out"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          />
+          <div
+            className={`relative w-[85vw] max-w-sm sm:w-80 bg-card border-r border-border transform transition-transform duration-150 ease-out ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+            style={{ height: "calc(100vh - 80px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Sidebar isMobile={true} isPWA={false} />
+          </div>
+        </div>
+      )}
 
       {/* Right Content Area - Full Height */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -93,7 +137,8 @@ function AppContent() {
           selectedSession={selectedSession}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          isMobile={false}
+          isMobile={isMobile}
+          onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
         />
 
         {/* Main Content - Below Header */}

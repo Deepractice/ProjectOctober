@@ -12,12 +12,12 @@ export function MessageHeader({ messageType }: MessageHeaderProps) {
           !
         </div>
       ) : messageType === "tool" ? (
-        <div className="w-8 h-8 bg-gray-600 dark:bg-gray-700 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
           🔧
         </div>
       ) : (
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1">
-          <AgentLogo className="w-full h-full" />
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
+          🤖
         </div>
       )}
       <div className="text-sm font-medium text-gray-900 dark:text-white">
