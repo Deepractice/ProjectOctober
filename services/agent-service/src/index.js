@@ -14,9 +14,7 @@ import { getConfig } from "@deepractice-ai/agent-config";
 import { createApp } from "./app.js";
 import { handleChatConnection } from "./websocket/chat.js";
 import { handleShellConnection } from "./websocket/shell.js";
-import { setupSessionsWatcher } from "./watchers/sessions.js";
-import sessionManager from "./core/SessionManager.js";
-import { getCurrentProject } from "./projects.js";
+import { setupSessionsWatcher } from "./websocket/sessions-broadcast.js";
 import { logger } from "./utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -111,11 +109,7 @@ async function startServer() {
     server.listen(PORT, "0.0.0.0", async () => {
       console.log(`✅ Agent UI server running on http://0.0.0.0:${PORT}`);
 
-      // 🆕 Initialize SessionManager
-      const project = getCurrentProject();
-      await sessionManager.initialize(project.claudeProjectDir);
-
-      // Start watching the sessions folder for changes
+      // Start watching session events
       await setupSessionsWatcher(connectedClients);
     });
   } catch (error) {

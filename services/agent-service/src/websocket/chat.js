@@ -1,20 +1,10 @@
 /**
- * Chat WebSocket Handler
- * Handles Agent AI chat connections and messages
+ * Chat WebSocket Handler - Using Agent SDK
  */
-import { WebSocket } from "ws";
-import {
-  queryAgentSDK,
-  abortAgentSDKSession,
-  isAgentSDKSessionActive,
-  getActiveAgentSDKSessions,
-} from "../agent-sdk.js";
-import sessionManager from "../core/SessionManager.js";
+import { getAgent } from "../agent.js";
 
 export function handleChatConnection(ws, connectedClients) {
   console.log("💬 Chat WebSocket connected");
-
-  // Add to connected clients for project updates
   connectedClients.add(ws);
 
   ws.on("message", async (message) => {
@@ -22,80 +12,111 @@ export function handleChatConnection(ws, connectedClients) {
       const data = JSON.parse(message);
 
       if (data.type === "agent-command") {
-        console.log("💬 User message:", data.command || "[Continue/Resume]");
-        console.log("📁 Project:", data.options?.projectPath || "Unknown");
-        console.log("🔄 Session:", data.options?.sessionId ? "Resume" : "New");
-
         const sessionId = data.options?.sessionId;
+        const agent = await getAgent();
 
         try {
-          // For resume sessions, mark as processing
+          let session;
+
           if (sessionId) {
-            const session = sessionManager.getSession(sessionId);
-            if (session && session.status === "created") {
-              sessionManager.startProcessing(sessionId);
-              console.log("⚙️ Resumed session marked as processing:", sessionId);
+            // Resume existing session
+            session = agent.getSession(sessionId);
+            if (!session) {
+              throw new Error(`Session ${sessionId} not found`);
             }
+          } else {
+            // Create new session (from warmup pool)
+            session = await agent.createSession({
+              model: data.options?.model,
+            });
+
+            // Send session-created event
+            ws.send(
+              JSON.stringify({
+                type: "session-created",
+                sessionId: session.id,
+              })
+            );
           }
 
-          // Use Agent Agents SDK
-          await queryAgentSDK(data.command, data.options, ws);
+          // Subscribe to messages
+          const subscription = session.messages$().subscribe({
+            next: (msg) => {
+              ws.send(
+                JSON.stringify({
+                  type: "agent-response",
+                  sessionId: session.id,
+                  data: msg,
+                })
+              );
+            },
+            error: (err) => {
+              ws.send(
+                JSON.stringify({
+                  type: "claude-error",
+                  sessionId: session.id,
+                  error: err.message,
+                })
+              );
+              subscription.unsubscribe();
+            },
+          });
 
-          // Mark session as completed
-          if (sessionId) {
-            sessionManager.completeSession(sessionId);
-            console.log("✅ Session completed:", sessionId);
-          }
+          // Send message
+          await session.send(data.command);
+
+          // After send completes, notify frontend
+          ws.send(
+            JSON.stringify({
+              type: "agent-complete",
+              sessionId: session.id,
+              exitCode: 0,
+            })
+          );
         } catch (error) {
-          // Mark session as error
-          if (sessionId) {
-            sessionManager.errorSession(sessionId, error);
-            console.log("❌ Session error:", sessionId);
-          }
-          throw error;
+          ws.send(
+            JSON.stringify({
+              type: "claude-error",
+              error: error.message,
+            })
+          );
         }
       } else if (data.type === "abort-session") {
-        console.log("🛑 Abort session request:", data.sessionId);
-        // Use Agent Agents SDK
-        const success = await abortAgentSDKSession(data.sessionId);
+        const agent = await getAgent();
+        const session = agent.getSession(data.sessionId);
 
-        // Notify SessionManager
-        if (success) {
-          sessionManager.abortSession(data.sessionId);
-          console.log("🛑 SessionManager notified of abort:", data.sessionId);
+        if (session) {
+          await session.abort();
+          ws.send(
+            JSON.stringify({
+              type: "session-aborted",
+              sessionId: data.sessionId,
+              success: true,
+            })
+          );
         }
-
-        ws.send(
-          JSON.stringify({
-            type: "session-aborted",
-            sessionId: data.sessionId,
-            provider: "claude",
-            success,
-          })
-        );
       } else if (data.type === "check-session-status") {
-        // Check if a specific session is currently processing
-        const sessionId = data.sessionId;
-        // Use Agent Agents SDK
-        const isActive = isAgentSDKSessionActive(sessionId);
+        const agent = await getAgent();
+        const session = agent.getSession(data.sessionId);
 
         ws.send(
           JSON.stringify({
             type: "session-status",
-            sessionId,
-            provider: "claude",
-            isProcessing: isActive,
+            sessionId: data.sessionId,
+            isProcessing: session ? session.isActive() : false,
           })
         );
       } else if (data.type === "get-active-sessions") {
-        // Get all currently active sessions
-        const activeSessions = {
-          claude: getActiveAgentSDKSessions(),
-        };
+        const agent = await getAgent();
+        const activeSessions = agent
+          .getSessions(100, 0)
+          .filter((s) => s.isActive())
+          .map((s) => s.id);
+
         ws.send(
           JSON.stringify({
             type: "active-sessions",
-            sessions: activeSessions,
+            sessions: { claude: activeSessions },
           })
         );
       }
@@ -112,7 +133,6 @@ export function handleChatConnection(ws, connectedClients) {
 
   ws.on("close", () => {
     console.log("🔌 Chat client disconnected");
-    // Remove from connected clients
     connectedClients.delete(ws);
   });
 }

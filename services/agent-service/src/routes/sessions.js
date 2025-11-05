@@ -1,185 +1,128 @@
 /**
- * Session API Routes
- * Handles session listing, creation, messages, deletion, and token usage
+ * Session API Routes - Using Agent SDK
  */
-
 import express from "express";
-import path from "path";
-import os from "os";
-import { promises as fs } from "fs";
-import { getCurrentProject, getSessions } from "../projects.js";
-import { getSessionMessages, deleteSession } from "../sessions.js";
-import { warmupSession } from "../agent-sdk.js";
-import sessionManager from "../core/SessionManager.js";
+import { getAgent } from "../agent.js";
 
 const router = express.Router();
 
-// Get sessions for current project
-router.get("/", async (req, res) => {
-  try {
-    const { limit = 5, offset = 0 } = req.query;
-    const result = await getSessions(parseInt(limit), parseInt(offset));
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create new session with warmup
+// Create new session
 router.post("/create", async (req, res) => {
   try {
-    console.log("📝 Creating new session via warmup...");
-
-    const project = getCurrentProject();
-    const projectPath = project.fullPath;
-
-    // Call warmup to create session
-    const sessionId = await warmupSession(projectPath);
-
-    console.log("✅ Session created successfully:", sessionId);
-
-    // Register warmup session with SessionManager
-    sessionManager.createSession(sessionId, {
-      cwd: projectPath,
-      command: "Warmup",
-      timestamp: new Date().toISOString(),
-      isWarmup: true,
-    });
-    console.log("📝 Warmup session registered with SessionManager:", sessionId);
+    const agent = await getAgent();
+    const session = await agent.createSession();
 
     res.json({
-      success: true,
-      sessionId: sessionId,
-      project: {
-        name: project.name,
-        path: project.path,
-      },
+      sessionId: session.id, // Frontend expects sessionId, not id
+      id: session.id,
+      summary: "New Session",
+      messageCount: 0,
+      lastActivity: session.createdAt,
+      cwd: session.getMetadata().projectPath,
     });
   } catch (error) {
-    console.error("❌ Error creating session:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get messages for a specific session
+// Get sessions
+router.get("/", async (req, res) => {
+  try {
+    const { limit = 20, offset = 0 } = req.query;
+    const agent = await getAgent();
+
+    const sessions = agent.getSessions(parseInt(limit), parseInt(offset));
+
+    // Transform to frontend format
+    const formatted = sessions.map((s) => ({
+      id: s.id,
+      summary: extractSummary(s),
+      messageCount: s.getMessages().length,
+      lastActivity: s.getMetadata().startTime,
+      cwd: s.getMetadata().projectPath,
+    }));
+
+    res.json({
+      sessions: formatted,
+      hasMore: sessions.length === parseInt(limit),
+      total: formatted.length,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get session messages
 router.get("/:sessionId/messages", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { limit, offset } = req.query;
+    const { limit, offset = 0 } = req.query;
 
-    // Parse limit and offset if provided
-    const parsedLimit = limit ? parseInt(limit, 10) : null;
-    const parsedOffset = offset ? parseInt(offset, 10) : 0;
+    const agent = await getAgent();
+    const session = agent.getSession(sessionId);
 
-    const result = await getSessionMessages(sessionId, parsedLimit, parsedOffset);
-
-    // Handle both old and new response formats
-    if (Array.isArray(result)) {
-      // Backward compatibility: no pagination parameters were provided
-      res.json({ messages: result });
-    } else {
-      // New format with pagination info
-      res.json(result);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
     }
+
+    const messages = session.getMessages(limit ? parseInt(limit) : undefined, parseInt(offset));
+
+    res.json({ messages });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete session endpoint
+// Delete session
 router.delete("/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    await deleteSession(sessionId);
+    const agent = await getAgent();
+
+    await agent.sessionManager.deleteSession(sessionId);
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get token usage for a specific session
+// Get token usage
 router.get("/:sessionId/token-usage", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const homeDir = os.homedir();
+    const agent = await getAgent();
+    const session = agent.getSession(sessionId);
 
-    // Get actual project path
-    const project = getCurrentProject();
-    const projectPath = project.fullPath;
-
-    // Construct the JSONL file path
-    const encodedPath = projectPath.replace(/[\\/:\s~_]/g, "-");
-    const projectDir = path.join(homeDir, ".claude", "projects", encodedPath);
-
-    // Allow only safe characters in sessionId
-    const safeSessionId = String(sessionId).replace(/[^a-zA-Z0-9._-]/g, "");
-    if (!safeSessionId) {
-      return res.status(400).json({ error: "Invalid sessionId" });
-    }
-    const jsonlPath = path.join(projectDir, `${safeSessionId}.jsonl`);
-
-    // Constrain to projectDir
-    const rel = path.relative(path.resolve(projectDir), path.resolve(jsonlPath));
-    if (rel.startsWith("..") || path.isAbsolute(rel)) {
-      return res.status(400).json({ error: "Invalid path" });
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
     }
 
-    // Read and parse the JSONL file
-    let fileContent;
-    try {
-      fileContent = await fs.readFile(jsonlPath, "utf8");
-    } catch (error) {
-      if (error.code === "ENOENT") {
-        return res.status(404).json({ error: "Session file not found", path: jsonlPath });
-      }
-      throw error;
-    }
-    const lines = fileContent.trim().split("\n");
-
-    const parsedContextWindow = parseInt(process.env.CONTEXT_WINDOW, 10);
-    const contextWindow = Number.isFinite(parsedContextWindow) ? parsedContextWindow : 160000;
-    let inputTokens = 0;
-    let cacheCreationTokens = 0;
-    let cacheReadTokens = 0;
-
-    // Find the latest assistant message with usage data (scan from end)
-    for (let i = lines.length - 1; i >= 0; i--) {
-      try {
-        const entry = JSON.parse(lines[i]);
-
-        // Only count assistant messages which have usage data
-        if (entry.type === "assistant" && entry.message?.usage) {
-          const usage = entry.message.usage;
-
-          // Use token counts from latest assistant message only
-          inputTokens = usage.input_tokens || 0;
-          cacheCreationTokens = usage.cache_creation_input_tokens || 0;
-          cacheReadTokens = usage.cache_read_input_tokens || 0;
-
-          break;
-        }
-      } catch (parseError) {
-        // Skip lines that can't be parsed
-        continue;
-      }
-    }
-
-    // Calculate total context usage (excluding output_tokens)
-    const totalUsed = inputTokens + cacheCreationTokens + cacheReadTokens;
+    const usage = session.getTokenUsage();
 
     res.json({
-      used: totalUsed,
-      total: contextWindow,
+      used: usage.used,
+      total: usage.total,
       breakdown: {
-        input: inputTokens,
-        cacheCreation: cacheCreationTokens,
-        cacheRead: cacheReadTokens,
+        input: usage.breakdown.input,
+        cacheCreation: usage.breakdown.cacheCreation,
+        cacheRead: usage.breakdown.cacheRead,
       },
     });
   } catch (error) {
-    console.error("Error reading session token usage:", error);
-    res.status(500).json({ error: "Failed to read session token usage" });
+    res.status(500).json({ error: error.message });
   }
 });
+
+function extractSummary(session) {
+  const messages = session.getMessages(5);
+  const firstUserMsg = messages.find((m) => m.type === "user");
+
+  if (firstUserMsg && firstUserMsg.content) {
+    return firstUserMsg.content.substring(0, 100);
+  }
+
+  return "New Session";
+}
 
 export default router;
