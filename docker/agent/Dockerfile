@@ -78,8 +78,8 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 # Copy backend package.json
 COPY services/agent-service/package.json ./services/agent-service/
 
-# Install production dependencies (this layer will be cached)
-RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-service... --prod
+# Install backend dependencies (reuse cached node_modules from packages-builder)
+RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-service...
 
 # Copy source code
 COPY services/agent-service ./services/agent-service
