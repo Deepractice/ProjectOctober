@@ -1,4 +1,5 @@
 import { Observable, Subject } from "rxjs";
+import { randomUUID } from "crypto";
 import type { Logger } from "@deepracticex/logger";
 import type {
   Session,
@@ -71,10 +72,36 @@ export class ClaudeSession implements Session {
       throw new Error(`Cannot send message: session is ${this._state}`);
     }
 
+    console.log("🟡 [ClaudeSession] send() called:", {
+      sessionId: this.id,
+      contentPreview: content.substring(0, 50) + "...",
+      currentMessagesCount: this.messages.length,
+      hasRealSessionId: !!this.realSessionId,
+    });
+
     this.logger.debug(
       { sessionId: this.id, contentLength: content.length, hasRealSessionId: !!this.realSessionId },
       "Sending message"
     );
+
+    // ✅ FIX: Manually add user message BEFORE sending to Claude SDK
+    // Claude SDK doesn't return user messages in the stream, so we must add it ourselves
+    const userMessage: AnyMessage = {
+      id: crypto.randomUUID(),
+      type: "user",
+      content,
+      timestamp: new Date(),
+    };
+
+    console.log("🟡 [ClaudeSession] Adding user message manually:", {
+      messageId: userMessage.id,
+      contentPreview: content.substring(0, 50) + "...",
+    });
+
+    this.messages.push(userMessage);
+    this.messageSubject.next(userMessage);
+
+    console.log("🟡 [ClaudeSession] User message added, total messages now:", this.messages.length);
 
     const prevState = this._state;
     this._state = "active";
@@ -87,11 +114,19 @@ export class ClaudeSession implements Session {
         ...(this.realSessionId && { resume: this.realSessionId }),
       };
 
+      console.log("🟡 [ClaudeSession] Starting SDK stream...");
       let messageCount = 0;
       for await (const sdkMessage of this.adapter.stream(content, streamOptions)) {
+        console.log("🟡 [ClaudeSession] Received SDK message:", {
+          type: sdkMessage.type,
+          hasSessionId: !!sdkMessage.session_id,
+          messageCount: messageCount + 1,
+        });
+
         // Capture session_id from first message
         if (!this.realSessionId && sdkMessage.session_id) {
           this.realSessionId = sdkMessage.session_id;
+          console.log("🟡 [ClaudeSession] Captured real session ID:", this.realSessionId);
           this.logger.debug(
             { sessionId: this.id, realSessionId: this.realSessionId },
             "Captured real session ID"
@@ -101,6 +136,13 @@ export class ClaudeSession implements Session {
         this.processSDKMessage(sdkMessage);
         messageCount++;
       }
+
+      console.log("🟡 [ClaudeSession] SDK stream completed:", {
+        sessionId: this.id,
+        messagesReceived: messageCount,
+        totalMessagesNow: this.messages.length,
+        messageTypes: this.messages.map((m) => m.type),
+      });
 
       // After streaming completes, session becomes idle (waiting for next input)
       this._state = "idle";
@@ -120,12 +162,27 @@ export class ClaudeSession implements Session {
   }
 
   private processSDKMessage(sdkMessage: SDKMessage): void {
+    console.log("🟡 [ClaudeSession] processSDKMessage:", {
+      sdkType: sdkMessage.type,
+      currentMessagesCount: this.messages.length,
+    });
+
     // Transform SDK message to our format
     const message = this.transformSDKMessage(sdkMessage);
 
     if (message) {
+      console.log("🟡 [ClaudeSession] Transformed message:", {
+        type: message.type,
+        id: message.id,
+        contentPreview: message.content?.substring(0, 50) + "...",
+      });
+
       this.messages.push(message);
       this.messageSubject.next(message);
+
+      console.log("🟡 [ClaudeSession] Message added, total now:", this.messages.length);
+    } else {
+      console.log("🟡 [ClaudeSession] Message filtered out (null after transform)");
     }
 
     // Extract token usage from result messages

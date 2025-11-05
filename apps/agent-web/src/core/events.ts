@@ -7,16 +7,22 @@ import type { Session, ChatMessage } from "~/types";
 
 // Session Events
 export type SessionEvent =
-  | { type: "session.created"; sessionId: string }
+  | { type: "session.create" } // User action: create new session
+  | { type: "session.created"; sessionId: string } // Store update: session created
   | { type: "session.updated"; sessions: Session[] }
-  | { type: "session.deleted"; sessionId: string }
+  | { type: "session.delete"; sessionId: string } // User action: delete session
+  | { type: "session.deleted"; sessionId: string } // Store update: session deleted
+  | { type: "session.refresh" } // User action: refresh sessions
   | { type: "session.selected"; sessionId: string }
   | { type: "session.processing"; sessionId: string; isProcessing: boolean }
-  | { type: "session.aborted"; sessionId: string };
+  | { type: "session.abort"; sessionId: string } // User action: abort session
+  | { type: "session.aborted"; sessionId: string }; // Store update: session aborted
 
 // Message Events
 export type MessageEvent =
-  | { type: "message.user"; sessionId: string; content: string; images?: any[] }
+  | { type: "message.send"; sessionId: string; content: string; images?: any[] } // User action: send message
+  | { type: "message.user"; sessionId: string; content: string; images?: any[] } // Store update: user message added
+  | { type: "message.loaded"; sessionId: string; messages: ChatMessage[] } // Store update: messages loaded from API
   | { type: "message.assistant"; sessionId: string; content: string }
   | { type: "message.streaming"; sessionId: string; chunk: string }
   | { type: "message.complete"; sessionId: string }

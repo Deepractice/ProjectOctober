@@ -70,6 +70,7 @@ agent-web implements a clean, layered architecture that separates business logic
 ### UI Components (`components/`)
 
 **Layout Components:**
+
 - `App.tsx` - Main layout (Sidebar left, HeaderNav + Content right)
 - `HeaderNav.tsx` - Top navigation bar with session title and tab switching (Chat/Shell/Files)
 - `Sidebar/` - Session management with sub-components:
@@ -80,6 +81,7 @@ agent-web implements a clean, layered architecture that separates business logic
 - `ChatInterface.tsx` - Main chat container
 
 **Chat Components:**
+
 - `MessagesArea/` - Message list with pagination
 - `MessageRenderer/` - Message rendering with sub-components:
   - `UserMessage.tsx` - User message bubble
@@ -96,6 +98,7 @@ agent-web implements a clean, layered architecture that separates business logic
   - `ImageAttachments.tsx` - Image preview and drag-drop
 
 **Utility Components:**
+
 - `AgentLogo.tsx` - Branding logo
 - `AgentStatus.tsx` - Thinking/processing indicator with countdown timer and framer-motion animations
 - `AgentStatusBar.tsx` - Status bar wrapper component
@@ -248,6 +251,7 @@ eventBus.stream().subscribe((event: AppEvent) => {
 ```
 
 **Features:**
+
 - Type-safe event types
 - Automatic debug logging in dev
 - Observable-based subscriptions
@@ -267,6 +271,7 @@ Type-safe event definitions:
 Zustand stores subscribed to EventBus:
 
 **sessionStore:**
+
 - Sessions list
 - Selected session
 - Loading/error states
@@ -280,6 +285,7 @@ Zustand stores subscribed to EventBus:
   - `session.aborted` → clears processing state
 
 **messageStore:**
+
 - Messages per session (Map<sessionId, ChatMessage[]>)
 - Add/update/clear operations
 - Streaming message handling
@@ -287,6 +293,7 @@ Zustand stores subscribed to EventBus:
 - Automatically subscribes to message events
 
 **uiStore:**
+
 - UI preferences (autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, sidebarVisible)
 - **Agent status display** (agentStatus, provider) - for current session only
 - Persisted to localStorage (preferences only, not agent status)
@@ -294,11 +301,13 @@ Zustand stores subscribed to EventBus:
 ### API Layer (`api/`)
 
 **websocket.ts:**
+
 - WebSocket client with reconnection
 - Message queue during disconnect
 - Connection state management
 
 **rest.ts:**
+
 - REST API client with auth
 - Session CRUD operations
 - Message history loading
@@ -306,6 +315,7 @@ Zustand stores subscribed to EventBus:
 - Whisper transcription
 
 **agent.ts:**
+
 - High-level API facade
 - `sendMessage()` - Send user message
 - `createSession()` - Create new session
@@ -316,6 +326,7 @@ Zustand stores subscribed to EventBus:
 ### Type System (`types/`)
 
 Shared type definitions:
+
 - `Session` - Session metadata (id, title, created_at, updated_at, summary, lastActivity, messageCount)
 - `ChatMessage` - User/Assistant/Error/Tool messages
 - `ProjectInfo` - Project metadata
@@ -330,6 +341,7 @@ Shared type definitions:
 **Solution**: Gradually migrate agent-ui components, transforming them to work with EventBus + Zustand
 
 **Benefits:**
+
 - Full control over UI behavior
 - All needed components (TodoList, DiffDisplay, ToolUseDisplay, etc.)
 - Easier customization
@@ -351,6 +363,7 @@ Shared type definitions:
 - **Props down, events up**: Unidirectional data flow
 
 Example: Sidebar was split into:
+
 - `SidebarHeader` - Branding
 - `SessionSearchBar` - Search + Actions
 - `SessionList` - List container
@@ -363,6 +376,7 @@ Example: Sidebar was split into:
 **Solution**: Single event stream with type-safe subscriptions
 
 **Benefits:**
+
 - Unified data flow (easy to trace)
 - Type safety (compile-time guarantees)
 - Testability (mock EventBus)
@@ -439,6 +453,7 @@ pnpm --filter @deepractice-ai/agent-web build
 ```
 
 **Access:**
+
 - Frontend: http://localhost:5200
 - Backend: http://localhost:5201
 
@@ -491,7 +506,7 @@ import { eventBus } from "~/core/eventBus";
 
 function handleAction() {
   eventBus.emit({
-    type: "session.create"
+    type: "session.create",
   });
 }
 ```
@@ -499,12 +514,14 @@ function handleAction() {
 ### Debugging
 
 **EventBus logging** (auto-enabled in dev):
+
 ```
 [EventBus] session.create { type: 'session.create' }
 [EventBus] message.user { type: 'message.user', sessionId: '...', content: '...' }
 ```
 
 **Store logging:**
+
 ```
 [SessionStore] Creating new session...
 [SessionStore] Session created: abc123
@@ -512,51 +529,211 @@ function handleAction() {
 ```
 
 **React DevTools:**
+
 - Use Zustand DevTools extension to inspect store state
 
 ## Architecture Principles
 
+### Core Principle: Store as Service/Facade Layer
+
+**Store is the unified entry point** - Components only interact with Stores, never directly with EventBus or API.
+
+```
+Component (UI Layer)
+    ↓ Read data via zustand hooks
+    ↓ Trigger actions via API facade functions
+Store (Service/Business Layer)
+    ↓ Subscribe to EventBus
+    ↓ Orchestrate business logic
+    ↓ Call API when needed
+EventBus (Event Stream)
+    ↓ Emit events
+API Layer (Network)
+    ↓ Pure network requests
+Backend
+```
+
 ### 1. Separation of Concerns
 
-- **UI**: Pure components, no business logic
-- **Business**: Stores + EventBus, no UI code
-- **Data**: API layer, no UI/business logic
+**UI Layer (Components):**
 
-### 2. Unidirectional Data Flow
+- Pure React components
+- No business logic
+- No direct EventBus access
+- No direct WebSocket/API calls
+- Only interact with Stores via:
+  - Zustand hooks for reading data
+  - API facade functions for actions (which internally emit events)
+
+**Business Layer (Stores):**
+
+- Subscribe to EventBus events
+- Orchestrate multi-step business logic
+- Coordinate API calls
+- Manage application state
+- Emit events when needed
+
+**Event Layer (EventBus):**
+
+- Pure event stream
+- No business logic
+- Just emit and subscribe
+
+**API Layer:**
+
+- Pure network requests (REST + WebSocket)
+- No business logic
+- Optionally emit events (for backward compatibility)
+
+### 2. Event Types: Action vs State Update
+
+Events are categorized into two types:
+
+**Action Events** (User intent):
+
+- `session.create` - User wants to create session
+- `session.delete` - User wants to delete session
+- `session.abort` - User wants to abort session
+- `message.send` - User wants to send message
+
+**State Update Events** (System state change):
+
+- `session.created` - Session was created
+- `session.deleted` - Session was deleted
+- `session.aborted` - Session was aborted
+- `message.user` - User message was added to store
+
+**Flow:**
 
 ```
-User Action → Event → Store → UI Re-render
-     ↓
-   API → Backend → WebSocket → Event → Store → UI
+User clicks → API facade → emit action event → Store handles → orchestrate logic → emit state events
 ```
 
-### 3. Type Safety
+### 3. Store Responsibilities
+
+**What Stores SHOULD do:**
+
+1. **Listen to EventBus** - Subscribe to all relevant events
+2. **Business Orchestration** - Coordinate multi-step operations
+   - Example: `session.selected` → setSelectedSession + loadMessages
+3. **API Coordination** - Call APIs at the right time
+4. **State Management** - Maintain application state
+5. **Derived State** - Calculate derived data (e.g., processingSessions)
+
+**What Stores SHOULD NOT do:**
+
+1. Pure event forwarding (event → store → same event)
+2. One-to-one event-to-state mapping with no logic
+3. UI rendering logic
+
+### 4. Component Guidelines
+
+**✅ DO:**
+
+```typescript
+// Read data from Store
+const messages = useMessageStore((state) => state.sessionMessages.get(sessionId) || []);
+
+// Use API facade for actions
+await sendMessage(sessionId, content);
+
+// Or emit events via API facade
+eventBus.emit({ type: "session.selected", sessionId });
+```
+
+**❌ DON'T:**
+
+```typescript
+// Direct EventBus subscription in components
+useEffect(() => {
+  const sub = eventBus.on(isMessageEvent).subscribe(...);
+}, []);
+
+// Direct WebSocket calls
+wsClient.send({ type: "agent-command", ... });
+
+// Direct business logic
+if (messages.length === 0 && !isLoading) {
+  loadMessages(); // This should be in Store
+}
+```
+
+### 5. Zustand Subscription Best Practices
+
+**Problem:** Subscribing to derived data can cause infinite loops
+
+**Solution:** Subscribe to stable references, not computed values
+
+```typescript
+// ❌ BAD: Can cause infinite loops
+const chatMessages = useMessageStore((state) =>
+  selectedSession ? state.sessionMessages.get(selectedSession.id) || [] : []
+);
+
+// ✅ GOOD: Use local state + useEffect subscription
+const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+useEffect(() => {
+  if (!selectedSession) return;
+
+  const updateMessages = () => {
+    const messages = useMessageStore.getState().getMessages(selectedSession.id);
+    setChatMessages(messages);
+  };
+
+  updateMessages();
+  return useMessageStore.subscribe(updateMessages);
+}, [selectedSession?.id]);
+```
+
+### 6. Type Safety
 
 Every layer is fully typed:
+
 - Events have discriminated union types
 - Stores have TypeScript interfaces
 - API has typed responses
 - Components have typed props
 
-### 4. Component Composition
+### 7. Component Composition
 
 Build complex UIs from simple, reusable pieces:
+
 - Sidebar = Header + SearchBar + List
 - MessageRenderer = Header + (UserMessage | AssistantMessage | ToolUse)
 - InputArea = Textarea + ActionButtons + ImageAttachments
 
-### 5. Performance
+### 8. Performance
 
 - Selective Zustand subscriptions (only re-render what changed)
 - Component memoization where needed
 - Efficient message list rendering
 - WebSocket message batching
 
+### 9. Unidirectional Data Flow
+
+```
+Component: User clicks send
+    ↓
+API facade: sendMessage()
+    ↓
+EventBus: emit("message.send")
+    ↓
+MessageStore:
+    - Add message to UI
+    - Mark session active
+    - Send to WebSocket
+    - emit("message.user")
+    ↓
+Component: Re-render with new message
+```
+
 ## Migration from agent-ui Package
 
 We migrated components from the monolithic `agent-ui` package:
 
 **Strategy:**
+
 1. Copy components from `packages/agent-ui/src/components`
 2. Refactor into smaller sub-components
 3. Convert Context API → Zustand hooks
@@ -565,6 +742,7 @@ We migrated components from the monolithic `agent-ui` package:
 6. Add TypeScript types
 
 **Benefits:**
+
 - Full control over components
 - Better maintainability (smaller files)
 - Clear architecture boundaries
@@ -574,6 +752,7 @@ We migrated components from the monolithic `agent-ui` package:
 **Example Migration:**
 
 Before (agent-ui):
+
 ```typescript
 // Large monolithic component with Context
 function Sidebar() {
@@ -583,6 +762,7 @@ function Sidebar() {
 ```
 
 After (agent-web):
+
 ```typescript
 // Split into focused components
 function Sidebar() {
@@ -605,6 +785,7 @@ function Sidebar() {
 ## Dependencies
 
 **UI & Styling:**
+
 - React 18.2
 - Tailwind CSS
 - Framer Motion 12.x (animations)
@@ -612,30 +793,43 @@ function Sidebar() {
 - class-variance-authority, clsx, tailwind-merge (styling utilities)
 
 **State & Data:**
+
 - Zustand 5.x (state management)
 - RxJS 7.x (EventBus)
 - React Router DOM 6.x (routing)
 
 **Markdown & Content:**
+
 - react-markdown 10.x
 - remark-gfm 4.x
 
 **Search:**
+
 - fuse.js 7.x (fuzzy search)
 
 **Missing (TODO):**
+
 - CodeMirror packages (for CodeEditor component)
 
 ---
 
 **Last Updated**: 2025-11-05
-**Status**: ✅ Phase 1.5 Complete - Core components + Agent Status + HeaderNav
+**Status**: ✅ Architecture Refactored - Store as Service/Facade Layer
+
 **Architecture Highlights**:
 
-- EventBus-driven reactive architecture
-- Multi-session agent status management
-- Type-safe event system
-- Clean separation of concerns (UI / Business / Data)
+- **Store as unified entry point** - Components only interact with Stores
+- **EventBus-driven business orchestration** - Stores subscribe to events and coordinate logic
+- **Action vs State events** - Clear distinction between user intent and state changes
+- **Type-safe event system** - Discriminated unions for all events
+- **Clean separation of concerns** - UI / Business / Event / API layers
+
+**Key Learnings**:
+
+1. **Don't bypass Store** - Components should never directly call EventBus or WebSocket
+2. **Store orchestrates** - Multi-step business logic belongs in Stores, not Components
+3. **Zustand subscription traps** - Be careful with derived state subscriptions, use local state + useEffect when needed
+4. **Session selection auto-loads messages** - Automatic business orchestration in sessionStore
 
 **Next**:
 
@@ -643,3 +837,4 @@ function Sidebar() {
 - Files tab (file browser)
 - Code editor polish (CodeMirror deps)
 - Enhanced error handling
+- Remove debug logging from production

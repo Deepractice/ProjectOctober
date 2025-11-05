@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useSessionStore } from "~/stores/sessionStore";
-import { eventBus } from "~/core/eventBus";
 import { SidebarHeader } from "./SidebarHeader";
 import { SessionSearchBar } from "./SessionSearchBar";
 import { SessionList } from "./SessionList";
@@ -19,25 +18,30 @@ export function Sidebar({ isMobile = false, isPWA = false }: SidebarProps) {
   const selectedSession = useSessionStore((state) => state.selectedSession);
   const isLoading = useSessionStore((state) => state.isLoading);
 
-  // Session actions
+  // Get session actions from store
+  const createNewSession = useSessionStore((state) => state.createNewSession);
+  const selectSession = useSessionStore((state) => state.selectSession);
+  const deleteSessionById = useSessionStore((state) => state.deleteSessionById);
+  const refreshSessions = useSessionStore((state) => state.refreshSessions);
+
+  // Session action handlers
   const handleNewSession = async () => {
     try {
-      // Emit event to create new session
-      eventBus.emit({ type: "session.create" });
+      await createNewSession();
     } catch (error) {
       console.error("Failed to create session:", error);
     }
   };
 
   const handleSessionSelect = (session: Session) => {
-    // Emit event to select session
-    eventBus.emit({ type: "session.selected", sessionId: session.id });
+    console.log("[Sidebar] User clicked session:", session.id, session.summary);
+    selectSession(session.id);
+    console.log("[Sidebar] Called selectSession for:", session.id);
   };
 
   const handleSessionDelete = async (sessionId: string) => {
     try {
-      // Emit event to delete session
-      eventBus.emit({ type: "session.delete", sessionId });
+      await deleteSessionById(sessionId);
     } catch (error) {
       console.error("Failed to delete session:", error);
       throw error;
@@ -46,8 +50,7 @@ export function Sidebar({ isMobile = false, isPWA = false }: SidebarProps) {
 
   const handleRefresh = async () => {
     try {
-      // Emit event to refresh sessions
-      eventBus.emit({ type: "session.refresh" });
+      await refreshSessions();
     } catch (error) {
       console.error("Failed to refresh sessions:", error);
     }

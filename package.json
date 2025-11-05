@@ -5,7 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "turbo run dev --filter=@deepractice-ai/agent-service --filter=@deepractice-ai/agent-web",
+    "dev": "pnpm dev:backend & wait-on http://localhost:5201/health -t 30000 && pnpm dev:frontend",
+    "dev:backend": "turbo run dev --filter=@deepractice-ai/agent-service",
+    "dev:frontend": "turbo run dev --filter=@deepractice-ai/agent-web",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
@@ -29,7 +31,8 @@
     "eslint-plugin-prettier": "^5.5.4",
     "lefthook": "^1.13.6",
     "prettier": "^3.6.2",
-    "turbo": "^2.5.8"
+    "turbo": "^2.5.8",
+    "wait-on": "^8.0.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

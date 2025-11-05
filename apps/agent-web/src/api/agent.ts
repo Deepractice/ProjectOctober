@@ -1,35 +1,70 @@
 /**
- * Agent API Facade
- * High-level API for agent operations
+ * Agent API Layer
+ * Pure network requests with NO business logic or Store dependencies
+ * All business orchestration is handled by Stores via EventBus
  */
 
 import { wsClient } from "./websocket";
 import { api } from "./rest";
-import { eventBus } from "~/core/eventBus";
-import { useSessionStore } from "~/stores/sessionStore";
-import { useMessageStore } from "~/stores/messageStore";
 import type { Session, ChatMessage } from "~/types";
 
 /**
- * Send a message to the agent
+ * Create a new session
+ * Pure API call - returns sessionId
  */
-export async function sendMessage(
-  sessionId: string,
-  content: string,
-  images?: File[]
-): Promise<void> {
-  // Emit user message event
-  eventBus.emit({
-    type: "message.user",
-    sessionId,
-    content,
-    images,
-  });
+export async function createSession(): Promise<string> {
+  const response = await api.createSession();
+  if (!response.ok) {
+    throw new Error(`Failed to create session: ${response.statusText}`);
+  }
+  const { sessionId } = await response.json();
+  return sessionId;
+}
 
-  // Mark session as active
-  useSessionStore.getState().markSessionActive(sessionId);
+/**
+ * Delete a session
+ * Pure API call - no event emission
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  const response = await api.deleteSession(sessionId);
+  if (!response.ok) {
+    throw new Error(`Failed to delete session: ${response.statusText}`);
+  }
+}
 
-  // Send via WebSocket
+/**
+ * Load all sessions
+ * Pure API call - returns sessions array
+ */
+export async function loadSessions(limit: number = 100): Promise<Session[]> {
+  const response = await api.sessions(limit);
+  if (!response.ok) {
+    throw new Error(`Failed to load sessions: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.sessions || [];
+}
+
+/**
+ * Load messages for a session
+ * Pure API call - returns messages array
+ */
+export async function loadSessionMessages(sessionId: string): Promise<ChatMessage[]> {
+  const response = await api.sessionMessages(sessionId);
+  if (!response.ok) {
+    throw new Error(`Failed to load messages: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.messages || [];
+}
+
+/**
+ * Send message via WebSocket
+ * Pure WebSocket send - no Store manipulation
+ */
+export function sendMessageToBackend(sessionId: string, content: string): void {
   wsClient.send({
     type: "agent-command",
     command: content,
@@ -38,9 +73,10 @@ export async function sendMessage(
 }
 
 /**
- * Abort a session
+ * Abort session via WebSocket
+ * Pure WebSocket send - no Store manipulation
  */
-export async function abortSession(sessionId: string): Promise<void> {
+export function abortSessionBackend(sessionId: string): void {
   wsClient.send({
     type: "abort-session",
     sessionId,
@@ -48,84 +84,11 @@ export async function abortSession(sessionId: string): Promise<void> {
 }
 
 /**
- * Create a new session
- */
-export async function createSession(): Promise<string> {
-  const response = await api.createSession();
-  if (!response.ok) {
-    throw new Error(`Failed to create session: ${response.statusText}`);
-  }
-  const { sessionId } = await response.json();
-  console.log("[Agent API] Session created:", sessionId);
-  return sessionId;
-}
-
-/**
- * Delete a session
- */
-export async function deleteSession(sessionId: string): Promise<void> {
-  await api.deleteSession(sessionId);
-  eventBus.emit({ type: "session.deleted", sessionId });
-  console.log("[Agent API] Session deleted:", sessionId);
-}
-
-/**
- * Load all sessions
- */
-export async function loadSessions(limit: number = 100): Promise<Session[]> {
-  const sessionStore = useSessionStore.getState();
-  sessionStore.setLoading(true);
-
-  try {
-    const response = await api.sessions(limit);
-    if (!response.ok) {
-      throw new Error(`Failed to load sessions: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const sessions = data.sessions || [];
-
-    eventBus.emit({ type: "session.updated", sessions });
-    sessionStore.setLoading(false);
-
-    console.log("[Agent API] Sessions loaded:", sessions.length);
-    return sessions;
-  } catch (error) {
-    console.error("[Agent API] Failed to load sessions:", error);
-    sessionStore.setLoading(false);
-    sessionStore.setError((error as Error).message);
-    throw error;
-  }
-}
-
-/**
- * Load messages for a session
- */
-export async function loadSessionMessages(sessionId: string): Promise<ChatMessage[]> {
-  const messageStore = useMessageStore.getState();
-
-  try {
-    const response = await api.sessionMessages(sessionId);
-    if (!response.ok) {
-      throw new Error(`Failed to load messages: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const messages = data.messages || [];
-
-    messageStore.setMessages(sessionId, messages);
-    console.log("[Agent API] Messages loaded:", sessionId, messages.length);
-    return messages;
-  } catch (error) {
-    console.error("[Agent API] Failed to load messages:", error);
-    throw error;
-  }
-}
-
-/**
  * Connect to WebSocket
+ * Note: This is called by App.tsx on mount
  */
 export async function connectWebSocket(): Promise<void> {
+  const { wsClient } = await import("./websocket");
   await wsClient.connect();
 }
 

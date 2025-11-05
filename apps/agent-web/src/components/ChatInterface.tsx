@@ -9,14 +9,38 @@ import InputArea from "~/components/InputArea";
 import { useSessionStore } from "~/stores/sessionStore";
 import { useMessageStore } from "~/stores/messageStore";
 import { useUIStore } from "~/stores/uiStore";
-import { sendMessage, abortSession, loadSessionMessages } from "~/api/agent";
 import type { ChatMessage } from "~/types";
 
 export function ChatInterface() {
   const selectedSession = useSessionStore((state) => state.selectedSession);
   const isSessionProcessing = useSessionStore((state) => state.isSessionProcessing);
+  const abortSessionById = useSessionStore((state) => state.abortSessionById);
+  const sendMessage = useMessageStore((state) => state.sendMessage);
   const { autoExpandTools, showRawParameters, showThinking, agentStatus, provider } = useUIStore();
-  const getMessages = useMessageStore((state) => state.getMessages);
+
+  // Get messages using a stable approach
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Subscribe to message store changes for current session
+  useEffect(() => {
+    if (!selectedSession) {
+      setChatMessages([]);
+      return;
+    }
+
+    const updateMessages = () => {
+      const messages = useMessageStore.getState().getMessages(selectedSession.id);
+      setChatMessages(messages);
+    };
+
+    // Initial load
+    updateMessages();
+
+    // Subscribe to changes
+    const unsubscribe = useMessageStore.subscribe(updateMessages);
+
+    return unsubscribe;
+  }, [selectedSession?.id]);
 
   // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -28,39 +52,11 @@ export function ChatInterface() {
   const [input, setInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  // Get messages from store for current session
-  const chatMessages = selectedSession ? getMessages(selectedSession.id) : [];
-
   // Check if current session is loading
   const isLoading = selectedSession ? isSessionProcessing(selectedSession.id) : false;
 
-  // Load messages when session changes
-  useEffect(() => {
-    if (!selectedSession) return;
-
-    // Check if we already have messages for this session
-    const messages = getMessages(selectedSession.id);
-
-    // Only load if we don't have messages for this session
-    if (messages.length === 0) {
-      console.log("[ChatInterface] Loading messages for session:", selectedSession.id);
-      loadSessionMessages(selectedSession.id).catch((error) => {
-        console.error("[ChatInterface] Failed to load messages:", error);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSession?.id]);
-
-  // Subscribe to message store changes to trigger re-render
-  useEffect(() => {
-    if (!selectedSession) return;
-
-    const unsubscribe = useMessageStore.subscribe(() => {
-      // Force re-render when messages change
-    });
-
-    return unsubscribe;
-  }, [selectedSession?.id]);
+  // Note: Message loading is handled by sessionStore when session.selected event is emitted
+  // No need for UI component to manage loading logic
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -70,9 +66,17 @@ export function ChatInterface() {
     setInput("");
 
     try {
-      await sendMessage(selectedSession.id, messageContent);
+      sendMessage(selectedSession.id, messageContent);
     } catch (error) {
       console.error("Failed to send message:", error);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter to submit (unless Shift+Enter for new line)
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -98,7 +102,6 @@ export function ChatInterface() {
         chatMessages={chatMessages}
         selectedSession={selectedSession}
         currentSessionId={selectedSession.id}
-        provider="claude"
         isLoadingMoreMessages={false}
         hasMoreMessages={false}
         totalMessages={chatMessages.length}
@@ -128,12 +131,12 @@ export function ChatInterface() {
         isLoading={isLoading}
         selectedProject={{ path: "", name: "", fullPath: "" }}
         attachedImages={[]}
-        uploadingImages={[]}
-        imageErrors={{}}
+        uploadingImages={new Map()}
+        imageErrors={new Map()}
         permissionMode="auto"
         selectedSession={selectedSession}
-        claudeStatus={agentStatus}
-        provider={provider}
+        claudeStatus={agentStatus?.text || null}
+        provider={provider || "claude"}
         showThinking={showThinking}
         tokenBudget={null}
         isTextareaExpanded={false}
@@ -149,7 +152,7 @@ export function ChatInterface() {
         commandQuery=""
         frequentCommands={[]}
         sendByCtrlEnter={false}
-        handleAbortSession={() => selectedSession && abortSession(selectedSession.id)}
+        handleAbortSession={() => selectedSession && abortSessionById(selectedSession.id)}
         handleModeSwitch={() => {}}
         scrollToBottom={() => {}}
         setInput={setInput}
@@ -169,7 +172,7 @@ export function ChatInterface() {
         handleCommandSelect={() => {}}
         handleInputChange={(e: any) => setInput(e.target.value)}
         handleTextareaClick={() => {}}
-        handleKeyDown={() => {}}
+        handleKeyDown={handleKeyDown}
         handlePaste={() => {}}
         setIsInputFocused={() => {}}
         setCursorPosition={setCursorPosition}

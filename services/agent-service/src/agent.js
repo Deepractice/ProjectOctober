@@ -25,15 +25,13 @@ export async function getAgent() {
     agentInstance = createAgent({
       workspace: projectPath,
       model: "claude-sonnet-4",
-      warmupPoolSize: 3,
     });
 
-    logger.info("🔥 Initializing Agent (loading sessions + warmup pool)...");
+    logger.info("🔥 Initializing Agent (loading historical sessions)...");
     await agentInstance.initialize();
 
     const status = agentInstance.getStatus();
     logger.info("✅ Agent initialized");
-    logger.info(`   Warmup pool: ${status.warmupPoolSize} sessions`);
     logger.info(`   Active sessions: ${status.activeSessions}`);
   }
 

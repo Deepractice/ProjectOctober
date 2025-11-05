@@ -130,7 +130,7 @@ function MessagesArea({
             const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
 
             return (
-              <div key={`message-${index}-${message.timestamp || ""}`}>
+              <div key={message.id}>
                 <MessageComponent
                   message={message}
                   index={index}

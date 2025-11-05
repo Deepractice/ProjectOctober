@@ -5,7 +5,7 @@
 export type ChatMessageType = "user" | "assistant" | "error";
 
 export interface BaseMessage {
-  id?: string; // Unique message ID
+  id: string; // Unique message ID (required - backend always provides this)
   type: ChatMessageType;
   content: string;
   timestamp: Date | string;

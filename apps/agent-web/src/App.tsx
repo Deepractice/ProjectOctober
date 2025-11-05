@@ -10,7 +10,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from "
 import Sidebar from "~/components/Sidebar";
 import HeaderNav, { type TabType } from "~/components/HeaderNav";
 import ChatInterface from "~/components/ChatInterface";
-import { connectWebSocket, disconnectWebSocket, loadSessions } from "~/api/agent";
+import { connectWebSocket, disconnectWebSocket } from "~/api/agent";
 import { useSessionStore } from "~/stores/sessionStore";
 import { eventBus } from "~/core/eventBus";
 import type { AppEvent } from "~/core/events";
@@ -23,23 +23,28 @@ import "~/stores/uiStore";
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  const { sessions, selectedSession, setSelectedSession } = useSessionStore();
+  const { sessions, selectedSession, setSelectedSession, refreshSessions } = useSessionStore();
   const [activeTab, setActiveTab] = useState<TabType>("chat");
 
-  // Initialize WebSocket and load sessions
+  // Initialize WebSocket and load sessions (only once on mount)
   useEffect(() => {
+    console.log("[App] Initializing: connecting WebSocket and loading sessions");
+
     connectWebSocket().catch((error) => {
       console.error("[App] Failed to connect WebSocket:", error);
     });
 
-    loadSessions().catch((error) => {
+    // Use Store action to load sessions
+    refreshSessions().catch((error) => {
       console.error("[App] Failed to load sessions:", error);
     });
 
     return () => {
+      console.log("[App] Cleaning up: disconnecting WebSocket");
       disconnectWebSocket();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   // Handle URL-based session loading
   useEffect(() => {

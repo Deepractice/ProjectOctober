@@ -58,16 +58,12 @@ export function SessionItem({
       return;
     }
 
-    if (!confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-      return;
-    }
-
     setIsDeleting(true);
+
     try {
       await onDelete(session.id);
     } catch (error) {
       console.error("Error deleting session:", error);
-      alert("Error deleting session. Please try again.");
     } finally {
       setIsDeleting(false);
     }

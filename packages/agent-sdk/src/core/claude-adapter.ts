@@ -52,43 +52,6 @@ export class ClaudeAdapter {
     }
   }
 
-  async warmup(): Promise<string> {
-    const sdkOptions = this.mapOptions({});
-
-    this.logger.debug({ model: sdkOptions.model }, "Starting warmup session");
-
-    try {
-      const queryInstance = query({
-        prompt: "Warmup",
-        options: sdkOptions,
-      });
-
-      let sessionId: string | null = null;
-
-      for await (const message of queryInstance) {
-        if (message.session_id && !sessionId) {
-          sessionId = message.session_id;
-          this.logger.debug({ sessionId }, "Warmup session ID captured, interrupting");
-
-          // Interrupt immediately
-          await queryInstance.interrupt();
-          break;
-        }
-      }
-
-      if (!sessionId) {
-        this.logger.error("Failed to create warmup session: no session ID received");
-        throw new Error("Failed to create warmup session");
-      }
-
-      this.logger.debug({ sessionId }, "Warmup session created successfully");
-      return sessionId;
-    } catch (err) {
-      this.logger.error({ err }, "Warmup session creation failed");
-      throw err;
-    }
-  }
-
   private mapOptions(options: SessionOptions): any {
     const model = options.model || this.config.model || "claude-sonnet-4";
     return {

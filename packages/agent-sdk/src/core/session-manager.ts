@@ -16,7 +16,6 @@ import type {
 } from "~/types";
 import { ClaudeSession } from "./claude-session";
 import { ClaudeAdapter } from "./claude-adapter";
-import { WarmupPool } from "./warmup-pool";
 import { HistoricalSession } from "./historical-session";
 import type { Logger } from "@deepracticex/logger";
 
@@ -27,7 +26,6 @@ export class SessionManager {
   private sessions = new Map<string, ClaudeSession>();
   private sessionEventsSubject = new Subject<SessionEvent>();
   private adapter: ClaudeAdapter;
-  private warmupPool: WarmupPool | null = null;
   private sessionDir: string;
   private metrics = {
     totalCreated: 0,
@@ -55,19 +53,12 @@ export class SessionManager {
     return path.join(os.homedir(), ".claude", "projects", encodedName);
   }
 
-  setWarmupPool(pool: WarmupPool): void {
-    this.warmupPool = pool;
-  }
-
   async createSession(options?: SessionOptions): Promise<Session> {
     const startTime = Date.now();
 
-    // Try to get warm session
-    const warmSessionId = this.warmupPool?.acquire();
-    const sessionId = warmSessionId || this.generateId();
-    const isWarmSession = !!warmSessionId;
+    const sessionId = this.generateId();
 
-    this.logger.debug({ sessionId, isWarmSession, model: options?.model }, "Creating session");
+    this.logger.debug({ sessionId, model: options?.model }, "Creating session");
 
     const session = new ClaudeSession(
       sessionId,
@@ -78,7 +69,7 @@ export class SessionManager {
       },
       this.adapter,
       options,
-      isWarmSession,
+      false, // No warmup session
       this.logger
     );
 
@@ -89,17 +80,53 @@ export class SessionManager {
     const responseTime = Date.now() - startTime;
     this.metrics.totalResponseTime += responseTime;
 
-    this.logger.info({ sessionId, isWarmSession, responseTime }, "Session created successfully");
+    this.logger.info({ sessionId, responseTime }, "Session created successfully");
 
     return session;
   }
 
+  /**
+   * Get a session by ID
+   * Automatically upgrades HistoricalSession to ClaudeSession for continuing conversation
+   */
   getSession(id: string): Session | null {
     const session = this.sessions.get(id);
-    if (session && session.state === "deleted") {
+
+    if (!session) {
       return null;
     }
-    return session || null;
+
+    if (session.state === "deleted") {
+      return null;
+    }
+
+    // Auto-upgrade HistoricalSession to ClaudeSession for continuing conversation
+    if (session instanceof HistoricalSession) {
+      this.logger.debug(
+        { sessionId: id },
+        "Upgrading HistoricalSession to ClaudeSession with resume"
+      );
+
+      // Cast to HistoricalSession to access its methods
+      const historicalSession = session as HistoricalSession;
+      const metadata = historicalSession.getMetadata();
+      const resumeSession = new ClaudeSession(
+        id,
+        metadata,
+        this.adapter,
+        { resume: id }, // Use resume to continue from historical session
+        false, // Not from warmup pool
+        this.logger
+      );
+
+      // Replace the historical session with the resumed session
+      this.sessions.set(id, resumeSession);
+
+      this.logger.info({ sessionId: id }, "Historical session upgraded to resumable session");
+      return resumeSession;
+    }
+
+    return session;
   }
 
   getSessions(limit: number, offset: number): Session[] {
@@ -129,7 +156,10 @@ export class SessionManager {
           this.logger.debug({ sessionId: id, filePath }, "Deleted historical session file");
         } catch (error) {
           if ((error as any).code !== "ENOENT") {
-            this.logger.warn({ err: error, sessionId: id, filePath }, "Failed to delete session file");
+            this.logger.warn(
+              { err: error, sessionId: id, filePath },
+              "Failed to delete session file"
+            );
           }
         }
       } else {

@@ -20,7 +20,7 @@ export interface SessionState {
   activeSessions: Set<string>;
   processingSessions: Set<string>;
 
-  // Actions
+  // Internal state actions (used by EventBus subscribers)
   setSessions: (sessions: Session[]) => void;
   setSelectedSession: (session: Session | null) => void;
   addSession: (session: Session) => void;
@@ -38,6 +38,13 @@ export interface SessionState {
   // Loading state
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+
+  // Business action methods (for components to call)
+  createNewSession: () => Promise<void>;
+  selectSession: (sessionId: string) => void;
+  deleteSessionById: (sessionId: string) => Promise<void>;
+  refreshSessions: () => Promise<void>;
+  abortSessionById: (sessionId: string) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -117,6 +124,27 @@ export const useSessionStore = create<SessionState>()(
 
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error }),
+
+      // Business action methods (components call these)
+      createNewSession: async () => {
+        eventBus.emit({ type: "session.create" });
+      },
+
+      selectSession: (sessionId: string) => {
+        eventBus.emit({ type: "session.selected", sessionId });
+      },
+
+      deleteSessionById: async (sessionId: string) => {
+        eventBus.emit({ type: "session.delete", sessionId });
+      },
+
+      refreshSessions: async () => {
+        eventBus.emit({ type: "session.refresh" });
+      },
+
+      abortSessionById: (sessionId: string) => {
+        eventBus.emit({ type: "session.abort", sessionId });
+      },
     }),
     { name: "SessionStore" }
   )
@@ -128,45 +156,58 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
 
   switch (event.type) {
     case "session.create":
-      // Handle session creation request
+      // Business orchestration: create session
       try {
         console.log("[SessionStore] Creating new session...");
-        const { createSession } = await import("~/api/agent");
+        store.setLoading(true);
+
+        const { createSession, loadSessions } = await import("~/api/agent");
         const sessionId = await createSession();
         console.log("[SessionStore] Session created:", sessionId);
 
         // Reload sessions to get the new one
-        const { loadSessions } = await import("~/api/agent");
-        await loadSessions();
+        const sessions = await loadSessions();
+        store.setSessions(sessions);
+        store.setLoading(false);
 
         // Emit event to navigate to new session
         eventBus.emit({ type: "session.selected", sessionId });
       } catch (error) {
         console.error("[SessionStore] Failed to create session:", error);
         store.setError((error as Error).message);
+        store.setLoading(false);
       }
       break;
 
     case "session.refresh":
-      // Handle session refresh request
+      // Business orchestration: refresh sessions
       try {
         console.log("[SessionStore] Refreshing sessions...");
+        store.setLoading(true);
+
         const { loadSessions } = await import("~/api/agent");
-        await loadSessions();
+        const sessions = await loadSessions();
+        store.setSessions(sessions);
+        store.setLoading(false);
       } catch (error) {
         console.error("[SessionStore] Failed to refresh sessions:", error);
+        store.setError((error as Error).message);
+        store.setLoading(false);
       }
       break;
 
     case "session.delete":
-      // Handle session deletion request
+      // Business orchestration: delete session
       try {
         console.log("[SessionStore] Deleting session:", event.sessionId);
         const { deleteSession } = await import("~/api/agent");
         await deleteSession(event.sessionId);
-        // The API already emits session.deleted event
+
+        // Emit session.deleted event to update UI
+        eventBus.emit({ type: "session.deleted", sessionId: event.sessionId });
       } catch (error) {
         console.error("[SessionStore] Failed to delete session:", error);
+        store.setError((error as Error).message);
       }
       break;
 
@@ -183,10 +224,46 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
       break;
 
     case "session.selected":
+      console.log("[SessionStore] Received session.selected event:", event.sessionId);
       const session = store.sessions.find((s) => s.id === event.sessionId);
-      if (session) {
-        store.setSelectedSession(session);
+
+      if (!session) {
+        console.error("[SessionStore] Session not found in store:", event.sessionId);
+        console.log(
+          "[SessionStore] Available sessions:",
+          store.sessions.map((s) => s.id)
+        );
+        break;
       }
+
+      console.log("[SessionStore] Found session:", session.id, session.summary);
+      store.setSelectedSession(session);
+      console.log("[SessionStore] Updated selectedSession in store");
+
+      // Business orchestration: auto-load messages when session is selected
+      (async () => {
+        try {
+          console.log("[SessionStore] Starting to load messages for session:", event.sessionId);
+
+          const { loadSessionMessages } = await import("~/api/agent");
+          const messages = await loadSessionMessages(event.sessionId);
+
+          // Emit event to update messageStore
+          eventBus.emit({
+            type: "message.loaded",
+            sessionId: event.sessionId,
+            messages,
+          });
+
+          console.log("[SessionStore] Successfully loaded messages for session:", event.sessionId);
+        } catch (error) {
+          console.error(
+            "[SessionStore] Failed to load messages for session:",
+            event.sessionId,
+            error
+          );
+        }
+      })();
       break;
 
     case "session.processing":
@@ -198,7 +275,24 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
       }
       break;
 
+    case "session.abort":
+      // Business orchestration: handle user aborting a session
+      try {
+        console.log("[SessionStore] Aborting session:", event.sessionId);
+
+        // Send abort command to backend via API
+        const { abortSessionBackend } = await import("~/api/agent");
+        abortSessionBackend(event.sessionId);
+
+        // Emit session.aborted event for UI updates
+        eventBus.emit({ type: "session.aborted", sessionId: event.sessionId });
+      } catch (error) {
+        console.error("[SessionStore] Failed to abort session:", error);
+      }
+      break;
+
     case "session.aborted":
+      // Store update: mark session as not processing
       store.markSessionNotProcessing(event.sessionId);
       store.markSessionInactive(event.sessionId);
       break;

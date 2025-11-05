@@ -33,10 +33,10 @@
     "url": "https://github.com/Deepractice/Agent/issues"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && vite build",
-    "build:watch": "vite build --watch",
+    "build": "echo 'Skipping agent-ui build (deprecated, kept for reference only)'",
+    "build:watch": "echo 'Skipping agent-ui build (deprecated, kept for reference only)'",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "echo 'Skipping agent-ui typecheck (deprecated, kept for reference only)'"
   },
   "keywords": [
     "ai",

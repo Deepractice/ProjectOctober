@@ -77,13 +77,23 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
             }
           }
         }
-        // Handle string content
+        // Handle string content - check message type
         else if (typeof messageData?.content === "string" && messageData.content.trim()) {
-          eventBus.emit({
-            type: "message.assistant",
-            sessionId: wsMessage.sessionId || "",
-            content: messageData.content,
-          });
+          // ✅ FIX: Check the actual message type instead of assuming it's assistant
+          if (messageData.type === "user") {
+            eventBus.emit({
+              type: "message.user",
+              sessionId: wsMessage.sessionId || "",
+              content: messageData.content,
+            });
+          } else {
+            // Default to assistant for backward compatibility
+            eventBus.emit({
+              type: "message.assistant",
+              sessionId: wsMessage.sessionId || "",
+              content: messageData.content,
+            });
+          }
         }
 
         // Handle tool results
