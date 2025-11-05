@@ -6,12 +6,12 @@ import { z } from "zod";
  */
 export const baseConfigSchema = z.object({
   // Server Configuration
-  port: z.coerce.number().int().positive().default(5201),
+  port: z.coerce.number().int().positive().default(5200),
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
 
-  // Frontend Configuration
-  vitePort: z.coerce.number().int().positive().default(5200),
-  frontendUrl: z.string().url().default("http://localhost:5200"),
+  // Frontend Configuration (Vite dev server in development mode)
+  vitePort: z.coerce.number().int().positive().default(5173),
+  frontendUrl: z.string().url().default("http://localhost:5173"),
 
   // Anthropic API Configuration
   anthropicApiKey: z.string().min(1),

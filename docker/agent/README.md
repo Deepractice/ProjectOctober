@@ -49,9 +49,8 @@ docker-compose down
 
 Deepractice standard port allocation:
 
-- **5200**: Public access port (mapped to container's 5201)
-- **5201**: Internal service port (agent-service)
-- 5202: Reserved (development: Vite dev server)
+- **5200**: Agent service (unified entry point for production)
+- 5173: Vite dev server (development only, not in container)
 - 5203: Reserved (future: MCP service)
 
 ## Architecture
@@ -60,17 +59,16 @@ Single container running:
 
 - **Frontend**: React app (built to static files)
 - **Backend**: Node.js Express server (serves frontend + API)
-- **Internal Port**: 5201 (agent-service)
-- **External Port**: 5200 (docker port mapping)
+- **Port**: 5200 (agent-service)
 
 ```
 Container
-├─ Node.js (port 5201 internally)
+├─ Node.js (port 5200)
    ├─ Static files (/)
    ├─ API (/api/*)
    └─ WebSocket (/ws, /shell)
 
-Host → 5200:5201 → Container
+Host → 5200:5200 → Container
 ```
 
 ## Build from Source
@@ -105,7 +103,7 @@ Expected response: `{"status":"ok","service":"agent-service"}`
 ### Port already in use
 
 ```bash
-# Use different port (map host port 8080 to container port 5200)
+# Use different host port (e.g., 8080) mapped to container port 5200
 docker run -p 8080:5200 ...
 ```
 

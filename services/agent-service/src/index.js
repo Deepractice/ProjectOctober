@@ -102,7 +102,7 @@ async function startServer() {
 
     if (!isProduction) {
       console.log(
-        `⚠️  Note: Requests will be proxied to Vite dev server at http://localhost:${process.env.VITE_PORT || 5173}`
+        `⚠️  Note: In development, frontend should be served by Vite dev server at http://localhost:5173`
       );
     }
 
