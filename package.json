@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "author": "Deepractice",
   "license": "MIT",
