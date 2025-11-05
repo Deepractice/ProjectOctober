@@ -19,6 +19,7 @@ WORKDIR /build
 
 # Copy workspace config and package.json files first (for better caching)
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY tsconfig.json ./
 COPY packages/agent-config/package.json ./packages/agent-config/
 COPY packages/agent-sdk/package.json ./packages/agent-sdk/
 
