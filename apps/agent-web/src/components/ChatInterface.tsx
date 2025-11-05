@@ -38,6 +38,7 @@ export function ChatInterface() {
   useEffect(() => {
     if (!selectedSession) return;
 
+    // Check if we already have messages for this session
     const messages = getMessages(selectedSession.id);
 
     // Only load if we don't have messages for this session
@@ -47,7 +48,8 @@ export function ChatInterface() {
         console.error("[ChatInterface] Failed to load messages:", error);
       });
     }
-  }, [selectedSession?.id, getMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSession?.id]);
 
   // Subscribe to message store changes to trigger re-render
   useEffect(() => {
