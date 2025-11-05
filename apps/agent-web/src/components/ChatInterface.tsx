@@ -9,7 +9,7 @@ import InputArea from "~/components/InputArea";
 import { useSessionStore } from "~/stores/sessionStore";
 import { useMessageStore } from "~/stores/messageStore";
 import { useUIStore } from "~/stores/uiStore";
-import { sendMessage, abortSession } from "~/api/agent";
+import { sendMessage, abortSession, loadSessionMessages } from "~/api/agent";
 import type { ChatMessage } from "~/types";
 
 export function ChatInterface() {
@@ -33,6 +33,21 @@ export function ChatInterface() {
 
   // Check if current session is loading
   const isLoading = selectedSession ? isSessionProcessing(selectedSession.id) : false;
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (!selectedSession) return;
+
+    const messages = getMessages(selectedSession.id);
+
+    // Only load if we don't have messages for this session
+    if (messages.length === 0) {
+      console.log("[ChatInterface] Loading messages for session:", selectedSession.id);
+      loadSessionMessages(selectedSession.id).catch((error) => {
+        console.error("[ChatInterface] Failed to load messages:", error);
+      });
+    }
+  }, [selectedSession?.id, getMessages]);
 
   // Subscribe to message store changes to trigger re-render
   useEffect(() => {

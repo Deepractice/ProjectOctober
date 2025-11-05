@@ -119,7 +119,24 @@ export class SessionManager {
     const session = this.sessions.get(id);
     if (session) {
       this.logger.debug({ sessionId: id }, "Deleting session");
-      await session.delete();
+
+      // Handle historical sessions differently
+      if (session instanceof HistoricalSession) {
+        // Delete the .jsonl file for historical sessions
+        const filePath = path.join(this.sessionDir, `${id}.jsonl`);
+        try {
+          await fs.unlink(filePath);
+          this.logger.debug({ sessionId: id, filePath }, "Deleted historical session file");
+        } catch (error) {
+          if ((error as any).code !== "ENOENT") {
+            this.logger.warn({ err: error, sessionId: id, filePath }, "Failed to delete session file");
+          }
+        }
+      } else {
+        // For active sessions, call delete() method
+        await session.delete();
+      }
+
       this.sessions.delete(id);
       this.sessionEventsSubject.next({ type: "deleted", sessionId: id });
       this.logger.info({ sessionId: id }, "Session deleted");
