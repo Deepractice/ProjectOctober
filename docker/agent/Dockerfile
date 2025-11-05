@@ -47,10 +47,13 @@ COPY --from=packages-builder /build/node_modules ./node_modules
 COPY --from=packages-builder /build/packages ./packages
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 
-# Copy frontend package.json
+# Copy frontend package.json and config files
 COPY apps/agent-web/package.json ./apps/agent-web/
+COPY apps/agent-web/postcss.config.js ./apps/agent-web/
+COPY apps/agent-web/tailwind.config.js ./apps/agent-web/
+COPY apps/agent-web/vite.config.js ./apps/agent-web/
 
-# Install frontend dependencies (this layer will be cached if package.json doesn't change)
+# Install frontend dependencies including devDependencies (needed for build)
 RUN pnpm install --frozen-lockfile --filter @deepractice-ai/agent-web...
 
 # Copy source code and build
