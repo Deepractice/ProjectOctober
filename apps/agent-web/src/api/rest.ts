@@ -1,3 +1,8 @@
+/**
+ * REST API Client
+ * Handles all HTTP requests to the backend
+ */
+
 // Utility function for authenticated API calls
 export const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = localStorage.getItem("auth-token");
@@ -42,8 +47,10 @@ export const api = {
 
   // Protected endpoints
   config: (): Promise<Response> => authenticatedFetch("/api/config"),
+
   sessions: (limit: number = 5, offset: number = 0): Promise<Response> =>
     authenticatedFetch(`/api/sessions?limit=${limit}&offset=${offset}`),
+
   sessionMessages: (
     sessionId: string,
     limit: number | null = null,
@@ -58,18 +65,28 @@ export const api = {
     const url = `/api/sessions/${sessionId}/messages${queryString ? `?${queryString}` : ""}`;
     return authenticatedFetch(url);
   },
+
   deleteSession: (sessionId: string): Promise<Response> =>
     authenticatedFetch(`/api/sessions/${sessionId}`, {
       method: "DELETE",
     }),
+
+  createSession: (): Promise<Response> =>
+    authenticatedFetch("/api/sessions/create", {
+      method: "POST",
+    }),
+
   readFile: (filePath: string): Promise<Response> =>
     authenticatedFetch(`/api/file?filePath=${encodeURIComponent(filePath)}`),
+
   saveFile: (filePath: string, content: string): Promise<Response> =>
     authenticatedFetch(`/api/file`, {
       method: "PUT",
       body: JSON.stringify({ filePath, content }),
     }),
+
   getFiles: (): Promise<Response> => authenticatedFetch(`/api/files`),
+
   transcribe: (formData: FormData): Promise<Response> =>
     authenticatedFetch("/api/transcribe", {
       method: "POST",
@@ -81,7 +98,6 @@ export const api = {
   browseFilesystem: (dirPath: string | null = null): Promise<Response> => {
     const params = new URLSearchParams();
     if (dirPath) params.append("path", dirPath);
-
     return authenticatedFetch(`/api/browse-filesystem?${params}`);
   },
 
