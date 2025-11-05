@@ -60,8 +60,8 @@ export class ClaudeAdapter {
       resume: options.resume,
       mcpServers: this.config.mcpServers,
       permissionMode: "bypassPermissions",
-      // Don't pass executable or env - let SDK use its defaults
-      // which will properly inherit the environment
+      // Explicitly pass environment to ensure PATH is available for spawning processes
+      env: process.env,
     };
   }
 

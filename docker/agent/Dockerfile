@@ -89,6 +89,10 @@ COPY services/agent-service ./services/agent-service
 #
 FROM base AS production
 
+# Install Claude Code CLI (as root before switching to node user)
+USER root
+RUN npm install -g @anthropic-ai/claude-code
+
 WORKDIR /app
 
 # Copy node_modules from backend deps (pnpm workspace root)
