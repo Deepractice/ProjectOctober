@@ -5,9 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dev:backend & wait-on http://localhost:5201/health -t 30000 && pnpm dev:frontend",
-    "dev:backend": "turbo run dev --filter=@deepractice-ai/agent-service",
-    "dev:frontend": "turbo run dev --filter=@deepractice-ai/agent-web",
+    "dev": "pnpm dev:vite & pnpm dev:service",
+    "dev:vite": "turbo run dev --filter=@deepractice-ai/agent-web",
+    "dev:service": "wait-on http://localhost:5173 -t 30000 && turbo run dev --filter=@deepractice-ai/agent-service",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
