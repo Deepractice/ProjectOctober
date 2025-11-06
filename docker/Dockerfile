@@ -3,10 +3,11 @@
 # Uses published @deepractice-ai/agent-cli from npm
 #
 
-FROM node:20-alpine
+ARG RUNTIME_VERSION=latest
+FROM deepracticexs/agent-runtime:${RUNTIME_VERSION}
 
-# Install dependencies for health check
-RUN apk add --no-cache curl
+# Switch to root for installations
+USER root
 
 # Install agent-cli globally from npm
 RUN npm install -g @deepractice-ai/agent-cli
@@ -20,8 +21,11 @@ ENV NODE_ENV=production \
 # - ANTHROPIC_API_KEY (required)
 # - ANTHROPIC_BASE_URL (optional, default: https://api.anthropic.com)
 
-# Create project directory
-RUN mkdir -p /project
+# Create project directory and set ownership
+RUN mkdir -p /project && chown node:node /project
+
+# Switch to non-root user
+USER node
 
 # Set working directory
 WORKDIR /project
