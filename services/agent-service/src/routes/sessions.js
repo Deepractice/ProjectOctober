@@ -15,7 +15,7 @@ router.post("/create", async (req, res) => {
     res.json({
       sessionId: session.id, // Frontend expects sessionId, not id
       id: session.id,
-      summary: "New Session",
+      summary: session.summary(),
       messageCount: 0,
       lastActivity: session.createdAt,
       cwd: session.getMetadata().projectPath,
@@ -36,7 +36,7 @@ router.get("/", async (req, res) => {
     // Transform to frontend format
     const formatted = sessions.map((s) => ({
       id: s.id,
-      summary: extractSummary(s),
+      summary: s.summary(),
       messageCount: s.getMessages().length,
       lastActivity: s.getMetadata().startTime,
       cwd: s.getMetadata().projectPath,
@@ -128,16 +128,5 @@ router.get("/:sessionId/token-usage", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-function extractSummary(session) {
-  const messages = session.getMessages(5);
-  const firstUserMsg = messages.find((m) => m.type === "user");
-
-  if (firstUserMsg && firstUserMsg.content) {
-    return firstUserMsg.content.substring(0, 100);
-  }
-
-  return "New Session";
-}
 
 export default router;

@@ -16,7 +16,6 @@ import type {
 } from "~/types";
 import { ClaudeSession } from "./claude-session";
 import { ClaudeAdapter } from "./claude-adapter";
-import { HistoricalSession } from "./historical-session";
 import type { Logger } from "@deepracticex/logger";
 
 /**
@@ -87,7 +86,6 @@ export class SessionManager {
 
   /**
    * Get a session by ID
-   * Automatically upgrades HistoricalSession to ClaudeSession for continuing conversation
    */
   getSession(id: string): Session | null {
     const session = this.sessions.get(id);
@@ -98,32 +96,6 @@ export class SessionManager {
 
     if (session.state === "deleted") {
       return null;
-    }
-
-    // Auto-upgrade HistoricalSession to ClaudeSession for continuing conversation
-    if (session instanceof HistoricalSession) {
-      this.logger.debug(
-        { sessionId: id },
-        "Upgrading HistoricalSession to ClaudeSession with resume"
-      );
-
-      // Cast to HistoricalSession to access its methods
-      const historicalSession = session as HistoricalSession;
-      const metadata = historicalSession.getMetadata();
-      const resumeSession = new ClaudeSession(
-        id,
-        metadata,
-        this.adapter,
-        { resume: id }, // Use resume to continue from historical session
-        false, // Not from warmup pool
-        this.logger
-      );
-
-      // Replace the historical session with the resumed session
-      this.sessions.set(id, resumeSession);
-
-      this.logger.info({ sessionId: id }, "Historical session upgraded to resumable session");
-      return resumeSession;
     }
 
     return session;
@@ -150,25 +122,19 @@ export class SessionManager {
     if (session) {
       this.logger.debug({ sessionId: id }, "Deleting session");
 
-      // Handle historical sessions differently
-      if (session instanceof HistoricalSession) {
-        // Delete the .jsonl file for historical sessions
-        const filePath = path.join(this.sessionDir, `${id}.jsonl`);
-        try {
-          await fs.unlink(filePath);
-          this.logger.debug({ sessionId: id, filePath }, "Deleted historical session file");
-        } catch (error) {
-          if ((error as any).code !== "ENOENT") {
-            this.logger.warn(
-              { err: error, sessionId: id, filePath },
-              "Failed to delete session file"
-            );
-          }
+      // Delete the .jsonl file if it exists
+      const filePath = path.join(this.sessionDir, `${id}.jsonl`);
+      try {
+        await fs.unlink(filePath);
+        this.logger.debug({ sessionId: id, filePath }, "Deleted session file");
+      } catch (error) {
+        if ((error as any).code !== "ENOENT") {
+          this.logger.warn({ err: error, sessionId: id, filePath }, "Failed to delete session file");
         }
-      } else {
-        // For active sessions, call delete() method
-        await session.delete();
       }
+
+      // Call delete() method to clean up session
+      await session.delete();
 
       this.sessions.delete(id);
       this.sessionEventsSubject.next({ type: "deleted", sessionId: id });
@@ -207,10 +173,6 @@ export class SessionManager {
   destroy(): void {
     this.logger.info({ sessionCount: this.sessions.size }, "Destroying SessionManager");
     for (const session of this.sessions.values()) {
-      // Skip historical sessions - they can't be deleted directly
-      if (session instanceof HistoricalSession) {
-        continue;
-      }
       session.delete().catch((err) => {
         this.logger.warn({ err, sessionId: session.id }, "Failed to delete session during destroy");
       });
@@ -260,10 +222,22 @@ export class SessionManager {
 
         // Load historical session
         const filePath = path.join(this.sessionDir, file);
-        const session = await this.parseJsonlFile(filePath);
+        const sessionData = await this.parseJsonlFile(filePath);
 
-        if (session) {
-          this.sessions.set(sessionId, session as any);
+        if (sessionData) {
+          // Create ClaudeSession with historical messages
+          const session = new ClaudeSession(
+            sessionId,
+            sessionData.metadata,
+            this.adapter,
+            {}, // No options needed for historical sessions
+            false, // Not from warmup pool
+            this.logger,
+            sessionData.messages, // Pass historical messages
+            sessionData.tokenUsage // Pass token usage
+          );
+
+          this.sessions.set(sessionId, session);
           loadedCount++;
         }
       }
@@ -289,9 +263,13 @@ export class SessionManager {
   }
 
   /**
-   * Parse JSONL file and create HistoricalSession
+   * Parse JSONL file and return session data
    */
-  private async parseJsonlFile(filePath: string): Promise<HistoricalSession | null> {
+  private async parseJsonlFile(filePath: string): Promise<{
+    messages: AnyMessage[];
+    metadata: SessionMetadata;
+    tokenUsage: TokenUsage;
+  } | null> {
     const sessionId = path.basename(filePath, ".jsonl");
     const messages: AnyMessage[] = [];
     let metadata: SessionMetadata | null = null;
@@ -360,7 +338,7 @@ export class SessionManager {
         };
       }
 
-      return new HistoricalSession(sessionId, messages, metadata, tokenUsage);
+      return { messages, metadata, tokenUsage };
     } catch (error) {
       this.logger.error({ err: error, filePath, sessionId }, "Failed to parse session file");
       return null;

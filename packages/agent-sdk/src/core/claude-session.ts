@@ -44,7 +44,9 @@ export class ClaudeSession implements Session {
     adapter: ClaudeAdapter,
     options: SessionOptions = {},
     isWarmSession: boolean,
-    logger: Logger
+    logger: Logger,
+    initialMessages: AnyMessage[] = [],
+    initialTokenUsage?: TokenUsage
   ) {
     this.id = id;
     this.createdAt = new Date();
@@ -52,11 +54,21 @@ export class ClaudeSession implements Session {
     this.adapter = adapter;
     this.options = options;
     this.logger = logger;
+
+    // Initialize with historical messages if provided
+    this.messages = [...initialMessages];
+    if (initialTokenUsage) {
+      this.tokenUsage = initialTokenUsage;
+    }
+
     // If this is from warmup pool, id is already Claude SDK session_id
     if (isWarmSession) {
       this.realSessionId = id;
     }
-    this.logger.debug({ sessionId: id, isWarmSession }, "ClaudeSession constructed");
+    this.logger.debug(
+      { sessionId: id, isWarmSession, hasInitialMessages: initialMessages.length > 0 },
+      "ClaudeSession constructed"
+    );
   }
 
   get state(): SessionState {
@@ -452,6 +464,46 @@ export class ClaudeSession implements Session {
 
   getMetadata(): SessionMetadata {
     return { ...this.metadata };
+  }
+
+  /**
+   * Generate session summary from messages
+   * Priority:
+   * 1. First real user message (filtered system messages)
+   * 2. Fallback to "New Session"
+   *
+   * Aligned with Claude Code CLI behavior
+   */
+  summary(): string {
+    const messages = this.getMessages(10); // Get first 10 messages
+
+    // Find first real user message
+    const firstUserMsg = messages.find((m) => {
+      if (m.type !== "user") return false;
+
+      const content = m.content || "";
+
+      // Filter system messages (aligned with Claude Code CLI)
+      const isSystemMessage =
+        content.startsWith("<command-name>") ||
+        content.startsWith("<command-message>") ||
+        content.startsWith("<command-args>") ||
+        content.startsWith("<local-command-stdout>") ||
+        content.startsWith("<system-reminder>") ||
+        content.startsWith("Caveat:") ||
+        content.startsWith("This session is being continued from a previous") ||
+        content === "Warmup";
+
+      return !isSystemMessage && content.length > 0;
+    });
+
+    if (firstUserMsg && firstUserMsg.content) {
+      // Return first 100 characters, add ellipsis if truncated
+      const summary = firstUserMsg.content.substring(0, 100);
+      return firstUserMsg.content.length > 100 ? `${summary}...` : summary;
+    }
+
+    return "New Session";
   }
 
   isActive(): boolean {

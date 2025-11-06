@@ -49,6 +49,7 @@ export interface Session {
   getMessages(limit?: number, offset?: number): AnyMessage[];
   getTokenUsage(): TokenUsage;
   getMetadata(): SessionMetadata;
+  summary(): string;
 
   // Utilities
   isActive(): boolean;

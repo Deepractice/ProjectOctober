@@ -44,7 +44,7 @@ async function broadcastSessionEvent(connectedClients, event) {
     // Format sessions for frontend (same format as REST API)
     const formatted = sessions.map((s) => ({
       id: s.id,
-      summary: extractSummary(s),
+      summary: s.summary(),
       messageCount: s.getMessages().length,
       lastActivity: s.getMetadata().startTime,
       cwd: s.getMetadata().projectPath,
@@ -70,17 +70,6 @@ async function broadcastSessionEvent(connectedClients, event) {
   } catch (error) {
     logger.error("Failed to broadcast session event:", error);
   }
-}
-
-function extractSummary(session) {
-  const messages = session.getMessages(5);
-  const firstUserMsg = messages.find((m) => m.type === "user");
-
-  if (firstUserMsg && firstUserMsg.content) {
-    return firstUserMsg.content.substring(0, 100);
-  }
-
-  return "New Session";
 }
 
 export function closeSessionsWatcher() {
