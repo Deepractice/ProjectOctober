@@ -49,8 +49,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            deepractice/agent-ui:latest
-            deepractice/agent-ui:${{ steps.version.outputs.version }}
+            deepracticexs/agent:latest
+            deepracticexs/agent:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,16 +61,16 @@ jobs:
           echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker Hub:**" >> $GITHUB_STEP_SUMMARY
-          echo "- \`deepractice/agent-ui:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`deepractice/agent-ui:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`deepracticexs/agent:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`deepracticexs/agent:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Pull the image" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull deepractice/agent-ui:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Run the container" >> $GITHUB_STEP_SUMMARY
           echo "docker run -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
           echo "  -e ANTHROPIC_API_KEY=your_api_key \\" >> $GITHUB_STEP_SUMMARY
-          echo "  deepractice/agent-ui:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "  deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
