@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-web",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Web application for AI Agent (Gateway + UI)",
   "private": true,
   "type": "module",

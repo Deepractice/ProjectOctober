@@ -105,6 +105,12 @@ importers:
         specifier: ^8.14.2
         version: 8.18.3
     devDependencies:
+      '@deepractice-ai/agent-service':
+        specifier: workspace:*
+        version: link:../../services/agent-service
+      '@deepractice-ai/agent-web':
+        specifier: workspace:*
+        version: link:../agent-web
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0
