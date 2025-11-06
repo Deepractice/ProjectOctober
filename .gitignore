@@ -124,6 +124,9 @@ services/**/CLAUDE.md
 # AI tool caches and configs
 .mcp.json
 
+# PromptX local state
+.promptx/
+
 # ============================================
 # Database & Sensitive Data
 # ============================================
