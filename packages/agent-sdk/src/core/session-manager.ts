@@ -306,12 +306,47 @@ export class SessionManager {
 
           // Parse message
           if (entry.type === "user" || entry.type === "assistant") {
-            messages.push({
+            // Skip tool_result user messages (these are internal to Claude SDK)
+            if (entry.type === "user" && entry.message?.content) {
+              const content = entry.message.content;
+              if (Array.isArray(content)) {
+                const hasToolResult = content.some((block: any) => block.type === "tool_result");
+                if (hasToolResult) {
+                  // Skip this message - it's a tool result, not a real user message
+                  continue;
+                }
+              }
+            }
+
+            const baseMessage: AnyMessage = {
               id: entry.uuid || `${entry.type}-${Date.now()}`,
               type: entry.type,
               content: this.extractContent(entry.message),
               timestamp: new Date(entry.timestamp || Date.now()),
-            });
+            };
+
+            // For assistant messages, check if it's a tool use
+            if (entry.type === "assistant" && entry.message?.content) {
+              const content = entry.message.content;
+              if (Array.isArray(content)) {
+                // Find tool_use block
+                const toolBlock = content.find((block: any) => block.type === "tool_use");
+                if (toolBlock) {
+                  // This is a tool use message
+                  (baseMessage as any).isToolUse = true;
+                  (baseMessage as any).toolName = toolBlock.name;
+                  (baseMessage as any).toolInput = toolBlock.input
+                    ? JSON.stringify(toolBlock.input, null, 2)
+                    : "";
+                  (baseMessage as any).toolId = toolBlock.id;
+                  (baseMessage as any).toolResult = null;
+                  // Clear content for tool use messages
+                  baseMessage.content = "";
+                }
+              }
+            }
+
+            messages.push(baseMessage);
           }
 
           // Extract token usage

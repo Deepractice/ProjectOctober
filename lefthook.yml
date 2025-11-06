@@ -23,11 +23,11 @@ pre-push:
     install-check:
       run: pnpm install --frozen-lockfile
 
-    # Optional: enable when you want to run typecheck/test/build before push
+    typecheck:
+      run: pnpm typecheck
+
+    # Optional: enable when you want to run test/build before push
     # CI will catch these issues anyway
-    # typecheck:
-    #   run: pnpm typecheck
-    #
     # test:
     #   run: pnpm test
     #

@@ -75,6 +75,43 @@ Agent/
 - `src/components/Terminal.tsx` - Terminal emulator
 - `src/stores/sessionStore.ts` - Zustand state management
 
+**State Management Architecture**:
+
+Agent-web follows a strict **Component → Store → EventBus** pattern:
+
+```
+Component (UI)
+  ↓ calls action
+Store (Zustand)
+  ↓ emits event
+EventBus (RxJS)
+  ↓ broadcasts
+Store (business logic)
+  ↓ updates state
+Component (re-renders)
+```
+
+**Rules**:
+1. Components NEVER directly subscribe to EventBus
+2. Components ONLY call Store actions
+3. Stores handle ALL EventBus interactions
+4. Business logic lives in Store event handlers
+
+**Directory Structure**:
+```
+src/
+├── components/        # React components (UI only)
+├── stores/           # Zustand stores + EventBus subscriptions
+│   ├── sessionStore.ts
+│   ├── messageStore.ts
+│   └── uiStore.ts
+├── core/             # EventBus and adapters
+│   ├── eventBus.ts
+│   └── websocketAdapter.ts
+├── api/              # Pure network requests
+└── types/            # TypeScript types
+```
+
 ### packages/\* (Shared Libraries)
 
 **agent-config**: Configuration management with multi-source loading (env, file, database)

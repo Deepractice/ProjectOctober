@@ -16,6 +16,9 @@ export interface SessionState {
   isLoading: boolean;
   error: string | null;
 
+  // Navigation state (for components to subscribe to)
+  navigationTarget: string | null;
+
   // Session Protection System
   activeSessions: Set<string>;
   processingSessions: Set<string>;
@@ -55,6 +58,7 @@ export const useSessionStore = create<SessionState>()(
       selectedSession: null,
       isLoading: false,
       error: null,
+      navigationTarget: null,
       activeSessions: new Set(),
       processingSessions: new Set(),
 
@@ -246,6 +250,9 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
       console.log("[SessionStore] Found session:", session.id, session.summary);
       store.setSelectedSession(session);
       console.log("[SessionStore] Updated selectedSession in store");
+
+      // Set navigation target for App component to subscribe to
+      useSessionStore.setState({ navigationTarget: event.sessionId });
 
       // Business orchestration: auto-load messages when session is selected
       (async () => {

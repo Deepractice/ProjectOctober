@@ -83,6 +83,74 @@ pnpm --filter @deepractice-ai/agent-web build
 
 ## Architecture
 
+### Frontend State Management Architecture
+
+**Principle**: Component → Store → EventBus
+
+Agent's frontend follows a strict unidirectional data flow pattern using Zustand stores and a centralized EventBus.
+
+**Architecture Rules**:
+
+1. ✅ **Components ONLY call Store actions** - Never directly emit or subscribe to EventBus
+2. ✅ **Stores handle ALL EventBus interactions** - Both emitting and subscribing to events
+3. ✅ **Business logic lives in Store event handlers** - Not in components
+4. ✅ **Components subscribe to Store state** - Using Zustand hooks
+
+**Data Flow**:
+
+```
+User Action
+  ↓
+Component calls Store action (e.g., selectSession(id))
+  ↓
+Store emits EventBus event (e.g., session.selected)
+  ↓
+Store's EventBus listener handles event (business logic)
+  ↓
+Store updates internal state
+  ↓
+Component re-renders (via Zustand subscription)
+```
+
+**Example - Correct Pattern**:
+
+```typescript
+// ❌ WRONG - Component subscribing to EventBus
+function MyComponent() {
+  useEffect(() => {
+    eventBus.on(...).subscribe((event) => { ... })  // NEVER DO THIS
+  }, [])
+}
+
+// ✅ CORRECT - Component calls Store action
+function MyComponent() {
+  const selectSession = useSessionStore(state => state.selectSession)
+
+  const handleClick = () => {
+    selectSession(sessionId)  // Call Store action
+  }
+}
+
+// ✅ CORRECT - Store handles EventBus
+// In sessionStore.ts
+selectSession: (sessionId: string) => {
+  eventBus.emit({ type: "session.selected", sessionId })
+}
+
+eventBus.on(isSessionEvent).subscribe(async (event) => {
+  if (event.type === "session.selected") {
+    // Handle business logic here
+    store.setSelectedSession(session)
+  }
+})
+```
+
+**Key Benefits**:
+- Clear separation of concerns
+- Testable business logic (in Stores)
+- Predictable state updates
+- Easy to debug (centralized event flow)
+
 ### Monorepo Structure
 
 ```

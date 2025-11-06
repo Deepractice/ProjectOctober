@@ -12,8 +12,6 @@ import HeaderNav, { type TabType } from "~/components/HeaderNav";
 import ChatInterface from "~/components/ChatInterface";
 import { connectWebSocket, disconnectWebSocket } from "~/api/agent";
 import { useSessionStore } from "~/stores/sessionStore";
-import { eventBus } from "~/core/eventBus";
-import type { AppEvent } from "~/core/events";
 
 // Import stores to ensure they're initialized and subscribed to EventBus
 import "~/stores/sessionStore";
@@ -23,7 +21,11 @@ import "~/stores/uiStore";
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  const { sessions, selectedSession, setSelectedSession, refreshSessions } = useSessionStore();
+  const sessions = useSessionStore((state) => state.sessions);
+  const selectedSession = useSessionStore((state) => state.selectedSession);
+  const navigationTarget = useSessionStore((state) => state.navigationTarget);
+  const selectSession = useSessionStore((state) => state.selectSession);
+  const refreshSessions = useSessionStore((state) => state.refreshSessions);
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -61,35 +63,35 @@ function AppContent() {
   }, []); // Empty deps - only run once on mount
 
   // Handle URL-based session loading
+  // When URL changes, call Store action to select session
   useEffect(() => {
     if (sessionId && sessions.length > 0) {
       if (!selectedSession || selectedSession.id !== sessionId) {
         const session = sessions.find((s) => s.id === sessionId);
         if (session) {
-          console.log("[App] URL changed, selecting session:", sessionId);
-          setSelectedSession(session);
+          console.log("[App] URL changed, calling selectSession action:", sessionId);
+          selectSession(sessionId);
         }
       }
     }
-  }, [sessionId, sessions, selectedSession, setSelectedSession]);
+  }, [sessionId, sessions, selectedSession, selectSession]);
 
-  // Listen to session selection events
+  // Listen to Store navigation state changes
+  // When Store emits navigationTarget, perform navigation
   useEffect(() => {
-    const subscription = eventBus.stream().subscribe((event: AppEvent) => {
-      if (event.type === "session.selected") {
-        const session = sessions.find((s) => s.id === event.sessionId);
-        if (session) {
-          navigate(`/session/${session.id}`);
-          // Close mobile sidebar when session is selected
-          if (isMobile) {
-            setSidebarOpen(false);
-          }
-        }
-      }
-    });
+    if (navigationTarget && navigationTarget !== sessionId) {
+      console.log("[App] Navigation target changed, navigating to:", navigationTarget);
+      navigate(`/session/${navigationTarget}`);
 
-    return () => subscription.unsubscribe();
-  }, [sessions, navigate, isMobile]);
+      // Close mobile sidebar when session is selected
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+
+      // Clear navigation target to prevent re-triggering
+      useSessionStore.setState({ navigationTarget: null });
+    }
+  }, [navigationTarget, sessionId, navigate, isMobile]);
 
   // Temporary project info (until we have proper project management)
   const selectedProject = selectedSession
