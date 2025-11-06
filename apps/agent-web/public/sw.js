@@ -3,8 +3,18 @@
 const CACHE_NAME = "claude-ui-v1";
 const urlsToCache = ["/", "/index.html", "/manifest.json"];
 
+// Detect if running in development mode
+const isDevelopment =
+  self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
+
 // Install event
 self.addEventListener("install", (event) => {
+  if (isDevelopment) {
+    // In development, skip waiting and don't cache anything
+    self.skipWaiting();
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);
@@ -15,6 +25,11 @@ self.addEventListener("install", (event) => {
 
 // Fetch event
 self.addEventListener("fetch", (event) => {
+  // In development, let all requests pass through without caching
+  if (isDevelopment) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       // Return cached response if found

@@ -68,9 +68,9 @@ export class ClaudeAdapter {
       permissionMode: "bypassPermissions",
       // Explicitly pass env to ensure PATH is inherited by spawned processes
       env: process.env,
-      // Use absolute path for node executable in containerized environments
-      // to avoid spawn ENOENT errors when PATH lookup fails
-      executable: "/usr/bin/node",
+      // Use process.execPath to get the actual node binary that's running this code
+      // This works with nvm, volta, or any node version manager
+      executable: process.execPath,
     };
   }
 

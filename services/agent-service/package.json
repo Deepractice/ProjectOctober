@@ -7,6 +7,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "NODE_ENV=development nodemon src/index.js",
+    "dev:clean": "lsof -ti:5200 | xargs kill -9 2>/dev/null || true && pnpm dev",
     "start": "NODE_ENV=production node src/index.js",
     "lint": "eslint .",
     "typecheck": "echo 'No TypeScript in agent-service, skipping typecheck'"
