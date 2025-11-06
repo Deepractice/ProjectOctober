@@ -82,6 +82,9 @@ export class ClaudeAdapter {
       model: this.normalizeModelName(model),
       resume: options.resume,
       mcpServers: this.config.mcpServers,
+      // Load MCP configurations from Claude settings files
+      // This enables compatibility with Claude CLI and Claude Desktop configurations
+      settingSources: ["user", "project", "local"],
       permissionMode: "bypassPermissions",
       // Explicitly pass env to ensure PATH is inherited by spawned processes
       env: process.env,
