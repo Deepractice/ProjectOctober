@@ -1,4 +1,4 @@
-name: Publish Docker Images
+name: Publish Packages and Docker Images
 
 on:
   release:
@@ -11,9 +11,69 @@ on:
         type: string
 
 jobs:
-  publish-docker:
-    name: Build and Push to Docker Hub
+  publish-npm:
+    name: Publish NPM Packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for npm provenance
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Packages
+        run: pnpm build
+
+      - name: Publish agent-sdk to NPM
+        if: hashFiles('packages/agent-sdk/package.json') != ''
+        run: |
+          cd packages/agent-sdk
+          pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish agent-cli to NPM
+        if: hashFiles('apps/agent-cli/package.json') != ''
+        run: |
+          cd apps/agent-cli
+          pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## ✅ NPM Packages Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "packages/agent-sdk/package.json" ]; then
+            SDK_NAME=$(jq -r '.name' "packages/agent-sdk/package.json")
+            SDK_VERSION=$(jq -r '.version' "packages/agent-sdk/package.json")
+            echo "- \`${SDK_NAME}@${SDK_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f "apps/agent-cli/package.json" ]; then
+            CLI_NAME=$(jq -r '.name' "apps/agent-cli/package.json")
+            CLI_VERSION=$(jq -r '.version' "apps/agent-cli/package.json")
+            echo "- \`${CLI_NAME}@${CLI_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  publish-docker:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: publish-npm # Wait for NPM packages to be published
     permissions:
       contents: read
     steps:
@@ -40,6 +100,19 @@ jobs:
           # Remove 'v' prefix if exists
           VERSION=${VERSION#v}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Wait for NPM Package Availability
+        run: |
+          echo "Waiting for @deepractice-ai/agent-cli to be available on NPM..."
+          for i in {1..12}; do
+            if npm view @deepractice-ai/agent-cli@latest version &>/dev/null; then
+              echo "Package is available!"
+              exit 0
+            fi
+            echo "Attempt $i/12: Package not yet available, waiting 10 seconds..."
+            sleep 10
+          done
+          echo "Warning: Package still not available after 2 minutes, proceeding anyway..."
 
       - name: Build and Push Agent Image to Docker Hub
         uses: docker/build-push-action@v5
@@ -75,7 +148,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## ✅ Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Docker Images Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -90,15 +163,17 @@ jobs:
           echo "### 📦 Usage (Docker Hub)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
           echo "  -e ANTHROPIC_API_KEY=your_api_key \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -v \$(pwd):/project \\" >> $GITHUB_STEP_SUMMARY
           echo "  deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Usage (Aliyun ACR - China)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
           echo "  -e ANTHROPIC_API_KEY=your_api_key \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -v \$(pwd):/project \\" >> $GITHUB_STEP_SUMMARY
           echo "  ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
