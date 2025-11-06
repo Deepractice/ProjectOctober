@@ -9,6 +9,7 @@
     "dev": "NODE_ENV=development nodemon src/index.js",
     "dev:clean": "lsof -ti:5200 | xargs kill -9 2>/dev/null || true && pnpm dev",
     "start": "NODE_ENV=production node src/index.js",
+    "build": "tsup",
     "lint": "eslint .",
     "typecheck": "echo 'No TypeScript in agent-service, skipping typecheck'"
   },
@@ -41,6 +42,7 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.9.2",
     "@types/ws": "^8.18.1",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "tsup": "^8.0.1"
   }
 }

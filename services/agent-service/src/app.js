@@ -47,7 +47,6 @@ export function createApp(wss) {
   app.use("/api/commands", commandsRoutes);
   app.use("/api/sessions", sessionsRoutes);
   app.use("/api/project", projectRoutes);
-  app.use("/api", projectRoutes);
   app.use("/api", systemRoutes);
   app.use("/api", mediaRoutes);
 

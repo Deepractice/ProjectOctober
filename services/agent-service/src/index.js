@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Server Entry Point
- * Loads environment files with dotenv, then initializes configuration
+ * Can be used as a module (export startServer) or executed directly
  */
 import http from "http";
 import fs from "fs";
@@ -21,90 +21,113 @@ import { logger } from "./utils/logger.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment files with dotenv
-// From src/index.js, monorepo root is 3 levels up
-const rootDir = path.resolve(__dirname, "../../..");
-const nodeEnv = process.env.NODE_ENV || "development";
+/**
+ * Load environment files with dotenv
+ * Only loads if not already set (respects existing process.env)
+ */
+function loadEnvironmentFiles() {
+  const rootDir = path.resolve(__dirname, "../../..");
+  const nodeEnv = process.env.NODE_ENV || "development";
 
-// Load in priority order (higher priority = loaded last, overrides earlier)
-// 1. .env (defaults)
-dotenvConfig({ path: path.join(rootDir, ".env") });
+  // Only load .env files if running standalone (not via CLI)
+  // CLI will set environment variables before importing this module
+  dotenvConfig({ path: path.join(rootDir, ".env") });
+  dotenvConfig({ path: path.join(rootDir, `.env.${nodeEnv}`) });
+  dotenvConfig({ path: path.join(rootDir, ".env.local") });
 
-// 2. .env.[environment] (environment-specific)
-dotenvConfig({ path: path.join(rootDir, `.env.${nodeEnv}`), override: true });
+  logger.info({ nodeEnv, rootDir }, "Environment files loaded");
+}
+// Module-level config instance
+let configInstance = null;
 
-// 3. .env.local (highest priority - local secrets and overrides)
-dotenvConfig({ path: path.join(rootDir, ".env.local"), override: true });
-
-logger.info({ nodeEnv, rootDir }, "Environment files loaded");
-logger.info(
-  {
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY
-      ? `${process.env.ANTHROPIC_API_KEY.substring(0, 6)}***`
-      : undefined,
-    anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL,
-    port: process.env.PORT,
-  },
-  "Environment variables from process.env"
-);
-
-// Initialize agent-config (reads from process.env, validates, merges sources)
-const configInstance = await getConfig();
-
-logger.info("Configuration loaded and validated");
-logger.info(
-  {
-    anthropicApiKey: configInstance.anthropicApiKey
-      ? `${configInstance.anthropicApiKey.substring(0, 6)}***`
-      : undefined,
-    anthropicBaseUrl: configInstance.anthropicBaseUrl,
-    port: configInstance.port,
-  },
-  "Final configuration values"
-);
-
-// Export config for other modules
-export const config = () => configInstance;
-
-const PORT = configInstance.port;
-
-// Track connected WebSocket clients for session updates
-const connectedClients = new Set();
-
-// Create HTTP server
-const server = http.createServer();
-
-// Create WebSocket server
-const wss = new WebSocketServer({ server });
-
-// Create Express app
-const app = createApp(wss);
-
-// Attach Express app to HTTP server
-server.on("request", app);
-
-// WebSocket connection handler that routes based on URL path
-wss.on("connection", (ws, request) => {
-  const url = request.url;
-  console.log("🔗 Client connected to:", url);
-
-  // Parse URL to get pathname without query parameters
-  const urlObj = new URL(url, "http://localhost");
-  const pathname = urlObj.pathname;
-
-  if (pathname === "/shell") {
-    handleShellConnection(ws);
-  } else if (pathname === "/ws" || pathname === "/") {
-    // Accept both /ws and / (root path from dev proxy)
-    handleChatConnection(ws, connectedClients);
-  } else {
-    console.log("❌ Unknown WebSocket path:", pathname);
-    ws.close();
+/**
+ * Export config for other modules
+ */
+export const config = () => {
+  if (!configInstance) {
+    throw new Error("Server not started. Call startServer() first.");
   }
-});
+  return configInstance;
+};
 
-// Start server
-async function startServer() {
+/**
+ * Start the agent server
+ * @param {Object} options - Server options
+ * @param {string} options.host - Host to bind to (default: "0.0.0.0")
+ * @param {boolean} options.loadEnv - Whether to load .env files (default: true)
+ */
+export async function startServer(options = {}) {
+  const { host = "0.0.0.0", loadEnv = true } = options;
+
+  // Load environment files if requested (standalone mode)
+  if (loadEnv) {
+    loadEnvironmentFiles();
+  }
+
+  logger.info(
+    {
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY
+        ? `${process.env.ANTHROPIC_API_KEY.substring(0, 6)}***`
+        : undefined,
+      anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL,
+      port: process.env.PORT,
+    },
+    "Environment variables from process.env"
+  );
+
+  // Initialize agent-config (reads from process.env, validates, merges sources)
+  configInstance = await getConfig();
+
+  logger.info("Configuration loaded and validated");
+  logger.info(
+    {
+      anthropicApiKey: configInstance.anthropicApiKey
+        ? `${configInstance.anthropicApiKey.substring(0, 6)}***`
+        : undefined,
+      anthropicBaseUrl: configInstance.anthropicBaseUrl,
+      port: configInstance.port,
+    },
+    "Final configuration values"
+  );
+
+  const PORT = configInstance.port;
+
+  // Track connected WebSocket clients for session updates
+  const connectedClients = new Set();
+
+  // Create HTTP server
+  const server = http.createServer();
+
+  // Create WebSocket server
+  const wss = new WebSocketServer({ server });
+
+  // Create Express app
+  const app = createApp(wss);
+
+  // Attach Express app to HTTP server
+  server.on("request", app);
+
+  // WebSocket connection handler that routes based on URL path
+  wss.on("connection", (ws, request) => {
+    const url = request.url;
+    console.log("🔗 Client connected to:", url);
+
+    // Parse URL to get pathname without query parameters
+    const urlObj = new URL(url, "http://localhost");
+    const pathname = urlObj.pathname;
+
+    if (pathname === "/shell") {
+      handleShellConnection(ws);
+    } else if (pathname === "/ws" || pathname === "/") {
+      // Accept both /ws and / (root path from dev proxy)
+      handleChatConnection(ws, connectedClients);
+    } else {
+      console.log("❌ Unknown WebSocket path:", pathname);
+      ws.close();
+    }
+  });
+
+  // Start server logic
   try {
     // Validate PROJECT_PATH before starting
     const projectPath = configInstance.projectPath;
@@ -151,8 +174,8 @@ async function startServer() {
       );
     }
 
-    server.listen(PORT, "0.0.0.0", async () => {
-      console.log(`✅ Agent UI server running on http://0.0.0.0:${PORT}`);
+    server.listen(PORT, host, async () => {
+      console.log(`✅ Agent UI server running on http://${host}:${PORT}`);
 
       // Start watching session events
       await setupSessionsWatcher(connectedClients);
@@ -163,4 +186,7 @@ async function startServer() {
   }
 }
 
-startServer();
+// Auto-start if run directly (not imported as module)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer();
+}

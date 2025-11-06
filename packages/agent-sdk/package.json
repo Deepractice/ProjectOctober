@@ -2,7 +2,6 @@
   "name": "@deepractice-ai/agent-sdk",
   "version": "0.3.0",
   "description": "High-performance Agent SDK with RxJS event-driven architecture",
-  "private": true,
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -13,9 +12,14 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "prepublishOnly": "pnpm build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -25,6 +29,24 @@
     "test:coverage": "vitest run --coverage",
     "test:ci": "vitest run"
   },
+  "keywords": [
+    "ai",
+    "agent",
+    "sdk",
+    "claude",
+    "rxjs",
+    "deepractice"
+  ],
+  "author": "Deepractice Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deepractice/Agent/issues"
+  },
+  "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@anthropic-ai/sdk": "^0.32.1",
@@ -40,5 +62,8 @@
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
