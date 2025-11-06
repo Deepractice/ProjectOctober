@@ -41,7 +41,7 @@ jobs:
           VERSION=${VERSION#v}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Build and Push Agent Image
+      - name: Build and Push Agent Image to Docker Hub
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -54,23 +54,51 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Log in to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
+      - name: Build and Push Agent Image to Aliyun ACR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/agent/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:latest
+            ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}
+          cache-from: type=gha
+
       - name: Summary
         run: |
           echo "## ✅ Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Docker Hub:**" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Hub" >> $GITHUB_STEP_SUMMARY
           echo "- \`deepracticexs/agent:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`deepracticexs/agent:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Pull the image" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "### ☁️ Aliyun Container Registry" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Run the container" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Usage (Docker Hub)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "docker run -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
           echo "  -e ANTHROPIC_API_KEY=your_api_key \\" >> $GITHUB_STEP_SUMMARY
           echo "  deepracticexs/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Usage (Aliyun ACR - China)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 5200:5200 \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -e ANTHROPIC_API_KEY=your_api_key \\" >> $GITHUB_STEP_SUMMARY
+          echo "  ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/agent:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
