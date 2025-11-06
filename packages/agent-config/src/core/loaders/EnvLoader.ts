@@ -1,39 +1,32 @@
-import { config } from "dotenv";
-import { resolve } from "path";
-import { existsSync } from "fs";
 import { Loader } from "./Loader.js";
 
 /**
- * Loads configuration from .env file
- * Supports loading from monorepo root
+ * Loads configuration from process.env
+ *
+ * NOTE: This loader does NOT handle .env file loading.
+ * Environment files should be loaded by dotenv at application entry point.
+ *
+ * Responsibility:
+ * - Read values from process.env (already populated by dotenv)
+ * - Map environment variable names to config keys
+ * - Return config object for validation
+ *
+ * File loading is handled by dotenv in the service entry point:
+ * - .env.local (highest priority - local secrets and overrides)
+ * - .env.[environment] (medium - development/test/production)
+ * - .env (lowest - defaults)
  */
 export class EnvLoader implements Loader {
   priority = 10; // Base priority
-  private envPath: string;
-
-  constructor(envPath?: string) {
-    // Default to monorepo root .env
-    this.envPath = envPath || resolve(process.cwd(), ".env");
-  }
 
   async isAvailable(): Promise<boolean> {
-    return existsSync(this.envPath);
+    // Always available - process.env always exists
+    return true;
   }
 
   async load(): Promise<Record<string, unknown> | null> {
-    if (!(await this.isAvailable())) {
-      return null;
-    }
-
-    // Load .env file
-    const result = config({ path: this.envPath });
-
-    if (result.error) {
-      console.warn(`Failed to load .env from ${this.envPath}:`, result.error.message);
-      return null;
-    }
-
     // Map environment variables to config keys
+    // Values are already in process.env (loaded by dotenv)
     return {
       port: process.env.PORT,
       nodeEnv: process.env.NODE_ENV,

@@ -35,19 +35,14 @@ export async function updateConfig(
 
 /**
  * Update configuration from UI
- * This sets the UI loader cache with highest priority
+ * Currently not supported - UILoader has been removed
+ * Use updateConfig() with persist option instead
+ *
+ * @deprecated Use updateConfig(updates, { persist: true }) instead
  */
-export async function updateConfigFromUI(updates: ConfigUpdate): Promise<Config> {
-  const mgr = getManager();
-  const uiLoader = mgr.getUILoader();
-
-  if (!uiLoader) {
-    throw new Error("UILoader not available");
-  }
-
-  // Set UI config (will override env and db)
-  uiLoader.setConfig(updates as Record<string, unknown>);
-
-  // Reload to apply changes
-  return (await mgr.getConfig(true)) as Config;
+export async function updateConfigFromUI(_updates: ConfigUpdate): Promise<Config> {
+  throw new Error(
+    "updateConfigFromUI is not supported. UILoader has been removed. " +
+      "Use updateConfig(updates, { persist: true }) instead."
+  );
 }

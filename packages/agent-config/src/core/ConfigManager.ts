@@ -2,15 +2,13 @@ import { z } from "zod";
 import { Loader } from "./loaders/Loader.js";
 import { Persister } from "./persisters/Persister.js";
 import { EnvLoader } from "./loaders/EnvLoader.js";
-import { UILoader } from "./loaders/UILoader.js";
-import { DBLoader } from "./loaders/DBLoader.js";
 import { developmentConfigSchema, runtimeConfigSchema } from "./schemas/index.js";
 
 export type ConfigMode = "development" | "runtime";
 
 export interface ConfigManagerOptions {
   mode?: ConfigMode;
-  envPath?: string;
+  // envPath is deprecated - dotenv handles file loading at service entry point
 }
 
 /**
@@ -25,14 +23,15 @@ export class ConfigManager {
 
   constructor(options: ConfigManagerOptions = {}) {
     this.mode = options.mode || "development";
-    this.initializeDefaultLoaders(options.envPath);
+    this.initializeDefaultLoaders();
   }
 
   /**
-   * Initialize default loaders (can be overridden for testing)
+   * Initialize default loaders
    */
-  private initializeDefaultLoaders(envPath?: string): void {
-    this.loaders = [new EnvLoader(envPath), new DBLoader(), new UILoader()];
+  private initializeDefaultLoaders(): void {
+    // EnvLoader reads from process.env (dotenv handles file loading at service entry)
+    this.loaders = [new EnvLoader()];
   }
 
   /**
@@ -54,24 +53,38 @@ export class ConfigManager {
   /**
    * Load configuration from all available sources
    * Higher priority loaders override lower priority ones
+   *
+   * Current implementation:
+   * - EnvLoader (priority: 10) - reads from process.env
+   *
+   * Future: Can add custom loaders via addLoader() for database, UI, etc.
    */
   async load(): Promise<Record<string, unknown>> {
-    const configs: Record<string, unknown>[] = [];
+    // Load from all loaders and collect their configs
+    const loadedConfigs: Array<{ priority: number; config: Record<string, unknown> }> = [];
 
-    // Load from all available loaders
     for (const loader of this.loaders) {
       if (await loader.isAvailable()) {
         const config = await loader.load();
         if (config) {
-          configs.push(config);
+          loadedConfigs.push({ priority: loader.priority, config });
         }
       }
     }
 
-    // Merge configurations (reverse order, so higher priority wins)
-    const mergedConfig = configs.reverse().reduce((acc, config) => {
-      return { ...acc, ...config };
-    }, {});
+    // Sort by priority (ascending: lowest to highest)
+    // This ensures that when we merge, higher priority configs overwrite lower ones
+    loadedConfigs.sort((a, b) => a.priority - b.priority);
+
+    // Merge configurations: higher priority overwrites lower priority
+    // Example: { ...envConfig, ...dbConfig, ...uiConfig }
+    // Result: uiConfig values win, then dbConfig, then envConfig
+    const mergedConfig = loadedConfigs.reduce(
+      (acc, { config }) => {
+        return { ...acc, ...config };
+      },
+      {} as Record<string, unknown>
+    );
 
     // Validate against schema
     const validatedConfig = this.validate(mergedConfig);
@@ -152,12 +165,5 @@ export class ConfigManager {
    */
   clearCache(): void {
     this.cachedConfig = null;
-  }
-
-  /**
-   * Get the UILoader instance (for setting UI config)
-   */
-  getUILoader(): UILoader | undefined {
-    return this.loaders.find((l) => l instanceof UILoader) as UILoader | undefined;
   }
 }

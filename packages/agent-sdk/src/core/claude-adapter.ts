@@ -28,15 +28,18 @@ export class ClaudeAdapter {
   async *stream(prompt: string, options: SessionOptions = {}): AsyncGenerator<SDKMessage> {
     const sdkOptions = this.mapOptions(options);
 
+    // Log all key parameters for troubleshooting
     this.logger.info(
       {
         promptLength: prompt.length,
         model: sdkOptions.model,
-        resume: !!options.resume,
-        hasEnv: !!sdkOptions.env,
-        envPath: sdkOptions.env?.PATH?.substring(0, 100),
+        cwd: sdkOptions.cwd,
+        permissionMode: sdkOptions.permissionMode,
+        hasApiKey: !!sdkOptions.env?.ANTHROPIC_API_KEY,
+        hasBaseUrl: !!sdkOptions.env?.ANTHROPIC_BASE_URL,
+        baseUrl: sdkOptions.env?.ANTHROPIC_BASE_URL,
       },
-      "Starting Claude SDK stream"
+      "Starting Claude SDK stream with options"
     );
 
     try {
@@ -46,12 +49,26 @@ export class ClaudeAdapter {
       });
 
       let messageCount = 0;
+      let lastMessageTime = Date.now();
+
       for await (const message of queryInstance) {
         messageCount++;
+        lastMessageTime = Date.now();
+
+        this.logger.info(
+          {
+            messageCount,
+            messageType: message.type,
+            // @ts-expect-error - subtype may not exist on all message types
+            messageSubtype: message.subtype,
+          },
+          "Received message from Claude SDK"
+        );
+
         yield message;
       }
 
-      this.logger.debug({ messageCount }, "Claude SDK stream completed");
+      this.logger.info({ messageCount }, "Claude SDK stream completed");
     } catch (err) {
       this.logger.error({ err, promptLength: prompt.length }, "Claude SDK stream failed");
       throw err;
@@ -71,6 +88,10 @@ export class ClaudeAdapter {
       // Use process.execPath to get the actual node binary that's running this code
       // This works with nvm, volta, or any node version manager
       executable: process.execPath,
+      // Capture stderr output from Claude SDK subprocess
+      stderr: (data: string) => {
+        this.logger.error({ stderr: data }, "Claude SDK stderr output");
+      },
     };
   }
 

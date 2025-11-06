@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Server Entry Point
- * Loads configuration and starts the Express + WebSocket server
+ * Loads environment files with dotenv, then initializes configuration
  */
 import http from "http";
 import fs from "fs";
@@ -9,6 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
+import { config as dotenvConfig } from "dotenv";
 import { getConfig } from "@deepractice-ai/agent-config";
 
 import { createApp } from "./app.js";
@@ -20,11 +21,22 @@ import { logger } from "./utils/logger.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize configuration
-// From src/index.js, monorepo root is 3 levels up: ../../../.env
-const envPath = path.resolve(__dirname, "../../../.env");
+// Load environment files with dotenv
+// From src/index.js, monorepo root is 3 levels up
+const rootDir = path.resolve(__dirname, "../../..");
+const nodeEnv = process.env.NODE_ENV || "development";
 
-logger.info({ __dirname, envPath }, "Resolving .env path");
+// Load in priority order (higher priority = loaded last, overrides earlier)
+// 1. .env (defaults)
+dotenvConfig({ path: path.join(rootDir, ".env") });
+
+// 2. .env.[environment] (environment-specific)
+dotenvConfig({ path: path.join(rootDir, `.env.${nodeEnv}`), override: true });
+
+// 3. .env.local (highest priority - local secrets and overrides)
+dotenvConfig({ path: path.join(rootDir, ".env.local"), override: true });
+
+logger.info({ nodeEnv, rootDir }, "Environment files loaded");
 logger.info(
   {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY
@@ -36,9 +48,10 @@ logger.info(
   "Environment variables from process.env"
 );
 
-const configInstance = await getConfig({ envPath });
+// Initialize agent-config (reads from process.env, validates, merges sources)
+const configInstance = await getConfig();
 
-logger.info({ envPath }, "Configuration loaded from file");
+logger.info("Configuration loaded and validated");
 logger.info(
   {
     anthropicApiKey: configInstance.anthropicApiKey

@@ -8,15 +8,26 @@ Agent uses `@deepractice-ai/agent-config` for unified configuration management. 
 
 **Development Environment:**
 
-1. Copy `.env.example` to `.env`
-2. Update required values (especially `ANTHROPIC_API_KEY`)
-3. Run `pnpm dev`
+1. **Setup secrets** (REQUIRED - first time only):
+
+   ```bash
+   cp env/.env.secret.example env/.env.secret
+   # Edit env/.env.secret and add your ANTHROPIC_API_KEY
+   ```
+
+2. **Run the project**:
+   ```bash
+   pnpm dev
+   ```
 
 The configuration system will automatically:
 
-- Load `.env` from monorepo root
+- Load sensitive credentials from `env/.env.secret`
+- Load environment-specific config from `env/.env.development`
 - Validate all values against schema
 - Provide sensible defaults for optional fields
+
+See [env/README.md](../env/README.md) for detailed environment configuration guide.
 
 ## Configuration Architecture
 
@@ -27,7 +38,7 @@ The configuration system will automatically:
 └─────────────────────────────────────┘
             │
             ├─ Loaders (Input)
-            │  ├─ EnvLoader (priority: 10)    → .env file
+            │  ├─ EnvLoader (priority: 10)    → env/[environment]/.env, env/[environment]/.env.local, env/.env.secret
             │  ├─ DBLoader (priority: 20)     → Database (future)
             │  └─ UILoader (priority: 30)     → Web UI (future)
             │
@@ -36,7 +47,7 @@ The configuration system will automatically:
             │  └─ Production mode (strict)
             │
             └─ Persisters (Output)
-               ├─ FilePersister → .env.local
+               ├─ FilePersister → env/.env.local
                └─ DBPersister → Database (future)
 ```
 
@@ -81,17 +92,32 @@ The configuration system will automatically:
 
 When multiple sources provide the same configuration, **higher priority wins**:
 
+### Between Sources (Loaders)
+
 1. **UILoader (30)**: User input from web interface (future)
 2. **DBLoader (20)**: Persisted configuration from database (future)
-3. **EnvLoader (10)**: Environment variables from `.env` file
+3. **EnvLoader (10)**: Environment variables from `env/` directory
 
-Example:
+### Within EnvLoader (Environment Files)
+
+Files are loaded in the following order (later files override earlier):
+
+1. `env/.env` (lowest - deprecated, for backward compatibility)
+2. `env/[environment]/.env` (environment-specific config based on NODE_ENV)
+3. `env/[environment]/.env.local` (local overrides for specific environment)
+4. `env/.env.secret` (highest - sensitive credentials, shared across all environments)
+
+Example (NODE_ENV=development):
 
 ```
-PORT in .env         = 5201
-PORT in database     = 5300  ← Overrides .env
-PORT from UI         = 5400  ← Overrides database and .env
-Final PORT           = 5400
+PORT in env/.env                        = 5201
+PORT in env/development/.env            = 5200  ← Overrides env/.env
+PORT in env/development/.env.local      = 5300  ← Overrides above
+ANTHROPIC_API_KEY in env/.env.secret    = sk-xxx  ← Overrides all env files (highest priority)
+PORT in database                        = 5400  ← Overrides all env files (DBLoader priority 20)
+PORT from UI                            = 5500  ← Overrides everything (UILoader priority 30)
+Final PORT                              = 5500
+Final ANTHROPIC_API_KEY                 = sk-xxx (from .env.secret, no DB/UI override)
 ```
 
 ## Usage in Code
@@ -137,50 +163,87 @@ No need for agent-config in frontend (yet).
 - Relaxed validation
 - `ANTHROPIC_API_KEY` can be empty (warning only)
 - Extra keys allowed in config
-- Uses `.env` from monorepo root
+- Uses `env/development/.env` by default
+- Can be overridden with `env/development/.env.local`
 
 ### Production Mode
 
 - Strict validation
 - All required fields must be present
 - No extra keys allowed
-- Uses environment variables from deployment platform
+- Uses `env/production/.env` or environment variables from deployment platform
 
 ## Configuration Files
 
-### `.env` (Root directory)
+All environment files are now located in the `env/` directory for better organization.
 
-Development configuration (committed to git):
+### `env/.env.secret` (REQUIRED)
 
-```bash
-# Default development settings
-PORT=5201
-VITE_PORT=5200
-NODE_ENV=development
-FRONTEND_URL=http://localhost:5200
-ANTHROPIC_BASE_URL=https://api.anthropic.com
-PROJECT_PATH=.
-CONTEXT_WINDOW=160000
-LOG_LEVEL=info
-
-# Required: Add your API key
-ANTHROPIC_API_KEY=your_api_key_here
-```
-
-### `.env.local` (Root directory)
-
-Personal overrides (not committed to git):
+**Sensitive credentials** - gitignored, shared across all environments:
 
 ```bash
-# Override for your local setup
-ANTHROPIC_API_KEY=sk-your-actual-key
+# Copy from env/.env.secret.example
+ANTHROPIC_API_KEY=your-actual-api-key
 ANTHROPIC_BASE_URL=https://relay.deepractice.ai/api
-PROJECT_PATH=/Users/you/projects/myproject
 ```
 
-### `.env.example` (Root directory)
+**Setup**:
 
-Template for new developers (committed to git).
+```bash
+cp env/.env.secret.example env/.env.secret
+# Edit and add your credentials
+```
+
+### `env/development/.env`
+
+Development environment configuration (committed to git):
+
+```bash
+# Development settings (no secrets!)
+PORT=5200
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+PROJECT_PATH=/Users/sean/Deepractice/projects/Agent/demo
+```
+
+### `env/test/.env`
+
+Test environment configuration (committed to git):
+
+```bash
+# Test settings (no secrets!)
+PORT=5201
+NODE_ENV=test
+FRONTEND_URL=http://localhost:5174
+PROJECT_PATH=/tmp/agent-test-workspace
+```
+
+### `env/production/.env`
+
+Production environment configuration (committed to git):
+
+```bash
+# Production settings (no secrets!)
+PORT=5200
+NODE_ENV=production
+FRONTEND_URL=https://agent.deepractice.ai
+PROJECT_PATH=/var/lib/agent/workspace
+```
+
+### `env/[environment]/.env.local`
+
+Personal local overrides for **non-sensitive** config per environment (gitignored, optional):
+
+```bash
+# Example: env/development/.env.local
+PROJECT_PATH=/Users/you/custom/path
+PORT=5300
+LOG_LEVEL=debug
+```
+
+### `env/.env.example`
+
+General template for new developers (committed to git).
 
 ## Docker Configuration
 
@@ -201,10 +264,18 @@ services:
       - ${PROJECT_PATH:-.}:/project
 ```
 
-**Run with .env:**
+**Run with environment file:**
 
 ```bash
-docker-compose --env-file .env up
+# Create your own Docker env file based on example
+cp env/.env.example env/.env.docker
+# Edit env/.env.docker with your values
+
+# Then run with it
+docker-compose --env-file env/.env.docker up
+
+# Or use production env file
+docker-compose --env-file env/.env.production up
 ```
 
 ## Troubleshooting
@@ -222,8 +293,8 @@ const port = config().port; // ← Will throw if not initialized
 **Check .env location:**
 
 ```bash
-# Verify .env exists at monorepo root
-ls -la /path/to/Agent/.env
+# Verify environment files exist in env/ directory
+ls -la /path/to/Agent/env/
 ```
 
 ### Validation errors
@@ -304,15 +375,19 @@ if (!result.valid) {
 
 ### ✅ Do
 
-- Use `.env` for default development settings
-- Use `.env.local` for personal overrides
-- Commit `.env` and `.env.example` to git
-- Use environment variables in production
+- **Put ALL secrets** in `env/.env.secret` (API keys, tokens, passwords)
+- Use `env/[environment]/.env` for environment-specific non-sensitive config
+- Use `env/[environment]/.env.local` for personal non-sensitive overrides
+- Commit `env/development/.env`, `env/test/.env`, `env/production/.env` to git
+- Commit `env/.env.secret.example` (with empty values) to git
+- Use environment variables in CI/CD for production
 - Validate configuration at startup
 
 ### ❌ Don't
 
-- Don't commit secrets to `.env` (use `.env.local`)
+- **NEVER commit `env/.env.secret`** to git (contains real credentials)
+- Don't put secrets in environment templates (`env/development/.env`, etc.)
+- Don't put secrets in `.env.local` (use `env/.env.secret` instead)
 - Don't hardcode configuration values
 - Don't bypass schema validation
 - Don't modify `dist/` files directly
