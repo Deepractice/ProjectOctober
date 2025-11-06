@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-service",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Agent UI Backend API Service",
   "private": true,
   "type": "module",
