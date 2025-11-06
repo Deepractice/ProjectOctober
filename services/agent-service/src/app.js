@@ -72,9 +72,33 @@ export function createApp(wss) {
       res.sendFile(path.join(distPath, "index.html"));
     });
   } else {
-    // Development: 404 for undefined routes
-    app.use((_req, res) => {
-      res.status(404).json({ error: "Route not found" });
+    console.log("🔧 Development mode: Proxying to Vite dev server at http://localhost:5173");
+
+    // Development: proxy to Vite dev server
+    app.use(async (req, res) => {
+      const viteUrl = `http://localhost:5173${req.url}`;
+      try {
+        const fetch = (await import("node-fetch")).default;
+        const response = await fetch(viteUrl, {
+          method: req.method,
+          headers: req.headers,
+        });
+
+        // Copy status and headers
+        res.status(response.status);
+        response.headers.forEach((value, name) => {
+          res.setHeader(name, value);
+        });
+
+        // Stream response body
+        response.body.pipe(res);
+      } catch (error) {
+        console.error("❌ Proxy error:", error.message);
+        res.status(502).json({
+          error: "Vite dev server not available",
+          message: "Make sure Vite is running on port 5173",
+        });
+      }
     });
   }
 

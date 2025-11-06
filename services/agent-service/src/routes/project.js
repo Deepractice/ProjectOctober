@@ -101,7 +101,7 @@ router.get("/files/content", async (req, res) => {
     // Check if file exists
     try {
       await fsPromises.access(resolved);
-    } catch (error) {
+    } catch (_error) {
       return res.status(404).json({ error: "File not found" });
     }
 
@@ -184,7 +184,7 @@ router.get("/files", async (req, res) => {
     // Check if path exists
     try {
       await fsPromises.access(actualPath);
-    } catch (e) {
+    } catch (_e) {
       return res.status(404).json({ error: `Project path not found: ${actualPath}` });
     }
 
@@ -237,7 +237,7 @@ async function getFileTree(dirPath, maxDepth = 3, currentDepth = 0, showHidden =
         item.permissions =
           ((mode >> 6) & 7).toString() + ((mode >> 3) & 7).toString() + (mode & 7).toString();
         item.permissionsRwx = permToRwx(ownerPerm) + permToRwx(groupPerm) + permToRwx(otherPerm);
-      } catch (statError) {
+      } catch (_statError) {
         // If stat fails, provide default values
         item.size = 0;
         item.modified = null;
@@ -251,7 +251,7 @@ async function getFileTree(dirPath, maxDepth = 3, currentDepth = 0, showHidden =
           // Check if we can access the directory before trying to read it
           await fsPromises.access(item.path, fs.constants.R_OK);
           item.children = await getFileTree(item.path, maxDepth, currentDepth + 1, showHidden);
-        } catch (e) {
+        } catch (_e) {
           // Silently skip directories we can't access
           item.children = [];
         }

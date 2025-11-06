@@ -8,7 +8,6 @@ import type {
   Session,
 } from "~/types";
 import { SessionManager } from "./session-manager";
-import { WarmupPool } from "./warmup-pool";
 import { createSDKLogger } from "./utils/logger";
 import type { Logger } from "@deepracticex/logger";
 
@@ -17,7 +16,6 @@ import type { Logger } from "@deepracticex/logger";
  */
 export class ClaudeAgent implements Agent {
   private sessionManager: SessionManager;
-  private warmupPool: WarmupPool;
   private initialized = false;
   private logger: Logger;
 
@@ -25,7 +23,6 @@ export class ClaudeAgent implements Agent {
     this.logger = createSDKLogger(config.logger);
     this.logger.debug({ workspace: config.workspace, model: config.model }, "Creating ClaudeAgent");
     this.sessionManager = new SessionManager(config, this.logger);
-    this.warmupPool = new WarmupPool(config, this.logger);
   }
 
   async initialize(): Promise<void> {
@@ -37,12 +34,6 @@ export class ClaudeAgent implements Agent {
     this.logger.info("Initializing ClaudeAgent");
 
     try {
-      // Initialize warmup pool first
-      await this.warmupPool.initialize();
-
-      // Connect pool to session manager
-      this.sessionManager.setWarmupPool(this.warmupPool);
-
       // Load historical sessions
       await this.sessionManager.loadHistoricalSessions();
 
@@ -57,7 +48,6 @@ export class ClaudeAgent implements Agent {
   destroy(): void {
     this.logger.info("Destroying ClaudeAgent");
     this.sessionManager.destroy();
-    this.warmupPool.destroy();
     this.initialized = false;
     this.logger.debug("ClaudeAgent destroyed");
   }
@@ -97,7 +87,7 @@ export class ClaudeAgent implements Agent {
   getStatus(): AgentStatus {
     return {
       ready: this.initialized,
-      warmupPoolSize: this.warmupPool.size(),
+      warmupPoolSize: 0,
       activeSessions: this.sessionManager.activeCount(),
       metrics: this.sessionManager.getMetrics(),
     };

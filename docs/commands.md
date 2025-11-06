@@ -29,11 +29,17 @@ pnpm dev
 
 Starts the complete development environment:
 
-1. Builds `@deepractice-ai/agent-ui` library (if needed)
-2. Starts `@deepractice-ai/agent-service` backend
-3. Starts `@deepractice-ai/agent-web` frontend
+1. Starts Vite dev server on http://localhost:5173 (frontend hot reload)
+2. Starts agent-service on http://localhost:5200 (unified API + frontend proxy)
 
-Access the application at http://localhost:5200
+**Access the application at http://localhost:5200**
+
+In development mode:
+
+- Frontend changes hot-reload via Vite
+- Backend proxies all non-API requests to Vite
+- API endpoints available at `/api/*`
+- WebSocket at `ws://localhost:5200/ws`
 
 ### Build
 
@@ -103,7 +109,7 @@ pnpm start
 pnpm lint
 ```
 
-**Port:** 5201 (configured via `PORT` env var)
+**Port:** 5200 (configured via `PORT` env var, default 5200)
 
 ### apps/agent-web
 
@@ -124,7 +130,7 @@ pnpm lint
 pnpm typecheck
 ```
 
-**Port:** 5200 (configured via `VITE_PORT` env var)
+**Port:** 5173 (Vite default dev server port)
 
 ### packages/agent-ui
 
@@ -213,23 +219,29 @@ Commands are orchestrated by Turborepo (`turbo.json`):
               │
               ▼
 ┌─────────────────────────────────────────┐
-│ Turbo checks dependencies               │
-│ - agent-web depends on agent-ui         │
+│ Start Vite dev server (background)     │
+│ - Port 5173                             │
+│ - Hot reload enabled                    │
 └─────────────┬───────────────────────────┘
               │
               ▼
 ┌─────────────────────────────────────────┐
-│ Build packages/agent-ui                 │
-│ - tsc -p tsconfig.build.json            │
-│ - vite build                            │
-│ Output: dist/{index.js,index.cjs,*.d.ts}│
+│ Wait for Vite to be ready               │
+│ - http://localhost:5173                 │
 └─────────────┬───────────────────────────┘
               │
               ▼
 ┌─────────────────────────────────────────┐
-│ Start services in parallel              │
-│ ├─ agent-service (port 5201)            │
-│ └─ agent-web (port 5200)                │
+│ Start agent-service                     │
+│ - Port 5200                             │
+│ - Proxies to Vite for frontend assets  │
+│ - Serves API at /api/*                  │
+│ - WebSocket at /ws                      │
+└─────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────┐
+│ ✅ Ready at http://localhost:5200       │
 └─────────────────────────────────────────┘
 ```
 
@@ -249,13 +261,14 @@ See `.env.example` for all available variables.
 **Common variables:**
 
 ```bash
-# Backend
-PORT=5201                    # Agent service port
-DATABASE_PATH=./data/agent.db
-JWT_SECRET=your-secret-key
+# Agent Service
+PORT=5200                       # Agent service port (unified entry point)
+ANTHROPIC_API_KEY=sk-xxx        # Required for Claude SDK
+ANTHROPIC_BASE_URL=https://...  # Optional, custom API endpoint
+PROJECT_PATH=/path/to/project   # Default workspace for Claude SDK
 
-# Frontend
-VITE_PORT=5200              # Web app port
+# Development
+NODE_ENV=development            # Environment mode
 ```
 
 ## Troubleshooting
@@ -275,8 +288,8 @@ pnpm build
 Check and kill the process:
 
 ```bash
-lsof -ti:5200 | xargs kill -9  # Web
-lsof -ti:5201 | xargs kill -9  # Service
+lsof -ti:5200 | xargs kill -9  # Agent service
+lsof -ti:5173 | xargs kill -9  # Vite dev server
 ```
 
 ### Build cache issues

@@ -9,19 +9,19 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        "~": path.resolve(__dirname, "../../packages/agent-ui/src"),
+        "~": path.resolve(__dirname, "./src"),
       },
     },
     server: {
-      port: parseInt(env.VITE_PORT) || 5200,
+      // Use Vite default port (5173), no custom configuration needed
       proxy: {
-        "/api": `http://localhost:${env.PORT || 5201}`,
+        "/api": `http://localhost:${env.PORT || 5200}`,
         "/ws": {
-          target: `ws://localhost:${env.PORT || 5201}`,
+          target: `ws://localhost:${env.PORT || 5200}`,
           ws: true,
         },
         "/shell": {
-          target: `ws://localhost:${env.PORT || 5201}`,
+          target: `ws://localhost:${env.PORT || 5200}`,
           ws: true,
         },
       },

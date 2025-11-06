@@ -1,4 +1,5 @@
 import { Observable, Subject } from "rxjs";
+import { randomUUID } from "crypto";
 import type { Logger } from "@deepracticex/logger";
 import type {
   Session,
@@ -72,8 +73,41 @@ export class ClaudeSession implements Session {
     }
 
     this.logger.debug(
-      { sessionId: this.id, contentLength: content.length, hasRealSessionId: !!this.realSessionId },
-      "Sending message"
+      {
+        sessionId: this.id,
+        contentPreview: content.substring(0, 50),
+        contentLength: content.length,
+        currentMessagesCount: this.messages.length,
+        hasRealSessionId: !!this.realSessionId,
+        state: this._state,
+      },
+      "Send called"
+    );
+
+    // ✅ FIX: Manually add user message BEFORE sending to Claude SDK
+    // Claude SDK doesn't return user messages in the stream, so we must add it ourselves
+    const userMessage: AnyMessage = {
+      id: randomUUID(),
+      type: "user",
+      content,
+      timestamp: new Date(),
+    };
+
+    this.logger.debug(
+      {
+        sessionId: this.id,
+        messageId: userMessage.id,
+        contentPreview: content.substring(0, 50),
+      },
+      "Adding user message manually"
+    );
+
+    this.messages.push(userMessage);
+    this.messageSubject.next(userMessage);
+
+    this.logger.debug(
+      { sessionId: this.id, totalMessages: this.messages.length },
+      "User message added"
     );
 
     const prevState = this._state;
@@ -87,20 +121,45 @@ export class ClaudeSession implements Session {
         ...(this.realSessionId && { resume: this.realSessionId }),
       };
 
+      this.logger.debug(
+        { sessionId: this.id, hasResume: !!this.realSessionId },
+        "Starting SDK stream"
+      );
+
       let messageCount = 0;
       for await (const sdkMessage of this.adapter.stream(content, streamOptions)) {
+        messageCount++;
+        this.logger.debug(
+          {
+            sessionId: this.id,
+            sdkMessageType: sdkMessage.type,
+            hasSessionId: !!sdkMessage.session_id,
+            messageCount,
+          },
+          "Received SDK message"
+        );
+
         // Capture session_id from first message
         if (!this.realSessionId && sdkMessage.session_id) {
           this.realSessionId = sdkMessage.session_id;
-          this.logger.debug(
+          this.logger.info(
             { sessionId: this.id, realSessionId: this.realSessionId },
-            "Captured real session ID"
+            "Captured real session ID from SDK"
           );
         }
 
         this.processSDKMessage(sdkMessage);
-        messageCount++;
       }
+
+      this.logger.info(
+        {
+          sessionId: this.id,
+          messagesReceived: messageCount,
+          totalMessagesNow: this.messages.length,
+          messageTypes: this.messages.map((m) => m.type),
+        },
+        "SDK stream completed"
+      );
 
       // After streaming completes, session becomes idle (waiting for next input)
       this._state = "idle";
@@ -120,12 +179,49 @@ export class ClaudeSession implements Session {
   }
 
   private processSDKMessage(sdkMessage: SDKMessage): void {
-    // Transform SDK message to our format
-    const message = this.transformSDKMessage(sdkMessage);
+    this.logger.debug(
+      {
+        sessionId: this.id,
+        sdkType: sdkMessage.type,
+        currentMessagesCount: this.messages.length,
+        hasUuid: !!sdkMessage.uuid,
+      },
+      "Processing SDK message"
+    );
 
-    if (message) {
-      this.messages.push(message);
-      this.messageSubject.next(message);
+    // Transform SDK message to our format (may return multiple messages)
+    const messages = this.transformSDKMessage(sdkMessage);
+
+    if (messages && messages.length > 0) {
+      this.logger.debug(
+        { sessionId: this.id, transformedCount: messages.length },
+        "Transformed messages"
+      );
+
+      for (const message of messages) {
+        const msg = message as any;
+        this.logger.debug(
+          {
+            sessionId: this.id,
+            messageType: message.type,
+            messageId: message.id,
+            isToolUse: msg.isToolUse,
+            toolName: msg.toolName,
+            contentPreview: msg.content?.substring(0, 50),
+          },
+          "Adding message to stream"
+        );
+
+        this.messages.push(message);
+        this.messageSubject.next(message);
+      }
+
+      this.logger.debug(
+        { sessionId: this.id, totalMessages: this.messages.length },
+        "Messages added to session"
+      );
+    } else {
+      this.logger.debug({ sessionId: this.id }, "No messages after transform");
     }
 
     // Extract token usage from result messages
@@ -134,28 +230,134 @@ export class ClaudeSession implements Session {
     }
   }
 
-  private transformSDKMessage(sdkMessage: SDKMessage): AnyMessage | null {
+  private transformSDKMessage(sdkMessage: SDKMessage): AnyMessage[] {
+    const results: AnyMessage[] = [];
+    const timestamp = new Date();
+
     // Map SDK message types to our message types
     if (sdkMessage.type === "user") {
-      return {
+      const content = sdkMessage.message.content;
+
+      this.logger.debug(
+        {
+          sessionId: this.id,
+          isArray: Array.isArray(content),
+          contentType: typeof content,
+          contentPreview: Array.isArray(content)
+            ? content.map((b) => b.type).join(", ")
+            : String(content).substring(0, 100),
+        },
+        "Processing user message"
+      );
+
+      // Check if this is a tool result message (should not be displayed as user message)
+      if (Array.isArray(content)) {
+        const hasToolResult = content.some((block) => block.type === "tool_result");
+        if (hasToolResult) {
+          // Tool results are handled separately, don't show as user message
+          this.logger.debug({ sessionId: this.id }, "Skipping tool_result user message");
+          return [];
+        }
+      }
+
+      // Regular user message
+      const textContent = this.extractTextContent(content);
+      this.logger.debug(
+        {
+          sessionId: this.id,
+          contentLength: textContent.length,
+          contentPreview: textContent.substring(0, 50),
+        },
+        "Creating user message"
+      );
+
+      results.push({
         id: sdkMessage.uuid || `user-${Date.now()}`,
         type: "user",
-        content: this.extractTextContent(sdkMessage.message.content),
-        timestamp: new Date(),
-      };
+        content: textContent,
+        timestamp,
+      });
+      return results;
     }
 
     if (sdkMessage.type === "assistant") {
-      return {
-        id: sdkMessage.uuid || `assistant-${Date.now()}`,
-        type: "assistant",
-        content: this.extractTextContent(sdkMessage.message.content),
-        timestamp: new Date(),
-      };
+      const content = sdkMessage.message.content;
+
+      this.logger.debug(
+        {
+          sessionId: this.id,
+          isArray: Array.isArray(content),
+          blockCount: Array.isArray(content) ? content.length : 0,
+          blockTypes: Array.isArray(content) ? content.map((b) => b.type).join(", ") : "string",
+        },
+        "Processing assistant message"
+      );
+
+      if (Array.isArray(content)) {
+        // Process each content block
+        for (const block of content) {
+          if (block.type === "text" && block.text) {
+            // Text content
+            this.logger.debug(
+              {
+                sessionId: this.id,
+                blockType: "text",
+                textLength: block.text.length,
+              },
+              "Creating assistant text message"
+            );
+            results.push({
+              id: sdkMessage.uuid || `assistant-${Date.now()}-${results.length}`,
+              type: "assistant",
+              content: block.text,
+              timestamp,
+            });
+          } else if (block.type === "tool_use") {
+            // Tool use
+            this.logger.debug(
+              {
+                sessionId: this.id,
+                blockType: "tool_use",
+                toolName: block.name,
+                toolId: block.id,
+              },
+              "Creating tool use message"
+            );
+            results.push({
+              id: sdkMessage.uuid || `tool-${Date.now()}-${results.length}`,
+              type: "assistant",
+              content: "",
+              timestamp,
+              isToolUse: true,
+              toolName: block.name,
+              toolInput: block.input ? JSON.stringify(block.input, null, 2) : "",
+              toolId: block.id,
+              toolResult: null,
+            } as any);
+          }
+        }
+      } else {
+        // String content (fallback)
+        const textContent = this.extractTextContent(content);
+        if (textContent) {
+          this.logger.debug(
+            { sessionId: this.id, contentLength: textContent.length },
+            "Creating assistant string message"
+          );
+          results.push({
+            id: sdkMessage.uuid || `assistant-${Date.now()}`,
+            type: "assistant",
+            content: textContent,
+            timestamp,
+          });
+        }
+      }
+
+      return results;
     }
 
-    // System messages don't need to be exposed
-    return null;
+    // System messages or other types don't need to be exposed
+    return [];
   }
 
   /**

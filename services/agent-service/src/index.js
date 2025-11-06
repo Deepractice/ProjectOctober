@@ -81,7 +81,8 @@ wss.on("connection", (ws, request) => {
 
   if (pathname === "/shell") {
     handleShellConnection(ws);
-  } else if (pathname === "/ws") {
+  } else if (pathname === "/ws" || pathname === "/") {
+    // Accept both /ws and / (root path from dev proxy)
     handleChatConnection(ws, connectedClients);
   } else {
     console.log("❌ Unknown WebSocket path:", pathname);
@@ -92,6 +93,37 @@ wss.on("connection", (ws, request) => {
 // Start server
 async function startServer() {
   try {
+    // Validate PROJECT_PATH before starting
+    const projectPath = configInstance.projectPath;
+    if (!projectPath) {
+      console.error("❌ PROJECT_PATH is not configured in .env");
+      console.error("   Please set PROJECT_PATH to a valid directory path");
+      process.exit(1);
+    }
+
+    // Check if PROJECT_PATH exists, if not create it
+    if (!fs.existsSync(projectPath)) {
+      console.log(`📁 Creating workspace directory: ${projectPath}`);
+      try {
+        fs.mkdirSync(projectPath, { recursive: true });
+        console.log(`✅ Workspace directory created`);
+      } catch (err) {
+        console.error(`❌ Failed to create workspace directory: ${projectPath}`);
+        console.error(`   Error: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
+    // Verify it's a directory
+    const stats = fs.statSync(projectPath);
+    if (!stats.isDirectory()) {
+      console.error(`❌ PROJECT_PATH is not a directory: ${projectPath}`);
+      console.error("   Please set PROJECT_PATH to a valid directory path");
+      process.exit(1);
+    }
+
+    console.log(`📁 Workspace directory validated: ${projectPath}`);
+
     // Check if running in production mode (dist folder exists)
     const distIndexPath = path.join(__dirname, "../dist/index.html");
     const isProduction = fs.existsSync(distIndexPath);
@@ -102,7 +134,7 @@ async function startServer() {
 
     if (!isProduction) {
       console.log(
-        `⚠️  Note: Requests will be proxied to Vite dev server at http://localhost:${process.env.VITE_PORT || 5173}`
+        `⚠️  Note: In development, frontend should be served by Vite dev server at http://localhost:5173`
       );
     }
 

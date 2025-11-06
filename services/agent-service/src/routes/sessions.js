@@ -58,17 +58,32 @@ router.get("/:sessionId/messages", async (req, res) => {
     const { sessionId } = req.params;
     const { limit, offset = 0 } = req.query;
 
+    console.log("🟣 [API] GET /sessions/:sessionId/messages", {
+      sessionId,
+      limit,
+      offset,
+    });
+
     const agent = await getAgent();
     const session = agent.getSession(sessionId);
 
     if (!session) {
+      console.log("🟣 [API] Session not found:", sessionId);
       return res.status(404).json({ error: "Session not found" });
     }
 
     const messages = session.getMessages(limit ? parseInt(limit) : undefined, parseInt(offset));
 
+    console.log("🟣 [API] Returning messages:", {
+      sessionId,
+      messageCount: messages.length,
+      messageTypes: messages.map((m) => m.type),
+      messageIds: messages.map((m) => m.id),
+    });
+
     res.json({ messages });
   } catch (error) {
+    console.error("🟣 [API] Error loading messages:", error);
     res.status(500).json({ error: error.message });
   }
 });

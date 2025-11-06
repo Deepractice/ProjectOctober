@@ -23,9 +23,9 @@ echo "📂 Project root: $PROJECT_ROOT"
 cd "$PROJECT_ROOT"
 
 # Verify required files exist
-if [ ! -f "package.json" ] || [ ! -d "apps/agent-ui" ] || [ ! -d "services/agent-service" ]; then
+if [ ! -f "package.json" ] || [ ! -d "apps/agent-web" ] || [ ! -d "services/agent-service" ] || [ ! -d "packages/agent-sdk" ] || [ ! -d "packages/agent-config" ]; then
   echo "❌ Error: Not in project root or missing required directories"
-  echo "   Expected: package.json, apps/agent-ui/, services/agent-service/"
+  echo "   Expected: package.json, apps/agent-web/, services/agent-service/, packages/agent-sdk/, packages/agent-config/"
   exit 1
 fi
 

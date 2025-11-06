@@ -47,10 +47,11 @@ Don't worry about "over-engineering" - structure clarity > code quantity.
 
 Convention over configuration. Default values should work.
 
-- `PORT=5201` - Backend service
-- `VITE_PORT=5200` - Frontend dev
+- `PORT=5200` - Agent service (unified entry point)
 - `ANTHROPIC_API_KEY` - Required
 - `ANTHROPIC_BASE_URL` - Default: <https://api.anthropic.com>
+
+Note: Vite dev server runs on default port 5173 (no configuration needed)
 
 ## Commands
 

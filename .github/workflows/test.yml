@@ -1,0 +1,82 @@
+name: Test
+
+# Disabled during rapid development phase
+# Tests will be added incrementally as features stabilize
+on:
+  workflow_dispatch: # Manual trigger only for now
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Unit Tests
+        run: |
+          echo "⚠️ Unit tests not yet implemented"
+          echo "Run 'pnpm test' when test suite is ready"
+          # pnpm test
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Integration Tests
+        run: |
+          echo "⚠️ Integration tests not yet implemented"
+          echo "Run 'pnpm test:integration' when test suite is ready"
+          # pnpm test:integration
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run E2E Tests
+        run: |
+          echo "⚠️ E2E tests not yet implemented"
+          echo "Run 'pnpm test:e2e' when test suite is ready"
+          # pnpm test:e2e

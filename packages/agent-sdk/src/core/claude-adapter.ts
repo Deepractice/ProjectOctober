@@ -28,8 +28,14 @@ export class ClaudeAdapter {
   async *stream(prompt: string, options: SessionOptions = {}): AsyncGenerator<SDKMessage> {
     const sdkOptions = this.mapOptions(options);
 
-    this.logger.debug(
-      { promptLength: prompt.length, model: sdkOptions.model, resume: !!options.resume },
+    this.logger.info(
+      {
+        promptLength: prompt.length,
+        model: sdkOptions.model,
+        resume: !!options.resume,
+        hasEnv: !!sdkOptions.env,
+        envPath: sdkOptions.env?.PATH?.substring(0, 100),
+      },
       "Starting Claude SDK stream"
     );
 
@@ -52,43 +58,6 @@ export class ClaudeAdapter {
     }
   }
 
-  async warmup(): Promise<string> {
-    const sdkOptions = this.mapOptions({});
-
-    this.logger.debug({ model: sdkOptions.model }, "Starting warmup session");
-
-    try {
-      const queryInstance = query({
-        prompt: "Warmup",
-        options: sdkOptions,
-      });
-
-      let sessionId: string | null = null;
-
-      for await (const message of queryInstance) {
-        if (message.session_id && !sessionId) {
-          sessionId = message.session_id;
-          this.logger.debug({ sessionId }, "Warmup session ID captured, interrupting");
-
-          // Interrupt immediately
-          await queryInstance.interrupt();
-          break;
-        }
-      }
-
-      if (!sessionId) {
-        this.logger.error("Failed to create warmup session: no session ID received");
-        throw new Error("Failed to create warmup session");
-      }
-
-      this.logger.debug({ sessionId }, "Warmup session created successfully");
-      return sessionId;
-    } catch (err) {
-      this.logger.error({ err }, "Warmup session creation failed");
-      throw err;
-    }
-  }
-
   private mapOptions(options: SessionOptions): any {
     const model = options.model || this.config.model || "claude-sonnet-4";
     return {
@@ -97,8 +66,11 @@ export class ClaudeAdapter {
       resume: options.resume,
       mcpServers: this.config.mcpServers,
       permissionMode: "bypassPermissions",
-      // Don't pass executable or env - let SDK use its defaults
-      // which will properly inherit the environment
+      // Explicitly pass env to ensure PATH is inherited by spawned processes
+      env: process.env,
+      // Use process.execPath to get the actual node binary that's running this code
+      // This works with nvm, volta, or any node version manager
+      executable: process.execPath,
     };
   }
 

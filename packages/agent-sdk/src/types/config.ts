@@ -1,6 +1,5 @@
 export interface AgentConfig {
   workspace: string;
-  warmupPoolSize?: number;
   model?: string;
   mcpServers?: Record<string, McpServerConfig>;
   logger?: LoggerConfig;

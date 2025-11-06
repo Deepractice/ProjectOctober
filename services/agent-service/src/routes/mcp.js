@@ -4,7 +4,7 @@ import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { spawn } from "child_process";
+// spawn is dynamically imported where needed
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -18,8 +18,6 @@ router.get("/cli/list", async (req, res) => {
     console.log("📋 Listing MCP servers using Agent CLI");
 
     const { spawn } = await import("child_process");
-    const { promisify } = await import("util");
-    const exec = promisify(spawn);
 
     const process = spawn("claude", ["mcp", "list"], {
       stdio: ["pipe", "pipe", "pipe"],
@@ -397,7 +395,7 @@ router.get("/config/read", async (req, res) => {
         configPath = filepath;
         console.log(`✅ Found Agent config at: ${filepath}`);
         break;
-      } catch (error) {
+      } catch (_error) {
         // File doesn't exist or is not valid JSON, try next
         console.log(`ℹ️ Config not found or invalid at: ${filepath}`);
       }

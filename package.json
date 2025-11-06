@@ -5,7 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "turbo run dev --filter=@deepractice-ai/agent-service --filter=@deepractice-ai/agent-web",
+    "dev": "pnpm dev:vite & pnpm dev:service",
+    "dev:vite": "turbo run dev --filter=@deepractice-ai/agent-web",
+    "dev:service": "wait-on http://localhost:5173 -t 30000 && turbo run dev --filter=@deepractice-ai/agent-service",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
@@ -13,7 +15,7 @@
     "format:check": "prettier --check .",
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "author": "Deepractice",
   "license": "MIT",
@@ -29,7 +31,8 @@
     "eslint-plugin-prettier": "^5.5.4",
     "lefthook": "^1.13.6",
     "prettier": "^3.6.2",
-    "turbo": "^2.5.8"
+    "turbo": "^2.5.8",
+    "wait-on": "^8.0.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

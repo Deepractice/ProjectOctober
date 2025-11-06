@@ -80,12 +80,28 @@ jobs:
 
       - name: Check Build Artifacts
         run: |
-          # Check agent-ui (frontend)
-          if [ -d "apps/agent-ui/dist" ]; then
-            echo "✅ agent-ui built successfully"
-            ls -la "apps/agent-ui/dist" | head -20
+          # Check agent-web (frontend)
+          if [ -d "apps/agent-web/dist" ]; then
+            echo "✅ agent-web built successfully"
+            ls -la "apps/agent-web/dist" | head -20
           else
-            echo "❌ agent-ui build failed - no dist directory"
+            echo "❌ agent-web build failed - no dist directory"
+            exit 1
+          fi
+
+          # Check agent-config package
+          if [ -d "packages/agent-config/dist" ]; then
+            echo "✅ agent-config built successfully"
+          else
+            echo "❌ agent-config build failed - no dist directory"
+            exit 1
+          fi
+
+          # Check agent-sdk package
+          if [ -d "packages/agent-sdk/dist" ]; then
+            echo "✅ agent-sdk built successfully"
+          else
+            echo "❌ agent-sdk build failed - no dist directory"
             exit 1
           fi
 
