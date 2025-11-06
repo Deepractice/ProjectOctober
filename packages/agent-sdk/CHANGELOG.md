@@ -1,5 +1,11 @@
 # @deepractice-ai/agent-sdk
 
+## 0.2.3
+
+### Patch Changes
+
+- @deepractice-ai/agent-config@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes

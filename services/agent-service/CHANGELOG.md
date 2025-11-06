@@ -1,5 +1,13 @@
 # @deepractice-ai/agent-service
 
+## 0.2.3
+
+### Patch Changes
+
+- 32a7d25: Add build-runtime workflow for AgentRuntime submodule
+  - @deepractice-ai/agent-config@0.2.3
+  - @deepractice-ai/agent-sdk@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes
