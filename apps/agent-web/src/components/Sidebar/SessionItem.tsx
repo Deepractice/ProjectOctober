@@ -113,14 +113,14 @@ export function SessionItem({
           onTouchEnd={handleTouchClick(() => onSelect(session))}
         >
           <div className="flex items-center gap-2">
-            <div
+            {/* <div
               className={cn(
                 "w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0",
                 isSelected ? "bg-primary/10" : "bg-muted/50"
               )}
             >
               <AgentLogo className="w-3 h-3" />
-            </div>
+            </div> */}
             <div className="min-w-0 flex-1">
               <div className="text-xs font-medium truncate text-foreground">{sessionName}</div>
               <div className="flex items-center gap-1 mt-0.5">
@@ -167,7 +167,7 @@ export function SessionItem({
             onClick={() => onSelect(session)}
           >
             <div className="flex items-start gap-2 min-w-0 w-full">
-              <AgentLogo className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              {/* <AgentLogo className="w-3 h-3 mt-0.5 flex-shrink-0" /> */}
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-medium truncate text-foreground">{sessionName}</div>
                 <div className="flex items-center gap-1 mt-0.5">

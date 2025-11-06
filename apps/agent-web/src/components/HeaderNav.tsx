@@ -56,11 +56,11 @@ export function HeaderNav({
           {/* Session Title Display */}
           <div className="min-w-0 flex items-center gap-2">
             {/* Agent Logo (only show in chat tab with session) */}
-            {activeTab === "chat" && selectedSession && (
+            {/* {activeTab === "chat" && selectedSession && (
               <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
                 <AgentLogo className="w-5 h-5" />
               </div>
-            )}
+            )} */}
 
             <div className="flex-1 min-w-0">
               {activeTab === "chat" && selectedSession ? (

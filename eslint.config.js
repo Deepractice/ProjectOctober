@@ -5,6 +5,20 @@ import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
 
 export default [
+  // Global ignores must be first
+  {
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/out/**",
+      "**/outputs/**",
+      "**/.turbo/**",
+      "**/temp/**",
+      "**/*.config.js",
+      "**/*.config.ts",
+    ],
+  },
   js.configs.recommended,
   prettierConfig,
   {
@@ -62,18 +76,5 @@ export default [
       // Allow control characters in regex (for terminal escape codes)
       "no-control-regex": "off",
     },
-  },
-  {
-    ignores: [
-      "node_modules/",
-      "dist/",
-      "build/",
-      "out/",
-      "outputs/",
-      ".turbo/",
-      "temp/",
-      "*.config.js",
-      "*.config.ts",
-    ],
   },
 ];
