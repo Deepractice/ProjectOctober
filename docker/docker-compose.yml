@@ -2,7 +2,9 @@ version: "3.8"
 
 services:
   agent:
-    image: deepracticexs/agent:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: agent
     ports:
       - "5200:5200"
@@ -11,16 +13,8 @@ services:
       - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       - NODE_ENV=production
       - PORT=5200
+      - PROJECT_PATH=/project
     volumes:
-      # Project directory
+      # Project directory - mount your code here
       - ${PROJECT_PATH:-.}:/project
-      # Optional: SSH and Git config
-      - ~/.ssh:/home/node/.ssh:ro
-      - ~/.gitconfig:/home/node/.gitconfig:ro
-      # Agent data
-      - agent-data:/opt/claude-config
     restart: unless-stopped
-
-volumes:
-  agent-data:
-    driver: local

@@ -1,10 +1,10 @@
-# Agent Docker Image
+# Deepractice Agent Docker
 
-Full-stack AI Agent application with frontend and backend in a single container.
+Lightweight Docker image using `@deepractice-ai/agent-cli` from npm.
 
 ## Quick Start
 
-### 1. Using Docker Run
+### Option 1: Docker Run
 
 ```bash
 docker run -d \
@@ -15,22 +15,39 @@ docker run -d \
   deepracticexs/agent:latest
 ```
 
-Access at: http://localhost:5200
+**Access**: http://localhost:5200
 
-### 2. Using Docker Compose (Recommended)
+### Option 2: Docker Compose (Recommended)
+
+1. Create `.env` file:
 
 ```bash
-# Create .env file
 cp .env.example .env
-# Edit .env with your API key
+```
 
-# Start
+2. Edit `.env` with your API key:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+ANTHROPIC_BASE_URL=https://api.anthropic.com
+PROJECT_PATH=.
+```
+
+3. Start the service:
+
+```bash
 docker-compose up -d
+```
 
-# View logs
+4. View logs:
+
+```bash
 docker-compose logs -f
+```
 
-# Stop
+5. Stop the service:
+
+```bash
 docker-compose down
 ```
 
@@ -38,92 +55,133 @@ docker-compose down
 
 ### Required Environment Variables
 
-- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `ANTHROPIC_API_KEY`: Your Anthropic API key ([Get one here](https://console.anthropic.com/))
 
 ### Optional Environment Variables
 
-- `ANTHROPIC_BASE_URL`: API endpoint (default: https://api.anthropic.com)
-- `PROJECT_PATH`: Project directory to mount (default: current directory)
-
-## Port Specification
-
-Deepractice standard port allocation:
-
-- **5200**: Agent service (unified entry point for production)
-- 5173: Vite dev server (development only, not in container)
-- 5203: Reserved (future: MCP service)
+- `ANTHROPIC_BASE_URL`: API endpoint (default: `https://api.anthropic.com`)
+- `PROJECT_PATH`: Project directory to mount (default: current directory `.`)
+- `PORT`: Server port (default: `5200`)
 
 ## Architecture
 
-Single container running:
+This lightweight Docker image:
 
-- **Frontend**: React app (built to static files)
-- **Backend**: Node.js Express server (serves frontend + API)
-- **Port**: 5200 (agent-service)
+- Uses `node:20-alpine` (~180MB compressed)
+- Installs `@deepractice-ai/agent-cli` from npm
+- Runs `agentx http` command
+- Mounts your project directory at `/project`
+
+**Single container serving**:
+
+- Frontend (React SPA)
+- Backend (Express API)
+- WebSocket (Agent communication)
 
 ```
-Container
-├─ Node.js (port 5200)
-   ├─ Static files (/)
-   ├─ API (/api/*)
-   └─ WebSocket (/ws, /shell)
-
-Host → 5200:5200 → Container
+Container (port 5200)
+├─ agentx CLI
+   └─ agent-service
+      ├─ Static files (/)
+      ├─ API (/api/*)
+      └─ WebSocket (/ws, /shell)
 ```
 
 ## Build from Source
 
 ```bash
-# Build runtime first (one-time)
-cd ../runtime
-./build.sh
+# Build the image
+docker build -t deepracticexs/agent:latest .
 
-# Build agent
-cd ../agent
+# Or use the build script
 ./build.sh
 ```
+
+## Port Specification
+
+Deepractice standard port allocation:
+
+- **5200**: Agent service (unified production port)
+- 5173: Vite dev server (development only, not in Docker)
+- 5203: Reserved for future MCP service
 
 ## Volumes
 
 - `/project`: Your project directory (read/write)
-- `/opt/claude-config`: Agent data and sessions
-- `/home/node/.ssh`: SSH keys (optional, read-only)
-- `/home/node/.gitconfig`: Git config (optional, read-only)
+  - This is where the agent can read and modify your code
 
 ## Health Check
 
+The container includes a health check endpoint:
+
 ```bash
-curl http://localhost:5200/health
+curl http://localhost:5200/api/health
 ```
 
-Expected response: `{"status":"ok","service":"agent-service"}`
+Expected response:
+
+```json
+{ "status": "ok", "service": "agent-service" }
+```
 
 ## Troubleshooting
 
-### Port already in use
+### Port Already in Use
+
+Use a different host port:
 
 ```bash
-# Use different host port (e.g., 8080) mapped to container port 5200
 docker run -p 8080:5200 ...
+# Access at http://localhost:8080
 ```
 
-### Permission issues
+### Permission Issues
+
+Ensure your project directory is readable:
 
 ```bash
-# Check project directory permissions
 ls -la $(pwd)
 ```
 
-### View logs
+### View Logs
 
 ```bash
+# Docker run
 docker logs -f agent
+
+# Docker compose
+docker-compose logs -f
+```
+
+### Container Won't Start
+
+Check if ANTHROPIC_API_KEY is set:
+
+```bash
+docker exec agent env | grep ANTHROPIC
 ```
 
 ## Image Size
 
-Approximately ~900MB (compressed ~350MB)
+- **Base**: node:20-alpine (~120MB)
+- **With agent-cli**: ~180MB compressed
+- **Disk space**: ~450MB uncompressed
 
-## Base Image
+Much smaller than the previous full-build image (~900MB).
 
-Built on `deepracticexs/agent-runtime:latest`
+## Upgrading
+
+```bash
+# Pull latest image
+docker pull deepracticexs/agent:latest
+
+# Restart container
+docker-compose down
+docker-compose up -d
+```
+
+## Related
+
+- [Main README](../README.md) - Project overview
+- [Agent CLI](../apps/agent-cli/README.md) - CLI documentation
+- [Development Guide](../CONTRIBUTING.md) - Build from source
