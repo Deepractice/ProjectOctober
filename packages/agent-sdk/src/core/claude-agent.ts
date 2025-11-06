@@ -3,6 +3,7 @@ import type {
   Agent,
   AgentConfig,
   SessionOptions,
+  SessionCreateOptions,
   SessionEvent,
   AgentStatus,
   Session,
@@ -52,9 +53,9 @@ export class ClaudeAgent implements Agent {
     this.logger.debug("ClaudeAgent destroyed");
   }
 
-  async createSession(options?: SessionOptions): Promise<Session> {
+  async createSession(options: SessionCreateOptions): Promise<Session> {
     this.ensureInitialized();
-    this.logger.debug({ model: options?.model }, "Creating new session");
+    this.logger.debug({ model: options?.model }, "Creating new session with initial message");
     const session = await this.sessionManager.createSession(options);
     this.logger.info({ sessionId: session.id, model: options?.model }, "Session created");
     return session;
@@ -71,8 +72,7 @@ export class ClaudeAgent implements Agent {
   async chat(message: string, options?: SessionOptions): Promise<Session> {
     this.logger.debug({ messageLength: message.length }, "Starting quick chat");
     try {
-      const session = await this.createSession(options);
-      await session.send(message);
+      const session = await this.createSession({ initialMessage: message, ...options });
       return session;
     } catch (err) {
       this.logger.error({ err, messageLength: message.length }, "Quick chat failed");

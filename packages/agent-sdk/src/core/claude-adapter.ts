@@ -49,11 +49,9 @@ export class ClaudeAdapter {
       });
 
       let messageCount = 0;
-      let lastMessageTime = Date.now();
 
       for await (const message of queryInstance) {
         messageCount++;
-        lastMessageTime = Date.now();
 
         this.logger.info(
           {

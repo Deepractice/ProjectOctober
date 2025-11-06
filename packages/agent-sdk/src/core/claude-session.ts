@@ -7,6 +7,7 @@ import type {
   SessionMetadata,
   TokenUsage,
   AnyMessage,
+  UserMessage,
   SessionOptions,
 } from "~/types";
 import type { ClaudeAdapter } from "./claude-adapter";
@@ -497,10 +498,12 @@ export class ClaudeSession implements Session {
       return !isSystemMessage && content.length > 0;
     });
 
-    if (firstUserMsg && firstUserMsg.content) {
+    if (firstUserMsg && firstUserMsg.type === "user") {
+      // Type guard: UserMessage has content property
+      const userMsg = firstUserMsg as UserMessage;
       // Return first 100 characters, add ellipsis if truncated
-      const summary = firstUserMsg.content.substring(0, 100);
-      return firstUserMsg.content.length > 100 ? `${summary}...` : summary;
+      const summary = userMsg.content.substring(0, 100);
+      return userMsg.content.length > 100 ? `${summary}...` : summary;
     }
 
     return "New Session";

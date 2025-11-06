@@ -6,7 +6,6 @@ import os from "os";
 import readline from "readline";
 import type {
   AgentConfig,
-  SessionOptions,
   SessionEvent,
   Session,
   PerformanceMetrics,
@@ -457,9 +456,5 @@ export class SessionManager {
     }
 
     return "";
-  }
-
-  private generateId(): string {
-    return `session-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 }
