@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-config",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Configuration management for Agent project",
   "private": true,
   "type": "module",

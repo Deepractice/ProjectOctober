@@ -1,5 +1,42 @@
 # @deepractice-ai/agent-sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- bab25d4: Unify session management and fix summary stability issue
+  - Add `summary()` method to Session interface for stable session summaries
+  - Implement summary generation in ClaudeSession with system message filtering (aligned with Claude Code CLI)
+  - Remove HistoricalSession class - all sessions are now ClaudeSession instances
+  - ClaudeSession now accepts initialMessages and initialTokenUsage in constructor
+  - Remove auto-upgrade logic in SessionManager.getSession()
+  - Fix bug where all session summaries changed to "New Session" after creating a new session
+  - Simplify SessionManager.deleteSession() to handle all sessions uniformly
+
+### Patch Changes
+
+- ef747fa: Enable MCP configuration loading from Claude settings files
+
+  Add settingSources option to automatically load MCP server configurations from:
+  - User settings (~/.claude/settings.json)
+  - Project settings (.claude/settings.json)
+  - Local settings (.claude/settings.local.json)
+
+  This enables full compatibility with Claude CLI and Claude Desktop MCP configurations, allowing users to manage MCP servers using familiar Claude configuration files.
+
+- 294a88e: Filter out SDK warmup sessions from session list
+
+  Automatically filter out Claude SDK warmup/subagent sessions (agent-\* files) from the session manager. These internal SDK sessions are used for performance optimization and should not be exposed to the application layer.
+
+  Changes:
+  - Add isWarmupSession() helper to detect agent-\* session IDs
+  - Filter warmup sessions during loadHistoricalSessions()
+  - Filter warmup sessions in getSessions() output
+  - Log skipped warmup sessions for debugging
+
+  This ensures the business layer only sees real user sessions, keeping the SDK implementation details hidden.
+  - @deepractice-ai/agent-config@0.2.0
+
 ## 0.1.2
 
 ### Patch Changes
