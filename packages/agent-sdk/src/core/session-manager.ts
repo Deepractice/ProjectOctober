@@ -130,7 +130,10 @@ export class SessionManager {
   }
 
   getSessions(limit: number, offset: number): Session[] {
-    const all = Array.from(this.sessions.values());
+    // Filter out warmup sessions and get all real sessions
+    const all = Array.from(this.sessions.values()).filter(
+      (session) => !this.isWarmupSession(session.id)
+    );
 
     // Sort by start time (newest first)
     all.sort((a, b) => {
@@ -218,7 +221,16 @@ export class SessionManager {
   }
 
   /**
+   * Check if a session ID represents a warmup/subagent session
+   * Warmup sessions have IDs like "agent-{shortId}" (e.g., agent-8c147a19)
+   */
+  private isWarmupSession(sessionId: string): boolean {
+    return sessionId.startsWith("agent-") && sessionId.length < 20;
+  }
+
+  /**
    * Load all historical sessions from JSONL files on initialization
+   * Filters out SDK warmup sessions (agent-*) automatically
    */
   async loadHistoricalSessions(): Promise<void> {
     this.logger.debug({ sessionDir: this.sessionDir }, "Loading historical sessions");
@@ -230,11 +242,19 @@ export class SessionManager {
       this.logger.debug({ fileCount: jsonlFiles.length }, "Found session files");
 
       let loadedCount = 0;
+      let skippedWarmup = 0;
       for (const file of jsonlFiles) {
         const sessionId = path.basename(file, ".jsonl");
 
         // Skip if already in memory (active session)
         if (this.sessions.has(sessionId)) {
+          continue;
+        }
+
+        // Skip SDK warmup/subagent sessions
+        if (this.isWarmupSession(sessionId)) {
+          skippedWarmup++;
+          this.logger.debug({ sessionId }, "Skipping warmup session");
           continue;
         }
 
@@ -249,7 +269,7 @@ export class SessionManager {
       }
 
       this.logger.info(
-        { loadedCount, totalFiles: jsonlFiles.length },
+        { loadedCount, skippedWarmup, totalFiles: jsonlFiles.length },
         "Historical sessions loaded"
       );
     } catch (error) {
