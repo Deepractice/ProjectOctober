@@ -36,9 +36,15 @@ jobs:
           echo "name=release/${TIMESTAMP}" >> $GITHUB_OUTPUT
 
       - name: Create Release Branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Configure git to use the PAT for authentication
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
           git checkout -b ${{ steps.branch.outputs.name }}
 
       - name: Version Packages
@@ -50,8 +56,10 @@ jobs:
           git commit -m "chore: version packages" || echo "No changes to commit"
 
       - name: Push Release Branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Deepractice/Agent.git ${{ steps.branch.outputs.name }}
+          git push origin ${{ steps.branch.outputs.name }}
 
       - name: Create Release PR
         env:
