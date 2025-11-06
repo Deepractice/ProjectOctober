@@ -1,5 +1,13 @@
 # @deepractice-ai/agent-service
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [264b5b0]
+  - @deepractice-ai/agent-sdk@0.4.1
+  - @deepractice-ai/agent-config@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes
