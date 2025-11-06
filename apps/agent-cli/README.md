@@ -9,7 +9,7 @@ CLI tool for running Deepractice AI Agent - a visual AI agent interface powered 
 npm install -g @deepractice-ai/agent-cli
 
 # Run the server
-agent-cli http --anthropic-api-key YOUR_API_KEY
+agentx http --anthropic-api-key YOUR_API_KEY
 ```
 
 The server will start on `http://0.0.0.0:5200` by default.
@@ -25,7 +25,7 @@ npm install -g @deepractice-ai/agent-cli
 ### Using npx (No Installation)
 
 ```bash
-npx @deepractice-ai/agent-cli http --anthropic-api-key YOUR_API_KEY
+npx @deepractice-ai/agent-cli agentx http --anthropic-api-key YOUR_API_KEY
 ```
 
 ### Local Development
@@ -50,7 +50,7 @@ node apps/agent-cli/dist/bin/agent-cli.js http --anthropic-api-key YOUR_API_KEY
 ### Basic Command
 
 ```bash
-agent-cli http [options]
+agentx http [options]
 ```
 
 ### Options
@@ -70,13 +70,13 @@ agent-cli http [options]
 
 ```bash
 # Start with API key
-agent-cli http --anthropic-api-key sk-ant-xxxxx
+agentx http --anthropic-api-key sk-ant-xxxxx
 
 # Custom port
-agent-cli http --port 8080 --anthropic-api-key sk-ant-xxxxx
+agentx http --port 8080 --anthropic-api-key sk-ant-xxxxx
 
 # Custom project directory
-agent-cli http --project /path/to/project --anthropic-api-key sk-ant-xxxxx
+agentx http --project /path/to/project --anthropic-api-key sk-ant-xxxxx
 ```
 
 #### Using Environment Variables
@@ -88,8 +88,14 @@ export ANTHROPIC_API_KEY=sk-ant-xxxxx
 export PORT=8080
 export PROJECT_PATH=/path/to/project
 
-agent-cli http
+agentx http
 ```
+
+**Note**: The CLI does not automatically load `.env` files. You must either:
+
+- Set environment variables manually (as shown above)
+- Pass options via command-line flags
+- Use a tool like `dotenv-cli` to load env files
 
 #### Docker Usage
 
@@ -113,7 +119,7 @@ The CLI sets up environment variables that are used by the underlying agent-serv
 
 ## Architecture
 
-The agent-cli is a lightweight wrapper that:
+The agentx CLI is a lightweight wrapper that:
 
 1. Parses command-line arguments
 2. Sets up environment variables
@@ -131,9 +137,8 @@ Configuration is loaded in the following priority (highest to lowest):
 
 1. CLI options (e.g., `--port 8080`)
 2. Environment variables (e.g., `export PORT=8080`)
-3. `.env.local` file
-4. `.env.[NODE_ENV]` file
-5. `.env` file
+
+**Note**: The CLI does not load `.env` files automatically. Use environment variables or CLI options.
 
 ## Requirements
 
@@ -149,7 +154,7 @@ Configuration is loaded in the following priority (highest to lowest):
 lsof -ti:5200 | xargs kill -9
 
 # Or use a different port
-agent-cli http --port 8080
+agentx http --port 8080
 ```
 
 ### Permission Denied (PROJECT_PATH)
@@ -158,7 +163,7 @@ Make sure the specified project path is writable:
 
 ```bash
 # Use a directory in your home folder
-agent-cli http --project ~/my-project
+agentx http --project ~/my-project
 ```
 
 ### API Key Issues
@@ -168,7 +173,7 @@ agent-cli http --project ~/my-project
 echo $ANTHROPIC_API_KEY
 
 # Or pass it directly
-agent-cli http --anthropic-api-key sk-ant-xxxxx
+agentx http --anthropic-api-key sk-ant-xxxxx
 ```
 
 ## Development
