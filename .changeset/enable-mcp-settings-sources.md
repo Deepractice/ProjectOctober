@@ -5,6 +5,7 @@
 Enable MCP configuration loading from Claude settings files
 
 Add settingSources option to automatically load MCP server configurations from:
+
 - User settings (~/.claude/settings.json)
 - Project settings (.claude/settings.json)
 - Local settings (.claude/settings.local.json)

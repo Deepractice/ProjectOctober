@@ -129,7 +129,10 @@ export class SessionManager {
         this.logger.debug({ sessionId: id, filePath }, "Deleted session file");
       } catch (error) {
         if ((error as any).code !== "ENOENT") {
-          this.logger.warn({ err: error, sessionId: id, filePath }, "Failed to delete session file");
+          this.logger.warn(
+            { err: error, sessionId: id, filePath },
+            "Failed to delete session file"
+          );
         }
       }
 
