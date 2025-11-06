@@ -1,5 +1,20 @@
 # @deepractice-ai/agent-service
 
+## 0.2.1
+
+### Patch Changes
+
+- 63814c8: Add Aliyun Container Registry sync and implement lazy session creation
+  - Add automatic Docker image synchronization to Aliyun ACR for faster access in China
+  - Implement lazy session creation pattern (sessions created on first user message)
+  - Fix TypeScript type errors in agent-sdk
+  - Update UI with welcome screen and improved session navigation
+  - Rename app title to "Deepractice Agent"
+
+- Updated dependencies [63814c8]
+  - @deepractice-ai/agent-sdk@0.2.1
+  - @deepractice-ai/agent-config@0.2.1
+
 ## 0.2.0
 
 ### Patch Changes
