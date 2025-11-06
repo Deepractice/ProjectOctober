@@ -7,20 +7,19 @@ commit-msg:
       run: npx commitlint --edit {1}
 
 pre-commit:
-  parallel: true
-  commands:
-    format:
-      glob: "*.{ts,js,cjs,mjs,jsx,tsx,json,md,yml,yaml}"
-      run: pnpm prettier --write {staged_files}
-      stage_fixed: true
-
-    lint:
-      glob: "*.{ts,js,cjs,mjs,jsx,tsx}"
-      run: pnpm lint
+  # Disabled: moved to pre-push for faster commits
+  # Only commitlint runs on commit
+  commands: {}
 
 pre-push:
   parallel: false
   commands:
+    format:
+      run: pnpm format
+
+    lint:
+      run: pnpm lint
+
     install-check:
       run: pnpm install --frozen-lockfile
 
