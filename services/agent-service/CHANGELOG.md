@@ -1,5 +1,24 @@
 # @deepractice-ai/agent-service
 
+## 0.2.0
+
+### Patch Changes
+
+- bab25d4: Unify session management and fix summary stability issue
+  - Add `summary()` method to Session interface for stable session summaries
+  - Implement summary generation in ClaudeSession with system message filtering (aligned with Claude Code CLI)
+  - Remove HistoricalSession class - all sessions are now ClaudeSession instances
+  - ClaudeSession now accepts initialMessages and initialTokenUsage in constructor
+  - Remove auto-upgrade logic in SessionManager.getSession()
+  - Fix bug where all session summaries changed to "New Session" after creating a new session
+  - Simplify SessionManager.deleteSession() to handle all sessions uniformly
+
+- Updated dependencies [ef747fa]
+- Updated dependencies [294a88e]
+- Updated dependencies [bab25d4]
+  - @deepractice-ai/agent-sdk@0.2.0
+  - @deepractice-ai/agent-config@0.2.0
+
 ## 0.1.2
 
 ### Patch Changes
