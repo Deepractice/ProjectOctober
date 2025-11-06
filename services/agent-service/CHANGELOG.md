@@ -1,5 +1,13 @@
 # @deepractice-ai/agent-service
 
+## 0.2.2
+
+### Patch Changes
+
+- ab2cba8: Restructure docker directory and add AgentRuntime as git submodule
+  - @deepractice-ai/agent-config@0.2.2
+  - @deepractice-ai/agent-sdk@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
