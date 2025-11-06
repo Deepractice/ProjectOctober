@@ -50,7 +50,8 @@ jobs:
           git commit -m "chore: version packages" || echo "No changes to commit"
 
       - name: Push Release Branch
-        run: git push origin ${{ steps.branch.outputs.name }}
+        run: |
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Deepractice/Agent.git ${{ steps.branch.outputs.name }}
 
       - name: Create Release PR
         env:
