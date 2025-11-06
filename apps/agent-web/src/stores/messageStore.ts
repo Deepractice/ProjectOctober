@@ -39,7 +39,7 @@ export interface MessageState {
   setLoadingMessages: (sessionId: string, loading: boolean) => void;
 
   // Business action methods (for components to call)
-  sendMessage: (sessionId: string, content: string, images?: any[]) => void;
+  sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => void;
 }
 
 export const useMessageStore = create<MessageState>()(
@@ -270,7 +270,18 @@ export const useMessageStore = create<MessageState>()(
       },
 
       // Business action methods (components call these)
-      sendMessage: (sessionId: string, content: string, images?: any[]) => {
+      sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => {
+        if (!sessionId) {
+          // No session yet - this is the first message, create session with it
+          console.log("[MessageStore] No sessionId - creating new session with first message");
+          eventBus.emit({
+            type: "session.create",
+            message: content,
+          });
+          return;
+        }
+
+        // Existing session - normal flow
         eventBus.emit({
           type: "message.send",
           sessionId,
@@ -284,6 +295,17 @@ export const useMessageStore = create<MessageState>()(
 );
 
 // Subscribe to EventBus (auto-setup on module load)
+import { isSessionEvent } from "~/core/events";
+
+// Listen to session.created to load initial messages
+eventBus.on(isSessionEvent).subscribe(async (event) => {
+  if (event.type === "session.created") {
+    const store = useMessageStore.getState();
+    console.log("[MessageStore] Session created, loading initial messages:", event.sessionId);
+    store.setMessages(event.sessionId, event.messages);
+  }
+});
+
 eventBus.on(isMessageEvent).subscribe(async (event) => {
   const store = useMessageStore.getState();
 

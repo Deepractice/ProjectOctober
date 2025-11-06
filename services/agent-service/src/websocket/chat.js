@@ -22,38 +22,25 @@ export function handleChatConnection(ws, connectedClients) {
         });
 
         try {
-          let session;
-          let isNewSession = false;
-
-          if (sessionId) {
-            // Resume existing session
-            console.log("🔵 [WebSocket] Resuming existing session:", sessionId);
-            session = agent.getSession(sessionId);
-            if (!session) {
-              throw new Error(`Session ${sessionId} not found`);
-            }
-            console.log(
-              "🔵 [WebSocket] Session found, current messages:",
-              session.getMessages().length
-            );
-          } else {
-            // Create new session (from warmup pool)
-            console.log("🔵 [WebSocket] Creating new session");
-            session = await agent.createSession({
-              model: data.options?.model,
-            });
-            isNewSession = true;
-
-            console.log("🔵 [WebSocket] New session created:", session.id);
-
-            // Send session-created event
-            ws.send(
-              JSON.stringify({
-                type: "session-created",
-                sessionId: session.id,
-              })
+          // sessionId is now REQUIRED - sessions are only created via POST /api/sessions/create
+          if (!sessionId) {
+            throw new Error(
+              "sessionId is required. Use POST /api/sessions/create with message to create new session."
             );
           }
+
+          // Resume existing session
+          console.log("🔵 [WebSocket] Resuming existing session:", sessionId);
+          const session = agent.getSession(sessionId);
+          if (!session) {
+            throw new Error(`Session ${sessionId} not found`);
+          }
+          console.log(
+            "🔵 [WebSocket] Session found, current messages:",
+            session.getMessages().length
+          );
+
+          const isNewSession = false;
 
           // Track messages we've already sent to avoid duplicates
           const messagesBefore = session.getMessages().length;

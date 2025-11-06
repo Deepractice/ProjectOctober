@@ -138,7 +138,9 @@ export const useSessionStore = create<SessionState>()(
 
       // Business action methods (components call these)
       createNewSession: async () => {
-        eventBus.emit({ type: "session.create" });
+        // Lazy session creation: just navigate to root, don't call API
+        // Session will be created when user sends first message
+        eventBus.emit({ type: "session.navigate.new" });
       },
 
       selectSession: (sessionId: string) => {
@@ -166,23 +168,51 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
   const store = useSessionStore.getState();
 
   switch (event.type) {
+    case "session.navigate.new":
+      // Lazy session creation: just navigate to root
+      console.log("[SessionStore] Navigating to new session (/)");
+
+      // Only set navigationTarget if it's not already "/"
+      const currentTarget = useSessionStore.getState().navigationTarget;
+      if (currentTarget !== "/") {
+        useSessionStore.setState({ navigationTarget: "/" });
+      }
+      break;
+
     case "session.create":
-      // Business orchestration: create session
+      // Business orchestration: create session with first message
       try {
-        console.log("[SessionStore] Creating new session...");
+        console.log("[SessionStore] Creating session with first message...");
         store.setLoading(true);
 
-        const { createSession, loadSessions } = await import("~/api/agent");
-        const sessionId = await createSession();
-        console.log("[SessionStore] Session created:", sessionId);
+        const response = await fetch("/api/sessions/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: event.message }),
+        });
 
-        // Reload sessions to get the new one
+        if (!response.ok) {
+          throw new Error(`Failed to create session: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("[SessionStore] Session created with SDK session_id:", data.sessionId);
+
+        // Reload sessions to include the new one
+        const { loadSessions } = await import("~/api/agent");
         const sessions = await loadSessions();
         store.setSessions(sessions);
         store.setLoading(false);
 
-        // Emit event to navigate to new session
-        eventBus.emit({ type: "session.selected", sessionId });
+        // Emit created event with messages
+        eventBus.emit({
+          type: "session.created",
+          sessionId: data.sessionId,
+          messages: data.messages || [],
+        });
+
+        // Navigate to new session
+        eventBus.emit({ type: "session.selected", sessionId: data.sessionId });
       } catch (error) {
         console.error("[SessionStore] Failed to create session:", error);
         store.setError((error as Error).message);

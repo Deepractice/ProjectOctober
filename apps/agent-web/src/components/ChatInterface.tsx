@@ -70,13 +70,14 @@ export function ChatInterface() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || !selectedSession || isLoading) return;
+    if (!input.trim() || isLoading) return;
 
     const messageContent = input.trim();
     setInput("");
 
     try {
-      sendMessage(selectedSession.id, messageContent);
+      // Pass undefined sessionId if no session selected (lazy creation)
+      sendMessage(selectedSession?.id, messageContent);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -90,48 +91,50 @@ export function ChatInterface() {
     }
   };
 
-  if (!selectedSession) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-background">
-        <div className="text-center px-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Welcome to Agent
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">Select a session or create a new one</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-full flex flex-col bg-background">
-      <MessagesArea
-        scrollContainerRef={scrollContainerRef}
-        messagesEndRef={messagesEndRef}
-        isLoadingSessionMessages={false}
-        chatMessages={chatMessages}
-        selectedSession={selectedSession}
-        currentSessionId={selectedSession.id}
-        isLoadingMoreMessages={false}
-        hasMoreMessages={false}
-        totalMessages={chatMessages.length}
-        sessionMessages={chatMessages}
-        visibleMessageCount={50}
-        visibleMessages={chatMessages}
-        isLoading={isLoading}
-        setProvider={() => {}}
-        provider={provider}
-        textareaRef={textareaRef}
-        loadEarlierMessages={() => {}}
-        createDiff={(old, newContent) => ""}
-        onFileOpen={() => {}}
-        onShowSettings={() => {}}
-        autoExpandTools={autoExpandTools}
-        showRawParameters={showRawParameters}
-        showThinking={showThinking}
-        selectedProject={{ path: "", name: "", fullPath: "" }}
-      />
+      {/* Messages Area - show welcome or messages */}
+      {!selectedSession ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center px-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Welcome to Deepractice Agent
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Type a message below to start a new conversation
+            </p>
+          </div>
+        </div>
+      ) : (
+        <MessagesArea
+          scrollContainerRef={scrollContainerRef}
+          messagesEndRef={messagesEndRef}
+          isLoadingSessionMessages={false}
+          chatMessages={chatMessages}
+          selectedSession={selectedSession}
+          currentSessionId={selectedSession.id}
+          isLoadingMoreMessages={false}
+          hasMoreMessages={false}
+          totalMessages={chatMessages.length}
+          sessionMessages={chatMessages}
+          visibleMessageCount={50}
+          visibleMessages={chatMessages}
+          isLoading={isLoading}
+          setProvider={() => {}}
+          provider={provider}
+          textareaRef={textareaRef}
+          loadEarlierMessages={() => {}}
+          createDiff={(old, newContent) => ""}
+          onFileOpen={() => {}}
+          onShowSettings={() => {}}
+          autoExpandTools={autoExpandTools}
+          showRawParameters={showRawParameters}
+          showThinking={showThinking}
+          selectedProject={{ path: "", name: "", fullPath: "" }}
+        />
+      )}
 
+      {/* Input Area - always show */}
       <InputArea
         textareaRef={textareaRef}
         inputContainerRef={inputContainerRef}

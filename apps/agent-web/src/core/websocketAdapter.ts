@@ -10,6 +10,17 @@ import type { WebSocketMessage } from "~/types";
  * Adapt WebSocket message to EventBus event
  */
 export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
+  console.log("[WebSocketAdapter] Received message:", {
+    type: wsMessage.type,
+    sessionId: wsMessage.sessionId,
+    dataPreview:
+      "data" in wsMessage
+        ? typeof wsMessage.data === "object"
+          ? JSON.stringify(wsMessage.data).substring(0, 100)
+          : String(wsMessage.data).substring(0, 100)
+        : "no data",
+  });
+
   try {
     switch (wsMessage.type) {
       case "session-created":

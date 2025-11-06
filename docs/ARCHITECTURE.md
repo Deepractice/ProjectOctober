@@ -92,12 +92,14 @@ Component (re-renders)
 ```
 
 **Rules**:
+
 1. Components NEVER directly subscribe to EventBus
 2. Components ONLY call Store actions
 3. Stores handle ALL EventBus interactions
 4. Business logic lives in Store event handlers
 
 **Directory Structure**:
+
 ```
 src/
 ├── components/        # React components (UI only)

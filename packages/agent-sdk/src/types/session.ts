@@ -29,6 +29,15 @@ export interface SessionMetadata {
 }
 
 /**
+ * Options for creating a new session
+ * initialMessage is REQUIRED - sessions are only created when user sends first message
+ */
+export interface SessionCreateOptions {
+  model?: string;
+  initialMessage: string; // Required: lazy session creation
+}
+
+/**
  * Session interface - represents a conversation with Claude
  */
 export interface Session {

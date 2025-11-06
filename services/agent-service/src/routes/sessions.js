@@ -6,21 +6,48 @@ import { getAgent } from "../agent.js";
 
 const router = express.Router();
 
-// Create new session
+/**
+ * Create new session with initial message (lazy session creation)
+ *
+ * BREAKING CHANGE: message is now REQUIRED in request body
+ * Sessions are only created when user sends first message
+ */
 router.post("/create", async (req, res) => {
   try {
+    const { message } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "message is required" });
+    }
+
+    console.log("🟢 [API] POST /sessions/create", {
+      messageLength: message.length,
+      messagePreview: message.substring(0, 50) + "...",
+    });
+
     const agent = await getAgent();
-    const session = await agent.createSession();
+
+    // Create session with initial message - will return real SDK session_id
+    const session = await agent.createSession({
+      initialMessage: message,
+    });
+
+    console.log("🟢 [API] Session created with real SDK session_id:", {
+      sessionId: session.id,
+      messageCount: session.getMessages().length,
+    });
 
     res.json({
-      sessionId: session.id, // Frontend expects sessionId, not id
+      sessionId: session.id,
       id: session.id,
       summary: session.summary(),
-      messageCount: 0,
-      lastActivity: session.createdAt,
+      messages: session.getMessages(), // Return all messages including the first one
+      messageCount: session.getMessages().length,
+      lastActivity: new Date(),
       cwd: session.getMetadata().projectPath,
     });
   } catch (error) {
+    console.error("🟢 [API] Error creating session with message:", error);
     res.status(500).json({ error: error.message });
   }
 });

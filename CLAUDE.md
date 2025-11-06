@@ -146,6 +146,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
 ```
 
 **Key Benefits**:
+
 - Clear separation of concerns
 - Testable business logic (in Stores)
 - Predictable state updates

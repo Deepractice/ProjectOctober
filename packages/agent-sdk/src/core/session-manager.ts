@@ -13,6 +13,7 @@ import type {
   AnyMessage,
   SessionMetadata,
   TokenUsage,
+  SessionCreateOptions,
 } from "~/types";
 import { ClaudeSession } from "./claude-session";
 import { ClaudeAdapter } from "./claude-adapter";
@@ -52,34 +53,77 @@ export class SessionManager {
     return path.join(os.homedir(), ".claude", "projects", encodedName);
   }
 
-  async createSession(options?: SessionOptions): Promise<Session> {
+  /**
+   * Create a new session with initial message (lazy session creation)
+   *
+   * IMPORTANT: initialMessage is REQUIRED. Sessions are only created when user sends first message.
+   * This ensures we always get a real Claude SDK session_id immediately.
+   *
+   * Flow:
+   * 1. Create ClaudeSession with placeholder ID
+   * 2. Immediately send initialMessage
+   * 3. SDK returns real session_id
+   * 4. Update session map with real ID
+   *
+   * @param options Must include initialMessage
+   * @returns Session with real SDK session_id
+   */
+  async createSession(options: SessionCreateOptions): Promise<Session> {
     const startTime = Date.now();
 
-    const sessionId = this.generateId();
+    // Use a placeholder ID temporarily - will be replaced with SDK session_id
+    const placeholderId = `placeholder-${Date.now()}`;
 
-    this.logger.debug({ sessionId, model: options?.model }, "Creating session");
+    this.logger.debug(
+      { placeholderId, model: options?.model, messageLength: options.initialMessage.length },
+      "Creating session with initial message"
+    );
 
     const session = new ClaudeSession(
-      sessionId,
+      placeholderId,
       {
         projectPath: this.config.workspace,
         model: options?.model || this.config.model || "claude-sonnet-4",
         startTime: new Date(),
       },
       this.adapter,
-      options,
+      { model: options?.model }, // SessionOptions for adapter
       false, // No warmup session
       this.logger
     );
 
-    this.sessions.set(sessionId, session);
-    this.sessionEventsSubject.next({ type: "created", sessionId });
+    // Temporarily add to map with placeholder ID
+    this.sessions.set(placeholderId, session);
+
+    // Send initial message immediately to get real SDK session_id
+    this.logger.debug({ placeholderId }, "Sending initial message to capture SDK session_id");
+    await session.send(options.initialMessage);
+
+    // After send(), session must have realSessionId
+    const realSessionId = (session as any).realSessionId;
+
+    if (!realSessionId) {
+      this.logger.error({ placeholderId }, "Failed to capture SDK session_id after send()");
+      throw new Error("Failed to capture SDK session_id");
+    }
+
+    // Replace placeholder with real SDK session_id in map
+    this.sessions.delete(placeholderId);
+    this.sessions.set(realSessionId, session);
+
+    // Update session's internal ID to real SDK session_id
+    (session as any).id = realSessionId;
+
+    this.logger.info(
+      { placeholderId, realSessionId, messageCount: session.getMessages().length },
+      "Session created with real SDK session_id"
+    );
+
+    this.sessionEventsSubject.next({ type: "created", sessionId: realSessionId });
 
     this.metrics.totalCreated++;
     const responseTime = Date.now() - startTime;
     this.metrics.totalResponseTime += responseTime;
-
-    this.logger.info({ sessionId, responseTime }, "Session created successfully");
 
     return session;
   }
@@ -228,7 +272,8 @@ export class SessionManager {
         const sessionData = await this.parseJsonlFile(filePath);
 
         if (sessionData) {
-          // Create ClaudeSession with historical messages
+          // sessionId from filename IS the real Claude SDK session_id
+          // (JSONL files are named with SDK session_id)
           const session = new ClaudeSession(
             sessionId,
             sessionData.metadata,
@@ -240,8 +285,16 @@ export class SessionManager {
             sessionData.tokenUsage // Pass token usage
           );
 
+          // For historical sessions, set realSessionId to enable resume
+          (session as any).realSessionId = sessionId;
+
           this.sessions.set(sessionId, session);
           loadedCount++;
+
+          this.logger.debug(
+            { sessionId, messageCount: sessionData.messages.length },
+            "Historical session loaded with realSessionId set"
+          );
         }
       }
 

@@ -15,8 +15,7 @@ export function SidebarHeader({ isMobile = false, isPWA = false }: SidebarHeader
             <MessageSquare className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">Agent UI</h1>
-            <p className="text-sm text-muted-foreground">AI coding assistant interface</p>
+            <h1 className="text-lg font-bold text-foreground">Deepractice Agent</h1>
           </div>
         </div>
       </div>
@@ -32,8 +31,7 @@ export function SidebarHeader({ isMobile = false, isPWA = false }: SidebarHeader
               <MessageSquare className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Agent UI</h1>
-              <p className="text-sm text-muted-foreground">Sessions</p>
+              <h1 className="text-lg font-semibold text-foreground">Deepractice Agent</h1>
             </div>
           </div>
         </div>

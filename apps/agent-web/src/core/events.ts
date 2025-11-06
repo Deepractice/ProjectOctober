@@ -7,8 +7,9 @@ import type { Session, ChatMessage } from "~/types";
 
 // Session Events
 export type SessionEvent =
-  | { type: "session.create" } // User action: create new session
-  | { type: "session.created"; sessionId: string } // Store update: session created
+  | { type: "session.navigate.new" } // User action: navigate to new session (lazy creation)
+  | { type: "session.create"; message: string } // Store action: create session with first message
+  | { type: "session.created"; sessionId: string; messages: ChatMessage[] } // Store update: session created
   | { type: "session.updated"; sessions: Session[] }
   | { type: "session.delete"; sessionId: string } // User action: delete session
   | { type: "session.deleted"; sessionId: string } // Store update: session deleted

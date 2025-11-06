@@ -63,9 +63,10 @@ function AppContent() {
   }, []); // Empty deps - only run once on mount
 
   // Handle URL-based session loading
-  // When URL changes, call Store action to select session
+  // When URL changes, call Store action to select session OR clear it
   useEffect(() => {
     if (sessionId && sessions.length > 0) {
+      // URL has sessionId - select it
       if (!selectedSession || selectedSession.id !== sessionId) {
         const session = sessions.find((s) => s.id === sessionId);
         if (session) {
@@ -73,15 +74,25 @@ function AppContent() {
           selectSession(sessionId);
         }
       }
+    } else if (!sessionId && selectedSession) {
+      // URL is "/" and we have a selected session - clear it
+      console.log("[App] URL is root, clearing selectedSession");
+      useSessionStore.setState({ selectedSession: null });
     }
   }, [sessionId, sessions, selectedSession, selectSession]);
 
   // Listen to Store navigation state changes
   // When Store emits navigationTarget, perform navigation
   useEffect(() => {
-    if (navigationTarget && navigationTarget !== sessionId) {
+    if (navigationTarget) {
       console.log("[App] Navigation target changed, navigating to:", navigationTarget);
-      navigate(`/session/${navigationTarget}`);
+
+      // Navigate to root (/) for new sessions or /session/:id for existing
+      if (navigationTarget === "/") {
+        navigate("/");
+      } else if (navigationTarget !== sessionId) {
+        navigate(`/session/${navigationTarget}`);
+      }
 
       // Close mobile sidebar when session is selected
       if (isMobile) {
