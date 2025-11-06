@@ -27,15 +27,16 @@ const __dirname = dirname(__filename);
  */
 function loadEnvironmentFiles() {
   const rootDir = path.resolve(__dirname, "../../..");
+  const envDir = path.join(rootDir, "env");
   const nodeEnv = process.env.NODE_ENV || "development";
 
   // Only load .env files if running standalone (not via CLI)
   // CLI will set environment variables before importing this module
-  dotenvConfig({ path: path.join(rootDir, ".env") });
-  dotenvConfig({ path: path.join(rootDir, `.env.${nodeEnv}`) });
-  dotenvConfig({ path: path.join(rootDir, ".env.local") });
+  dotenvConfig({ path: path.join(envDir, ".env") });
+  dotenvConfig({ path: path.join(envDir, `.env.${nodeEnv}`) });
+  dotenvConfig({ path: path.join(envDir, ".env.local") });
 
-  logger.info({ nodeEnv, rootDir }, "Environment files loaded");
+  logger.info({ nodeEnv, rootDir, envDir }, "Environment files loaded");
 }
 // Module-level config instance
 let configInstance = null;

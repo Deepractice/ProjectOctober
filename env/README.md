@@ -6,10 +6,10 @@ Simple and standard environment file management.
 
 ```bash
 # 1. Copy local template
-cp .env.example .env.local
+cp env/.env.example env/.env.local
 
 # 2. Edit and add your secrets
-nano .env.local  # Add your ANTHROPIC_API_KEY
+nano env/.env.local  # Add your ANTHROPIC_API_KEY
 
 # 3. Run
 pnpm dev
@@ -18,26 +18,27 @@ pnpm dev
 ## File Structure
 
 ```
-.env.local          # Your local config + secrets (gitignored)
-.env.development    # Development defaults (committed)
-.env.test          # Test defaults (committed)
-.env.production    # Production defaults (committed)
-.env.example       # Template for new developers (committed)
+env/
+├── .env.local          # Your local config + secrets (gitignored)
+├── .env.development    # Development defaults (committed)
+├── .env.test          # Test defaults (committed)
+├── .env.production    # Production defaults (committed)
+└── .env.example       # Template for new developers (committed)
 ```
 
 ## Loading Priority
 
 Files are loaded in this order (later overwrites earlier):
 
-1. `.env` (if exists - deprecated)
-2. `.env.[environment]` (development/test/production - based on NODE_ENV)
-3. `.env.local` (highest priority - your secrets and overrides)
+1. `env/.env` (if exists - deprecated)
+2. `env/.env.[environment]` (development/test/production - based on NODE_ENV)
+3. `env/.env.local` (highest priority - your secrets and overrides)
 
 **Example** (NODE_ENV=development):
 
-```
-PORT in .env.development  = 5200
-PORT in .env.local        = 5300  ← wins
+```text
+PORT in env/.env.development  = 5200
+PORT in env/.env.local        = 5300  ← wins
 ```
 
 ## Configuration Architecture
@@ -66,7 +67,7 @@ Service entry point loads files into `process.env`
 
 ## Available Variables
 
-See `.env.example` for full list with descriptions.
+See `env/.env.example` for full list with descriptions.
 
 **Core variables**:
 
@@ -80,14 +81,14 @@ See `.env.example` for full list with descriptions.
 
 ✅ **DO**:
 
-- Put secrets in `.env.local` (gitignored)
-- Commit environment templates (`.env.development`, etc.)
-- Use `.env.local` for all local overrides
+- Put secrets in `env/.env.local` (gitignored)
+- Commit environment templates (`env/.env.development`, etc.)
+- Use `env/.env.local` for all local overrides
 
 ❌ **DON'T**:
 
-- Don't commit `.env.local` (contains secrets)
-- Don't put secrets in `.env.development` (committed)
+- Don't commit `env/.env.local` (contains secrets)
+- Don't put secrets in `env/.env.development` (committed)
 - Don't modify `process.env` directly in code
 
 ## For Developers
@@ -96,7 +97,7 @@ See `.env.example` for full list with descriptions.
 
 1. **Add to schema** (`packages/agent-config/src/core/schemas/base.ts`)
 2. **Add to EnvLoader** (`packages/agent-config/src/core/loaders/EnvLoader.ts`)
-3. **Add to templates** (`.env.example`, `.env.development`, etc.)
+3. **Add to templates** (`env/.env.example`, `env/.env.development`, etc.)
 4. **Document** in this file
 
 ### Testing Different Environments

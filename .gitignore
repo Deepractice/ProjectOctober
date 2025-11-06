@@ -25,16 +25,16 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Environment variables
-# Ignore local overrides and secrets
+# Ignore local overrides and secrets (anywhere in the project)
 .env.local
 .env.*.local
 
-# Keep environment templates (committed to repo)
-!.env.development
-!.env.test
-!.env.production
-!.env.example
-!.env.secret.example
+# Keep environment templates in env/ folder (committed to repo)
+!env/.env.development
+!env/.env.test
+!env/.env.production
+!env/.env.example
+!env/.env.secret.example
 
 # Testing
 coverage/

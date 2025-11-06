@@ -210,14 +210,14 @@ packages/[name]/
 
 ```bash
 # Copy and edit local config (gitignored)
-cp .env.example .env.local
-nano .env.local  # Add ANTHROPIC_API_KEY
+cp env/.env.example env/.env.local
+nano env/.env.local  # Add ANTHROPIC_API_KEY
 ```
 
 ### Loading Priority
 
-1. `.env.[NODE_ENV]` (development/test/production)
-2. `.env.local` (your secrets, highest priority)
+1. `env/.env.[NODE_ENV]` (development/test/production)
+2. `env/.env.local` (your secrets, highest priority)
 
 ### Required Variables
 
@@ -230,7 +230,7 @@ nano .env.local  # Add ANTHROPIC_API_KEY
 - `PROJECT_PATH=.` - Default project directory
 - `NODE_ENV=development` - Environment mode
 
-See `.env.example` for full list.
+See `env/.env.example` for full list.
 
 ## Testing Strategy
 
@@ -297,7 +297,7 @@ import { createLogger } from "@deepracticex/logger"; // External
 
 1. Update schema: `packages/agent-config/src/core/schemas/base.ts`
 2. Update EnvLoader: `packages/agent-config/src/core/loaders/EnvLoader.ts`
-3. Update templates: `.env.example`, `.env.development`, etc.
+3. Update templates: `env/.env.example`, `env/.env.development`, etc.
 4. Test: Run config tests in `agent-config`
 
 ### Creating Changesets
@@ -385,4 +385,4 @@ pnpm build
 - [Commands Reference](docs/commands.md) - Complete command documentation
 - [Configuration Guide](docs/configuration.md) - Config system details
 - [Testing Strategy](docs/testing-strategy.md) - BDD + Unit testing approach
-- [Environment Variables](README.env.md) - Env file management
+- [Environment Variables](env/README.md) - Env file management
