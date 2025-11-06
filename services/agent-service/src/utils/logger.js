@@ -13,8 +13,8 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Log directory: project_root/logs
-const logDir = path.join(__dirname, "../../logs");
+// Log directory: configurable via LOG_DIR env var, default to project_root/logs
+const logDir = process.env.LOG_DIR || path.join(__dirname, "../../logs");
 
 // Create logger instance
 export const logger = createLogger({

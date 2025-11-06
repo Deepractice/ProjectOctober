@@ -15,14 +15,15 @@ RUN npm install -g @deepractice-ai/agent-cli
 # Environment variables
 ENV NODE_ENV=production \
     PORT=5200 \
-    PROJECT_PATH=/project
+    PROJECT_PATH=/project \
+    LOG_DIR=/logs
 
 # Runtime variables (must be provided via docker run -e or docker-compose):
 # - ANTHROPIC_API_KEY (required)
 # - ANTHROPIC_BASE_URL (optional, default: https://api.anthropic.com)
 
-# Create project directory and set ownership
-RUN mkdir -p /project && chown node:node /project
+# Create project and logs directories and set ownership
+RUN mkdir -p /project /logs && chown node:node /project /logs
 
 # Switch to non-root user
 USER node
