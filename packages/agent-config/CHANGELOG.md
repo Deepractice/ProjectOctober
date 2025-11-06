@@ -1,5 +1,11 @@
 # @deepractice-ai/agent-config
 
+## 0.1.2
+
+### Patch Changes
+
+- b2f7930: Refactor environment variable handling: remove database and UI loaders, add comprehensive environment templates (.env.development, .env.production, .env.test), and update configuration documentation
+
 ## 0.1.1
 
 ### Patch Changes
