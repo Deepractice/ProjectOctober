@@ -3,7 +3,8 @@
  * Integrates MessagesArea and InputArea with EventBus
  */
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import MessagesArea from "~/components/MessagesArea";
 import InputArea from "~/components/InputArea";
 import { useSessionStore } from "~/stores/sessionStore";
@@ -16,20 +17,24 @@ export function ChatInterface() {
   const isSessionProcessing = useSessionStore((state) => state.isSessionProcessing);
   const abortSessionById = useSessionStore((state) => state.abortSessionById);
   const sendMessage = useMessageStore((state) => state.sendMessage);
+  const pendingSessionId = useMessageStore((state) => state.pendingSessionId);
   const { autoExpandTools, showRawParameters, showThinking, agentStatus, provider } = useUIStore();
+
+  // Determine effective session ID (pending or real)
+  const effectiveSessionId = pendingSessionId || selectedSession?.id;
 
   // Get messages using a stable approach
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
-  // Subscribe to message store changes for current session
+  // Subscribe to message store changes for current session (including pending)
   useEffect(() => {
-    if (!selectedSession) {
+    if (!effectiveSessionId) {
       setChatMessages([]);
       return;
     }
 
     const updateMessages = () => {
-      const messages = useMessageStore.getState().getMessages(selectedSession.id);
+      const messages = useMessageStore.getState().getMessages(effectiveSessionId);
       setChatMessages(messages);
     };
 
@@ -40,7 +45,7 @@ export function ChatInterface() {
     const unsubscribe = useMessageStore.subscribe(updateMessages);
 
     return unsubscribe;
-  }, [selectedSession?.id]);
+  }, [effectiveSessionId]);
 
   // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -51,9 +56,14 @@ export function ChatInterface() {
   // Local state
   const [input, setInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [attachedImages, setAttachedImages] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState<Map<string, number>>(new Map());
+  const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
 
-  // Check if current session is loading
-  const isLoading = selectedSession ? isSessionProcessing(selectedSession.id) : false;
+  // Check if current session is loading (or pending session is being created)
+  const isLoading = effectiveSessionId
+    ? (selectedSession ? isSessionProcessing(selectedSession.id) : true) // pending sessions are always "loading"
+    : false;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -68,16 +78,43 @@ export function ChatInterface() {
   // Note: Message loading is handled by sessionStore when session.selected event is emitted
   // No need for UI component to manage loading logic
 
+  // Image upload handlers
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const imageFiles = acceptedFiles.filter((file) => file.type.startsWith("image/"));
+
+    if (imageFiles.length < acceptedFiles.length) {
+      setImageErrors((prev) => {
+        const newErrors = new Map(prev);
+        newErrors.set("general", "Only image files are supported");
+        return newErrors;
+      });
+    }
+
+    setAttachedImages((prev) => [...prev, ...imageFiles]);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+    },
+    noClick: true,
+    noKeyboard: true,
+  });
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const messageContent = input.trim();
+    const imagesToSend = attachedImages;
+
     setInput("");
+    setAttachedImages([]);
 
     try {
       // Pass undefined sessionId if no session selected (lazy creation)
-      sendMessage(selectedSession?.id, messageContent);
+      sendMessage(selectedSession?.id, messageContent, imagesToSend);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -93,8 +130,8 @@ export function ChatInterface() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Messages Area - show welcome or messages */}
-      {!selectedSession ? (
+      {/* Messages Area - show welcome or messages (including pending sessions) */}
+      {!effectiveSessionId ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center px-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
@@ -111,8 +148,14 @@ export function ChatInterface() {
           messagesEndRef={messagesEndRef}
           isLoadingSessionMessages={false}
           chatMessages={chatMessages}
-          selectedSession={selectedSession}
-          currentSessionId={selectedSession.id}
+          selectedSession={selectedSession || {
+            id: effectiveSessionId,
+            summary: "New conversation...",
+            messageCount: chatMessages.length,
+            lastActivity: new Date().toISOString(),
+            cwd: ".",
+          }}
+          currentSessionId={effectiveSessionId}
           isLoadingMoreMessages={false}
           hasMoreMessages={false}
           totalMessages={chatMessages.length}
@@ -143,11 +186,17 @@ export function ChatInterface() {
         cursorPosition={cursorPosition}
         isLoading={isLoading}
         selectedProject={{ path: "", name: "", fullPath: "" }}
-        attachedImages={[]}
-        uploadingImages={new Map()}
-        imageErrors={new Map()}
+        attachedImages={attachedImages}
+        uploadingImages={uploadingImages}
+        imageErrors={imageErrors}
         permissionMode="auto"
-        selectedSession={selectedSession}
+        selectedSession={selectedSession || (effectiveSessionId ? {
+          id: effectiveSessionId,
+          summary: "New conversation...",
+          messageCount: chatMessages.length,
+          lastActivity: new Date().toISOString(),
+          cwd: ".",
+        } : null)}
         claudeStatus={agentStatus?.text || null}
         provider={provider || "claude"}
         showThinking={showThinking}
@@ -172,11 +221,12 @@ export function ChatInterface() {
         setIsTextareaExpanded={() => {}}
         handleSubmit={handleSubmit}
         dropzoneProps={{
-          getRootProps: () => ({}),
-          getInputProps: () => ({}),
-          isDragActive: false,
+          getRootProps,
+          getInputProps,
+          isDragActive,
+          open,
         }}
-        setAttachedImages={() => {}}
+        setAttachedImages={setAttachedImages}
         selectFile={() => {}}
         setShowCommandMenu={() => {}}
         setSlashPosition={() => {}}

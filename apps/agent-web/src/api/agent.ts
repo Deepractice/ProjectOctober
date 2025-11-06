@@ -61,14 +61,50 @@ export async function loadSessionMessages(sessionId: string): Promise<ChatMessag
 }
 
 /**
+ * Convert File to base64 string
+ */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      // Extract base64 data (remove data:image/...;base64, prefix)
+      const base64Data = base64.split(",")[1];
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Send message via WebSocket
  * Pure WebSocket send - no Store manipulation
  */
-export function sendMessageToBackend(sessionId: string, content: string): void {
+export async function sendMessageToBackend(
+  sessionId: string,
+  content: string,
+  images?: File[]
+): Promise<void> {
+  // Convert images to base64 if provided
+  let imageData: Array<{ type: string; data: string }> | undefined;
+
+  if (images && images.length > 0) {
+    imageData = await Promise.all(
+      images.map(async (file) => ({
+        type: file.type,
+        data: await fileToBase64(file),
+      }))
+    );
+  }
+
   wsClient.send({
     type: "agent-command",
     command: content,
-    options: { sessionId },
+    options: {
+      sessionId,
+      ...(imageData && { images: imageData }),
+    },
   });
 }
 

@@ -145,11 +145,11 @@ function InputArea({
       {/* Input controls bar - Token usage and other buttons */}
       <div ref={inputContainerRef} className="max-w-4xl mx-auto mb-3">
         <div className="flex items-center justify-center gap-3">
-          {/* Token usage pie chart */}
-          <TokenUsagePie
+          {/* Token usage pie chart - Hidden for now */}
+          {/* <TokenUsagePie
             used={tokenBudget?.used || 0}
             total={tokenBudget?.total || parseInt(import.meta.env.VITE_CONTEXT_WINDOW) || 160000}
-          />
+          /> */}
 
           {/* Clear input button - positioned to the right of token pie, only shows when there's input */}
           {input.trim() && (

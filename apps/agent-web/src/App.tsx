@@ -55,9 +55,20 @@ function AppContent() {
       console.error("[App] Failed to load sessions:", error);
     });
 
+    // Listen for pending session navigation
+    const handlePendingNav = (event: Event) => {
+      const customEvent = event as CustomEvent<{ sessionId: string }>;
+      const { sessionId } = customEvent.detail;
+      console.log("[App] Navigating to pending session:", sessionId);
+      navigate(`/session/${sessionId}`, { replace: true });
+    };
+
+    window.addEventListener("navigate-to-pending", handlePendingNav);
+
     return () => {
       console.log("[App] Cleaning up: disconnecting WebSocket");
       disconnectWebSocket();
+      window.removeEventListener("navigate-to-pending", handlePendingNav);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run once on mount
@@ -65,6 +76,13 @@ function AppContent() {
   // Handle URL-based session loading
   // When URL changes, call Store action to select session OR clear it
   useEffect(() => {
+    // Protection: Redirect pending URLs (from refresh/direct access)
+    if (sessionId?.startsWith("pending-")) {
+      console.warn("[App] Detected pending session URL on mount/refresh, redirecting to home:", sessionId);
+      navigate("/", { replace: true });
+      return;
+    }
+
     if (sessionId && sessions.length > 0) {
       // URL has sessionId - select it
       if (!selectedSession || selectedSession.id !== sessionId) {
@@ -79,7 +97,7 @@ function AppContent() {
       console.log("[App] URL is root, clearing selectedSession");
       useSessionStore.setState({ selectedSession: null });
     }
-  }, [sessionId, sessions, selectedSession, selectSession]);
+  }, [sessionId, sessions, selectedSession, selectSession, navigate]);
 
   // Listen to Store navigation state changes
   // When Store emits navigationTarget, perform navigation
@@ -87,11 +105,15 @@ function AppContent() {
     if (navigationTarget) {
       console.log("[App] Navigation target changed, navigating to:", navigationTarget);
 
+      // Determine if this is a pending-to-real session replacement
+      const isPendingReplacement = sessionId?.startsWith("pending-") && !navigationTarget.startsWith("pending-");
+
       // Navigate to root (/) for new sessions or /session/:id for existing
       if (navigationTarget === "/") {
-        navigate("/");
+        navigate("/", { replace: true });
       } else if (navigationTarget !== sessionId) {
-        navigate(`/session/${navigationTarget}`);
+        // Use replace: true for pending session transitions (smooth URL change without history)
+        navigate(`/session/${navigationTarget}`, { replace: isPendingReplacement || navigationTarget.startsWith("pending-") });
       }
 
       // Close mobile sidebar when session is selected

@@ -23,6 +23,7 @@ export interface MessageState {
   // State
   sessionMessages: Map<string, ChatMessage[]>;
   loadingSessions: Set<string>;
+  pendingSessionId: string | null; // Temporary session ID before backend creates real one
 
   // Internal state actions (used by EventBus subscribers)
   addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
@@ -48,6 +49,7 @@ export const useMessageStore = create<MessageState>()(
       // Initial state
       sessionMessages: new Map(),
       loadingSessions: new Set(),
+      pendingSessionId: null,
 
       // Actions
       addUserMessage: (sessionId, content, images) => {
@@ -62,8 +64,8 @@ export const useMessageStore = create<MessageState>()(
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
-          const newMessage = {
-            type: "user",
+          const newMessage: ChatMessage = {
+            type: "user" as const,
             content,
             images: images || [],
             timestamp: new Date(),
@@ -271,20 +273,50 @@ export const useMessageStore = create<MessageState>()(
 
       // Business action methods (components call these)
       sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => {
-        if (!sessionId) {
-          // No session yet - this is the first message, create session with it
-          console.log("[MessageStore] No sessionId - creating new session with first message");
+        const { pendingSessionId } = get();
+
+        // Case 1: Brand new session (no sessionId, no pending)
+        if (!sessionId && !pendingSessionId) {
+          // Generate temporary session ID
+          const tempId = `pending-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+          console.log("[MessageStore] Creating new session with tempId:", tempId);
+
+          // Store pending session ID
+          set({ pendingSessionId: tempId });
+
+          // Optimistically add user message to UI
+          const store = get();
+          store.addUserMessage(tempId, content, images);
+
+          // Navigate to pending session URL immediately
+          // We'll add a special navigation event for pending sessions
+          const navEvent = new CustomEvent("navigate-to-pending", {
+            detail: { sessionId: tempId },
+          });
+          window.dispatchEvent(navEvent);
+
+          // Emit session.create event with tempId
           eventBus.emit({
             type: "session.create",
             message: content,
+            tempId,
           });
           return;
         }
 
-        // Existing session - normal flow
+        // Case 2: Pending session sending additional message (shouldn't happen in current flow, but handle it)
+        if (pendingSessionId && sessionId === pendingSessionId) {
+          console.log("[MessageStore] Sending message to pending session:", pendingSessionId);
+          // Just add to UI, wait for real session to be created
+          const store = get();
+          store.addUserMessage(pendingSessionId, content, images);
+          return;
+        }
+
+        // Case 3: Existing real session - normal flow
         eventBus.emit({
           type: "message.send",
-          sessionId,
+          sessionId: sessionId || pendingSessionId!,
           content,
           images,
         });
@@ -297,12 +329,30 @@ export const useMessageStore = create<MessageState>()(
 // Subscribe to EventBus (auto-setup on module load)
 import { isSessionEvent } from "~/core/events";
 
-// Listen to session.created to load initial messages
+// Listen to session.created to load initial messages and handle tempId replacement
 eventBus.on(isSessionEvent).subscribe(async (event) => {
   if (event.type === "session.created") {
     const store = useMessageStore.getState();
-    console.log("[MessageStore] Session created, loading initial messages:", event.sessionId);
-    store.setMessages(event.sessionId, event.messages);
+    const { oldTempId } = event;
+
+    console.log("[MessageStore] Session created:", event.sessionId, "oldTempId:", oldTempId);
+
+    // If this was a pending session, transfer messages from tempId to realId
+    if (oldTempId) {
+      const tempMessages = store.sessionMessages.get(oldTempId);
+      if (tempMessages) {
+        console.log("[MessageStore] Transferring messages from", oldTempId, "to", event.sessionId);
+        // Set messages from backend (should include user message + assistant response)
+        store.setMessages(event.sessionId, event.messages);
+        // Clean up temp session messages
+        store.clearSessionMessages(oldTempId);
+      }
+      // Clear pending session ID
+      useMessageStore.setState({ pendingSessionId: null });
+    } else {
+      // Normal session creation (not from pending)
+      store.setMessages(event.sessionId, event.messages);
+    }
   }
 });
 
@@ -339,7 +389,7 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
         // 4. Send to backend via WebSocket (using pure API)
         console.log("[MessageStore] Sending command to backend via WebSocket");
         const { sendMessageToBackend } = await import("~/api/agent");
-        sendMessageToBackend(event.sessionId, event.content);
+        await sendMessageToBackend(event.sessionId, event.content, event.images);
         console.log("[MessageStore] Command sent to backend successfully");
       } catch (error) {
         console.error("[MessageStore] Failed to send message:", error);

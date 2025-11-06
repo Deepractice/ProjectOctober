@@ -182,8 +182,10 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
     case "session.create":
       // Business orchestration: create session with first message
       try {
-        console.log("[SessionStore] Creating session with first message...");
-        store.setLoading(true);
+        const { tempId } = event;
+        console.log("[SessionStore] Creating session with first message, tempId:", tempId);
+        // DON'T set global loading state - this would show "Loading sessions..." in Sidebar
+        // The session will be added to the list when AI completes or via WebSocket broadcast
 
         const response = await fetch("/api/sessions/create", {
           method: "POST",
@@ -192,31 +194,41 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
         });
 
         if (!response.ok) {
+          // Failed to create session - navigate back to home
+          console.error("[SessionStore] Failed to create session:", response.statusText);
+          useSessionStore.setState({ navigationTarget: "/" });
           throw new Error(`Failed to create session: ${response.statusText}`);
         }
 
         const data = await response.json();
         console.log("[SessionStore] Session created with SDK session_id:", data.sessionId);
 
-        // Reload sessions to include the new one
-        const { loadSessions } = await import("~/api/agent");
-        const sessions = await loadSessions();
-        store.setSessions(sessions);
-        store.setLoading(false);
+        // Add the new session to the list immediately (optimistic update)
+        // Don't reload all sessions - just add this one to avoid loading state
+        const newSession: Session = {
+          id: data.sessionId,
+          summary: data.summary || "New conversation",
+          messageCount: data.messageCount || 1,
+          lastActivity: data.lastActivity || new Date().toISOString(),
+          cwd: data.cwd || ".",
+        };
+        store.addSession(newSession);
 
-        // Emit created event with messages
+        // Emit created event with messages and oldTempId
         eventBus.emit({
           type: "session.created",
           sessionId: data.sessionId,
           messages: data.messages || [],
+          oldTempId: tempId,
         });
 
-        // Navigate to new session
-        eventBus.emit({ type: "session.selected", sessionId: data.sessionId });
+        // Navigate to real session (replace pending URL)
+        useSessionStore.setState({ navigationTarget: data.sessionId });
       } catch (error) {
         console.error("[SessionStore] Failed to create session:", error);
         store.setError((error as Error).message);
-        store.setLoading(false);
+        // Navigate back to home on error
+        useSessionStore.setState({ navigationTarget: "/" });
       }
       break;
 
