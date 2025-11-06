@@ -30,10 +30,13 @@ function AppContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Detect mobile viewport
+  // Detect mobile viewport (1200px breakpoint)
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const width = window.innerWidth;
+      const shouldBeMobile = width < 1200;
+      console.log("[App] Viewport check:", { width, shouldBeMobile });
+      setIsMobile(shouldBeMobile);
     };
 
     checkMobile();

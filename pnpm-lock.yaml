@@ -302,9 +302,6 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.32.1
         version: 0.32.1(encoding@0.1.13)
-      '@deepractice-ai/agent-config':
-        specifier: workspace:*
-        version: link:../agent-config
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
