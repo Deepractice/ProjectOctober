@@ -51,9 +51,7 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
     console.log(`   PROJECT_PATH: ${process.env.PROJECT_PATH}`);
   }
   if (process.env.ANTHROPIC_API_KEY) {
-    console.log(
-      `   ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY.substring(0, 6)}***`
-    );
+    console.log(`   ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY.substring(0, 6)}***`);
   }
   console.log("");
 
@@ -76,10 +74,7 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
     const bundledServicePath = join(distRoot, "runtime/service.js");
 
     // Path to source service (in monorepo development)
-    const sourceServicePath = join(
-      __dirname,
-      "../../../../services/agent-service/src/index.js"
-    );
+    const sourceServicePath = join(__dirname, "../../../../services/agent-service/src/index.js");
 
     let servicePath: string;
     if (existsSync(bundledServicePath)) {

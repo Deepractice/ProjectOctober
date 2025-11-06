@@ -24,9 +24,7 @@ export async function initConfig() {
  */
 export function config() {
   if (!configInstance) {
-    throw new Error(
-      "Configuration not initialized. Call initConfig() first."
-    );
+    throw new Error("Configuration not initialized. Call initConfig() first.");
   }
   return configInstance;
 }

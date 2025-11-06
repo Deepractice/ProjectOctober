@@ -13,9 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Read package.json for version
-const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../package.json"), "utf-8")
-);
+const packageJson = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8"));
 
 const program = new Command();
 
@@ -33,11 +31,7 @@ program
   .option("--project <path>", "Project directory path")
   .option("--anthropic-api-key <key>", "Anthropic API key")
   .option("--anthropic-base-url <url>", "Anthropic API base URL")
-  .option(
-    "--node-env <env>",
-    "Node environment (development/production)",
-    "production"
-  )
+  .option("--node-env <env>", "Node environment (development/production)", "production")
   .action(httpCommand);
 
 program.parse();

@@ -55,14 +55,14 @@ agent-cli http [options]
 
 ### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--host <host>` | Host to bind to | `0.0.0.0` |
-| `--port <port>` | Port to listen on | `5200` |
-| `--project <path>` | Project directory path | Current directory |
-| `--anthropic-api-key <key>` | Anthropic API key (required) | - |
-| `--anthropic-base-url <url>` | Anthropic API base URL | `https://api.anthropic.com` |
-| `--node-env <env>` | Node environment | `production` |
+| Option                       | Description                  | Default                     |
+| ---------------------------- | ---------------------------- | --------------------------- |
+| `--host <host>`              | Host to bind to              | `0.0.0.0`                   |
+| `--port <port>`              | Port to listen on            | `5200`                      |
+| `--project <path>`           | Project directory path       | Current directory           |
+| `--anthropic-api-key <key>`  | Anthropic API key (required) | -                           |
+| `--anthropic-base-url <url>` | Anthropic API base URL       | `https://api.anthropic.com` |
+| `--node-env <env>`           | Node environment             | `production`                |
 
 ### Examples
 
@@ -120,6 +120,7 @@ The agent-cli is a lightweight wrapper that:
 3. Dynamically loads and starts the agent-service
 
 This design allows for:
+
 - Simple deployment (`npm install -g`)
 - Easy configuration via CLI or environment variables
 - Clean separation between CLI interface and server logic
