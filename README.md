@@ -71,12 +71,33 @@ That's it! No configuration files, no complex setup, just chat.
 
 Before you start, make sure you have:
 
-1. **Docker installed** - [Install Docker](https://docs.docker.com/get-docker/)
+1. **Node.js 20+ or Docker** - Choose one:
+   - [Install Node.js](https://nodejs.org/) (for NPM CLI method)
+   - [Install Docker](https://docs.docker.com/get-docker/) (for Docker method)
 2. **Anthropic API Key** - [Get API Key](https://console.anthropic.com/)
 
 ### Installation
 
-#### Option 1: Docker Run (Recommended for Quick Try)
+#### Option 1: NPM CLI (Recommended for Local Development)
+
+```bash
+# Install globally
+npm install -g @deepractice-ai/agent-cli
+
+# Run the server
+agentx http --anthropic-api-key sk-ant-xxxxx
+```
+
+**Access**: Open <http://localhost:5200> in your browser
+
+**Features**:
+
+- No Docker required - runs directly on Node.js
+- Easy to start and stop
+- Perfect for local development and testing
+- Cross-platform (Windows, macOS, Linux)
+
+#### Option 2: Docker Run (Recommended for Quick Try)
 
 ```bash
 docker run -d \
@@ -89,7 +110,7 @@ docker run -d \
 
 **Access**: Open <http://localhost:5200> in your browser
 
-#### Option 2: Docker Compose (Recommended for Production)
+#### Option 3: Docker Compose (Recommended for Production)
 
 1. Create a `.env` file:
 
@@ -152,7 +173,7 @@ docker-compose down
 ## ❓ FAQ
 
 **Q: Do I need to know Docker?**
-A: No. Just install Docker Desktop and copy-paste one command. That's all.
+A: No. You can use the NPM CLI method (Option 1) which only requires Node.js. Docker is optional.
 
 **Q: Is my data secure?**
 A: Yes. Everything runs locally on your machine. Your API key and conversations stay with you.
