@@ -49,7 +49,9 @@ export function MicButton({ onTranscript, className = "" }: MicButtonProps) {
 
       // Check if getUserMedia is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Microphone access not available. Please use HTTPS or a supported browser.");
+        throw new Error(
+          "Microphone access not available. Please use HTTPS or a supported browser."
+        );
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

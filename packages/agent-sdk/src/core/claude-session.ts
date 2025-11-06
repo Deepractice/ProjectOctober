@@ -87,7 +87,7 @@ export class ClaudeSession implements Session {
     // ✅ FIX: Manually add user message BEFORE sending to Claude SDK
     // Claude SDK doesn't return user messages in the stream, so we must add it ourselves
     const userMessage: AnyMessage = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       type: "user",
       content,
       timestamp: new Date(),

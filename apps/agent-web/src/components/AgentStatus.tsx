@@ -98,7 +98,9 @@ function AgentStatus({ status, onAbort, isLoading, provider = "claude" }: AgentS
                         <span className="text-gray-300 text-sm hidden sm:inline">
                           ⚒ {tokens.toLocaleString()} tokens
                         </span>
-                        <span className="text-gray-300 text-sm sm:hidden">⚒ {tokens.toLocaleString()}</span>
+                        <span className="text-gray-300 text-sm sm:hidden">
+                          ⚒ {tokens.toLocaleString()}
+                        </span>
                       </>
                     )}
                     <span className="text-gray-400 hidden sm:inline">·</span>
@@ -117,7 +119,12 @@ function AgentStatus({ status, onAbort, isLoading, provider = "claude" }: AgentS
                 className="ml-3 text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 flex-shrink-0"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 <span className="hidden sm:inline">Stop</span>
               </motion.button>

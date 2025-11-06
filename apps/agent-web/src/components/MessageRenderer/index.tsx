@@ -66,7 +66,20 @@ function formatUsageLimitText(text: string): string {
         .replace(/\b\w/g, (c) => c.toUpperCase());
       const tzHuman = city ? `${gmt} (${city})` : gmt;
 
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       const dateReadable = `${reset.getDate()} ${months[reset.getMonth()]} ${reset.getFullYear()}`;
 
       return `Agent usage limit reached. Your limit will reset at **${timeStr} ${tzHuman}** - ${dateReadable}`;
@@ -105,7 +118,10 @@ const markdownComponents = {
       };
       try {
         if (navigator?.clipboard?.writeText) {
-          navigator.clipboard.writeText(raw).then(doSet).catch(() => fallbackCopy(raw, doSet));
+          navigator.clipboard
+            .writeText(raw)
+            .then(doSet)
+            .catch(() => fallbackCopy(raw, doSet));
         } else {
           fallbackCopy(raw, doSet);
         }
@@ -149,7 +165,12 @@ const markdownComponents = {
     </blockquote>
   ),
   a: ({ href, children }: any) => (
-    <a href={href} className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+    <a
+      href={href}
+      className="text-blue-600 dark:text-blue-400 hover:underline"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       {children}
     </a>
   ),
@@ -186,103 +207,107 @@ interface MessageRendererProps {
 /**
  * Main MessageRenderer component
  */
-const MessageRenderer = memo(({
-  message,
-  index,
-  prevMessage,
-  createDiff,
-  onFileOpen,
-  onShowSettings,
-  autoExpandTools,
-  showRawParameters,
-  showThinking,
-  selectedProject,
-}: MessageRendererProps) => {
-  const isGrouped =
-    prevMessage &&
-    prevMessage.type === message.type &&
-    ["assistant", "user", "tool", "error"].includes(prevMessage.type);
+const MessageRenderer = memo(
+  ({
+    message,
+    index,
+    prevMessage,
+    createDiff,
+    onFileOpen,
+    onShowSettings,
+    autoExpandTools,
+    showRawParameters,
+    showThinking,
+    selectedProject,
+  }: MessageRendererProps) => {
+    const isGrouped =
+      prevMessage &&
+      prevMessage.type === message.type &&
+      ["assistant", "user", "tool", "error"].includes(prevMessage.type);
 
-  const messageRef = React.useRef<HTMLDivElement>(null);
-  const [isExpanded, setIsExpanded] = React.useState(false);
+    const messageRef = React.useRef<HTMLDivElement>(null);
+    const [isExpanded, setIsExpanded] = React.useState(false);
 
-  // Auto-expand tool use when it comes into view
-  React.useEffect(() => {
-    if (!autoExpandTools || !messageRef.current || !message.isToolUse) return;
+    // Auto-expand tool use when it comes into view
+    React.useEffect(() => {
+      if (!autoExpandTools || !messageRef.current || !message.isToolUse) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !isExpanded && messageRef.current) {
-            setIsExpanded(true);
-            const details = messageRef.current.querySelectorAll("details");
-            details.forEach((detail) => {
-              detail.open = true;
-            });
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !isExpanded && messageRef.current) {
+              setIsExpanded(true);
+              const details = messageRef.current.querySelectorAll("details");
+              details.forEach((detail) => {
+                detail.open = true;
+              });
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
 
-    observer.observe(messageRef.current);
+      observer.observe(messageRef.current);
 
-    return () => {
-      if (messageRef.current) {
-        observer.unobserve(messageRef.current);
-      }
-    };
-  }, [autoExpandTools, isExpanded, message.isToolUse]);
+      return () => {
+        if (messageRef.current) {
+          observer.unobserve(messageRef.current);
+        }
+      };
+    }, [autoExpandTools, isExpanded, message.isToolUse]);
 
-  return (
-    <div
-      ref={messageRef}
-      className={`chat-message ${message.type} ${isGrouped ? "grouped" : ""} ${message.type === "user" ? "flex justify-end px-3 sm:px-0" : "px-3 sm:px-0"}`}
-    >
-      {message.type === "user" ? (
-        <UserMessage
-          content={message.content}
-          timestamp={message.timestamp}
-          images={message.images}
-          isGrouped={isGrouped}
-        />
-      ) : (
-        <div className="w-full">
-          {!isGrouped && <MessageHeader messageType={message.type} />}
-
+    return (
+      <div
+        ref={messageRef}
+        className={`chat-message ${message.type} ${isGrouped ? "grouped" : ""} ${message.type === "user" ? "flex justify-end px-3 sm:px-0" : "px-3 sm:px-0"}`}
+      >
+        {message.type === "user" ? (
+          <UserMessage
+            content={message.content}
+            timestamp={message.timestamp}
+            images={message.images}
+            isGrouped={isGrouped}
+          />
+        ) : (
           <div className="w-full">
-            {/* Tool Use Display */}
-            {message.isToolUse && !["Read", "TodoWrite", "TodoRead"].includes(message.toolName) ? (
-              <ToolUseDisplay
-                message={message}
-                autoExpandTools={autoExpandTools}
-                showRawParameters={showRawParameters}
-                showThinking={showThinking}
-                onFileOpen={onFileOpen}
-                onShowSettings={onShowSettings}
-                selectedProject={selectedProject}
-                createDiff={createDiff}
-              />
-            ) : message.isToolUse && message.toolName === "Read" ? (
-              <ReadToolIndicator toolInput={message.toolInput} onFileOpen={onFileOpen} />
-            ) : message.isToolUse && (message.toolName === "TodoWrite" || message.toolName === "TodoRead") ? (
-              <TodoToolIndicator toolInput={message.toolInput} toolName={message.toolName} />
-            ) : (
-              <AssistantMessage
-                content={message.content}
-                timestamp={message.timestamp}
-                reasoning={message.reasoning}
-                showThinking={showThinking}
-                messageType={message.type}
-                isGrouped={isGrouped}
-              />
-            )}
+            {!isGrouped && <MessageHeader messageType={message.type} />}
+
+            <div className="w-full">
+              {/* Tool Use Display */}
+              {message.isToolUse &&
+              !["Read", "TodoWrite", "TodoRead"].includes(message.toolName) ? (
+                <ToolUseDisplay
+                  message={message}
+                  autoExpandTools={autoExpandTools}
+                  showRawParameters={showRawParameters}
+                  showThinking={showThinking}
+                  onFileOpen={onFileOpen}
+                  onShowSettings={onShowSettings}
+                  selectedProject={selectedProject}
+                  createDiff={createDiff}
+                />
+              ) : message.isToolUse && message.toolName === "Read" ? (
+                <ReadToolIndicator toolInput={message.toolInput} onFileOpen={onFileOpen} />
+              ) : message.isToolUse &&
+                (message.toolName === "TodoWrite" || message.toolName === "TodoRead") ? (
+                <TodoToolIndicator toolInput={message.toolInput} toolName={message.toolName} />
+              ) : (
+                <AssistantMessage
+                  content={message.content}
+                  timestamp={message.timestamp}
+                  reasoning={message.reasoning}
+                  showThinking={showThinking}
+                  messageType={message.type}
+                  isGrouped={isGrouped}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-});
+        )}
+      </div>
+    );
+  }
+);
 
 MessageRenderer.displayName = "MessageRenderer";
 

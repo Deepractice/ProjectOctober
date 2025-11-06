@@ -37,6 +37,7 @@ Agent/
 **Role**: Unified entry point for the entire application
 
 **Responsibilities**:
+
 - Serve REST API endpoints (`/api/*`)
 - Handle WebSocket connections (`/ws`, `/shell`)
 - Serve static frontend files in production (`/*`)
@@ -46,6 +47,7 @@ Agent/
 **Port**: 5200 (unified for both dev and prod)
 
 **Key Files**:
+
 - `src/index.js` - Server startup, configuration loading
 - `src/app.js` - Express app, route mounting, static file serving
 - `src/agent.js` - Claude Agent SDK integration
@@ -57,6 +59,7 @@ Agent/
 **Role**: React-based user interface
 
 **Responsibilities**:
+
 - Render UI components
 - Manage client-side state
 - Communicate with backend via HTTP and WebSocket
@@ -66,12 +69,13 @@ Agent/
 **Production**: Static files served by agent-service
 
 **Key Files**:
+
 - `src/App.tsx` - Main application component
 - `src/components/ChatInterface.tsx` - Chat UI
 - `src/components/Terminal.tsx` - Terminal emulator
 - `src/stores/sessionStore.ts` - Zustand state management
 
-### packages/* (Shared Libraries)
+### packages/\* (Shared Libraries)
 
 **agent-config**: Configuration management with multi-source loading (env, file, database)
 **agent-sdk**: Claude Agent SDK wrapper and session management
@@ -159,11 +163,13 @@ File system / Project
 **Image**: `deepracticexs/agent:latest`
 
 **Build Process**:
+
 1. Build agent-web → `apps/agent-web/dist/`
 2. Copy dist to `services/agent-service/dist/`
 3. Package agent-service + dist into Docker image
 
 **Runtime**:
+
 - Single Node.js process running agent-service
 - Serves static files from `dist/`
 - All requests go to port 5200
@@ -173,6 +179,7 @@ File system / Project
 ## Technology Stack
 
 ### Frontend
+
 - **React 18** - UI library
 - **TypeScript** - Type safety
 - **Vite** - Build tool and dev server
@@ -183,6 +190,7 @@ File system / Project
 - **Marked** - Markdown rendering
 
 ### Backend
+
 - **Node.js** - Runtime
 - **Express** - HTTP server
 - **ws** - WebSocket server
@@ -191,6 +199,7 @@ File system / Project
 - **@anthropic-ai/sdk** - Claude API integration
 
 ### Shared
+
 - **pnpm** - Package manager (workspace support)
 - **Turbo** - Build orchestration
 - **Zod** - Schema validation (agent-config)
@@ -200,6 +209,7 @@ File system / Project
 Agent uses a layered configuration system provided by `@deepractice-ai/agent-config`:
 
 **Priority Order** (highest to lowest):
+
 1. Runtime updates (in-memory)
 2. Environment variables
 3. `.env` file
@@ -207,6 +217,7 @@ Agent uses a layered configuration system provided by `@deepractice-ai/agent-con
 5. Default values
 
 **Key Config Values**:
+
 - `PORT` - Server port (default: 5200)
 - `ANTHROPIC_API_KEY` - Claude API key (required)
 - `ANTHROPIC_BASE_URL` - API endpoint (default: https://api.anthropic.com)
@@ -229,6 +240,7 @@ docker run -d \
 ```
 
 **Container Architecture**:
+
 - Base image: `deepracticexs/agent-runtime:latest` (Node.js + system tools)
 - Single process: agent-service
 - Volume mounts: project directory, SSH keys, git config
@@ -256,10 +268,12 @@ PORT=5200 node src/index.js
 Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 
 **Schema**:
+
 - `sessions` - Session metadata (id, name, timestamp, messages)
 - `messages` - Chat messages (session_id, role, content, attachments)
 
 **Flow**:
+
 1. User creates session → `POST /api/sessions`
 2. User sends message → WebSocket `/ws`
 3. Agent processes with Claude SDK
@@ -271,6 +285,7 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 ### Why Monorepo?
 
 **Benefits**:
+
 - Shared TypeScript types between frontend and backend
 - Unified dependency management
 - Atomic commits across full stack
@@ -281,6 +296,7 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 ### Why agent-service Serves Static Files?
 
 **Reasons**:
+
 - Simplifies deployment (single container)
 - Reduces infrastructure complexity (no separate frontend server)
 - Better for desktop-class applications (like VS Code, Cursor)
@@ -289,6 +305,7 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 ### Why Separate agent-web and agent-service in Development?
 
 **Reasons**:
+
 - Fast HMR in frontend (Vite dev server)
 - Backend can reload independently
 - Clear separation of concerns

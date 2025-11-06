@@ -90,7 +90,11 @@ export function HeaderNav({
                 // Other tabs
                 <div>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    {activeTab === "files" ? "Project Files" : activeTab === "shell" ? "Shell" : "Project"}
+                    {activeTab === "files"
+                      ? "Project Files"
+                      : activeTab === "shell"
+                        ? "Shell"
+                        : "Project"}
                   </h2>
                   {selectedProject && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">

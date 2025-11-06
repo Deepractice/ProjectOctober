@@ -133,7 +133,7 @@ const builtInCommands = [
  * Each handler returns { type: 'builtin', action: string, data: any }
  */
 const builtInHandlers = {
-  "/help": async (args, context) => {
+  "/help": async (_args, _context) => {
     const helpText = `# Agent Commands
 
 ## Built-in Commands
@@ -175,7 +175,7 @@ Custom commands can be created in:
     };
   },
 
-  "/clear": async (args, context) => {
+  "/clear": async (_args, _context) => {
     return {
       type: "builtin",
       action: "clear",
@@ -210,9 +210,8 @@ Custom commands can be created in:
     };
   },
 
-  "/cost": async (args, context) => {
+  "/cost": async (_args, context) => {
     // Calculate token usage and cost
-    const sessionId = context?.sessionId;
     const tokenUsage = context?.tokenUsage || { used: 0, total: 200000 };
 
     const costPerMillion = {
@@ -254,7 +253,7 @@ Custom commands can be created in:
     };
   },
 
-  "/status": async (args, context) => {
+  "/status": async (_args, context) => {
     // Read version from package.json
     const packageJsonPath = path.join(path.dirname(__dirname), "..", "package.json");
     let version = "unknown";
@@ -290,7 +289,7 @@ Custom commands can be created in:
     };
   },
 
-  "/memory": async (args, context) => {
+  "/memory": async (_args, context) => {
     const projectPath = context?.projectPath;
 
     if (!projectPath) {
@@ -328,7 +327,7 @@ Custom commands can be created in:
     };
   },
 
-  "/config": async (args, context) => {
+  "/config": async (_args, _context) => {
     return {
       type: "builtin",
       action: "config",

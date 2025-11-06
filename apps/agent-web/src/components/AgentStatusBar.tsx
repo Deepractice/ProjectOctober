@@ -15,7 +15,12 @@ interface AgentStatusBarProps {
   showThinking?: boolean;
 
   // Children (render prop pattern for custom rendering)
-  children?: React.ReactNode | ((props: { status: string | null; setStatus: (status: string | null) => void }) => React.ReactNode);
+  children?:
+    | React.ReactNode
+    | ((props: {
+        status: string | null;
+        setStatus: (status: string | null) => void;
+      }) => React.ReactNode);
 }
 
 /**
@@ -69,14 +74,10 @@ function AgentStatusBar({
   return (
     <div className="flex-1">
       {claudeStatus && (
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {claudeStatus}
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">{claudeStatus}</div>
       )}
       {isLoading && showThinking && (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Thinking...
-        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">Thinking...</div>
       )}
     </div>
   );

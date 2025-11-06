@@ -209,8 +209,12 @@ const CommandMenu = ({
                 role="option"
                 aria-selected={isSelected}
                 className="command-item"
-                onMouseEnter={() => onSelect && cmdWithIndex && onSelect(command, cmdWithIndex.globalIndex, true)}
-                onClick={() => onSelect && cmdWithIndex && onSelect(command, cmdWithIndex.globalIndex, false)}
+                onMouseEnter={() =>
+                  onSelect && cmdWithIndex && onSelect(command, cmdWithIndex.globalIndex, true)
+                }
+                onClick={() =>
+                  onSelect && cmdWithIndex && onSelect(command, cmdWithIndex.globalIndex, false)
+                }
                 style={{
                   display: "flex",
                   alignItems: "flex-start",

@@ -35,6 +35,7 @@ Starts the complete development environment:
 **Access the application at http://localhost:5200**
 
 In development mode:
+
 - Frontend changes hot-reload via Vite
 - Backend proxies all non-API requests to Vite
 - API endpoints available at `/api/*`
