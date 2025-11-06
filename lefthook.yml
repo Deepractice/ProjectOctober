@@ -15,13 +15,14 @@ pre-push:
   parallel: false
   commands:
     format:
-      run: pnpm format
+      run: pnpm format:check
 
     lint:
       run: pnpm lint
 
     install-check:
       run: pnpm install --frozen-lockfile
+      fail_text: "Lockfile is outdated. Run 'pnpm install' to update it."
 
     typecheck:
       run: pnpm typecheck
