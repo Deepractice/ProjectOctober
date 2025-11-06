@@ -61,6 +61,8 @@
     "access": "public"
   },
   "devDependencies": {
+    "@deepractice-ai/agent-service": "workspace:*",
+    "@deepractice-ai/agent-web": "workspace:*",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
