@@ -53,9 +53,6 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.29
         version: 0.1.30(zod@4.1.12)
-      '@deepractice-ai/agent-config':
-        specifier: workspace:*
-        version: link:../../packages/agent-config
       '@deepractice-ai/agent-sdk':
         specifier: workspace:*
         version: link:../../packages/agent-sdk
