@@ -62,7 +62,9 @@ export function ChatInterface() {
 
   // Check if current session is loading (or pending session is being created)
   const isLoading = effectiveSessionId
-    ? (selectedSession ? isSessionProcessing(selectedSession.id) : true) // pending sessions are always "loading"
+    ? selectedSession
+      ? isSessionProcessing(selectedSession.id)
+      : true // pending sessions are always "loading"
     : false;
 
   // Auto-scroll to bottom when new messages arrive
@@ -148,13 +150,15 @@ export function ChatInterface() {
           messagesEndRef={messagesEndRef}
           isLoadingSessionMessages={false}
           chatMessages={chatMessages}
-          selectedSession={selectedSession || {
-            id: effectiveSessionId,
-            summary: "New conversation...",
-            messageCount: chatMessages.length,
-            lastActivity: new Date().toISOString(),
-            cwd: ".",
-          }}
+          selectedSession={
+            selectedSession || {
+              id: effectiveSessionId,
+              summary: "New conversation...",
+              messageCount: chatMessages.length,
+              lastActivity: new Date().toISOString(),
+              cwd: ".",
+            }
+          }
           currentSessionId={effectiveSessionId}
           isLoadingMoreMessages={false}
           hasMoreMessages={false}
@@ -190,13 +194,18 @@ export function ChatInterface() {
         uploadingImages={uploadingImages}
         imageErrors={imageErrors}
         permissionMode="auto"
-        selectedSession={selectedSession || (effectiveSessionId ? {
-          id: effectiveSessionId,
-          summary: "New conversation...",
-          messageCount: chatMessages.length,
-          lastActivity: new Date().toISOString(),
-          cwd: ".",
-        } : null)}
+        selectedSession={
+          selectedSession ||
+          (effectiveSessionId
+            ? {
+                id: effectiveSessionId,
+                summary: "New conversation...",
+                messageCount: chatMessages.length,
+                lastActivity: new Date().toISOString(),
+                cwd: ".",
+              }
+            : null)
+        }
         claudeStatus={agentStatus?.text || null}
         provider={provider || "claude"}
         showThinking={showThinking}

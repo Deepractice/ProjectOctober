@@ -69,19 +69,10 @@ export function SessionItem({
     }
   };
 
-  // Touch handler to prevent double-tap issues on iPad
-  const handleTouchClick = (callback: () => void) => {
-    return (e: React.TouchEvent) => {
-      if (
-        (e.target as HTMLElement).closest(".overflow-y-auto") ||
-        (e.target as HTMLElement).closest("[data-scroll-container]")
-      ) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      callback();
-    };
+  // Mobile click handler
+  const handleMobileClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    onSelect(session);
   };
 
   // Calculate if session is active (within last 10 minutes)
@@ -110,7 +101,7 @@ export function SessionItem({
             isSelected && "bg-primary/5 border-primary/20",
             isActive && !isSelected && "border-green-500/30 bg-green-50/5 dark:bg-green-900/5"
           )}
-          onTouchEnd={handleTouchClick(() => onSelect(session))}
+          onClick={handleMobileClick}
         >
           <div className="flex items-center gap-2">
             {/* <div
@@ -138,11 +129,7 @@ export function SessionItem({
             {/* Mobile delete button */}
             <button
               className="w-5 h-5 rounded-md bg-red-50 dark:bg-red-900/20 flex items-center justify-center active:scale-95 transition-transform opacity-70 ml-1"
-              onTouchStart={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onTouchEnd={(e) => handleDelete(e)}
+              onClick={handleDelete}
               disabled={isDeleting}
             >
               {isDeleting ? (

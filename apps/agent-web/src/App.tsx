@@ -78,7 +78,10 @@ function AppContent() {
   useEffect(() => {
     // Protection: Redirect pending URLs (from refresh/direct access)
     if (sessionId?.startsWith("pending-")) {
-      console.warn("[App] Detected pending session URL on mount/refresh, redirecting to home:", sessionId);
+      console.warn(
+        "[App] Detected pending session URL on mount/refresh, redirecting to home:",
+        sessionId
+      );
       navigate("/", { replace: true });
       return;
     }
@@ -106,14 +109,17 @@ function AppContent() {
       console.log("[App] Navigation target changed, navigating to:", navigationTarget);
 
       // Determine if this is a pending-to-real session replacement
-      const isPendingReplacement = sessionId?.startsWith("pending-") && !navigationTarget.startsWith("pending-");
+      const isPendingReplacement =
+        sessionId?.startsWith("pending-") && !navigationTarget.startsWith("pending-");
 
       // Navigate to root (/) for new sessions or /session/:id for existing
       if (navigationTarget === "/") {
         navigate("/", { replace: true });
       } else if (navigationTarget !== sessionId) {
         // Use replace: true for pending session transitions (smooth URL change without history)
-        navigate(`/session/${navigationTarget}`, { replace: isPendingReplacement || navigationTarget.startsWith("pending-") });
+        navigate(`/session/${navigationTarget}`, {
+          replace: isPendingReplacement || navigationTarget.startsWith("pending-"),
+        });
       }
 
       // Close mobile sidebar when session is selected
