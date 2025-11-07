@@ -1,5 +1,13 @@
 # @deepractice-ai/agent
 
+## 0.6.3
+
+### Patch Changes
+
+- ea7bab5: Fix duplicate session rendering in sidebar
+
+  Prevent duplicate session items from appearing when creating a new session by adding duplicate check in addSession method.
+
 ## 0.6.2
 
 ### Patch Changes
