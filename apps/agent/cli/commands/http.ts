@@ -54,7 +54,8 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
 
   // Import and start the agent server
   try {
-    const { startServer } = await import("../server/index.js");
+    // After build: dist/cli/commands/http.js → dist/server/index.js
+    const { startServer } = await import("../../server/index.js");
 
     // Start the server with our options
     await startServer({
