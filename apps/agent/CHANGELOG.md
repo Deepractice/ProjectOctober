@@ -1,5 +1,16 @@
 # @deepractice-ai/agent
 
+## 0.6.4
+
+### Patch Changes
+
+- a240812: Fix changeset fixed groups configuration
+
+  Replace wildcard pattern with explicit package names as changeset doesn't support glob patterns in fixed groups.
+
+- Updated dependencies [a240812]
+  - @deepractice-ai/agent-sdk@0.6.4
+
 ## 0.6.3
 
 ### Patch Changes
