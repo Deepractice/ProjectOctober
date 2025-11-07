@@ -10,7 +10,7 @@ export default defineConfig({
   format: ['esm'],
   dts: false, // Disable DTS generation for now (JS files need TS conversion)
   sourcemap: true,
-  clean: true,
+  clean: false, // Don't clean dist to preserve vite build output
   outDir: 'dist',
   external: [
     'express',
