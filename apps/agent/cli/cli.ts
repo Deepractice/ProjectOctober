@@ -13,7 +13,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Read package.json for version
-const packageJson = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
+// __dirname will be dist/cli/ after build, so ../package.json points to dist/package.json
+// But we want the source package.json, which is at ../../package.json from dist/cli/
+const packageJson = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8"));
 
 const program = new Command();
 

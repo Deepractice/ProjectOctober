@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: {
     'server/index': 'server/index.ts',
-    'cli/bin/agent-cli': 'cli/bin/agent-cli.ts',
+    'cli/bin': 'cli/bin.ts',
     'cli/cli': 'cli/cli.ts',
     'cli/commands/http': 'cli/commands/http.ts',
   },

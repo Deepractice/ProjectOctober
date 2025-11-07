@@ -6,7 +6,7 @@
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "bin": {
-    "agentx": "./dist/cli/bin/agent-cli.js"
+    "agentx": "./dist/cli/bin.js"
   },
   "exports": {
     ".": "./dist/server/index.js",
@@ -23,7 +23,7 @@
     "dev:clean": "lsof -ti:5200 | xargs kill -9 2>/dev/null || true && pnpm dev",
     "build": "pnpm build:web && pnpm build:server",
     "build:web": "vite build",
-    "build:server": "tsup && chmod +x dist/cli/bin/agent-cli.js",
+    "build:server": "tsup && chmod +x dist/cli/bin.js",
     "start": "NODE_ENV=production node dist/server/index.js",
     "prepublishOnly": "pnpm build",
     "lint": "eslint .",
