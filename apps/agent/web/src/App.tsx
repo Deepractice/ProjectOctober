@@ -5,13 +5,21 @@
  * Migrated from agent-ui with simplified structure
  */
 
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import Sidebar from "~/components/Sidebar";
 import HeaderNav, { type TabType } from "~/components/HeaderNav";
 import ChatInterface from "~/components/ChatInterface";
 import { connectWebSocket, disconnectWebSocket } from "~/api/agent";
 import { useSessionStore } from "~/stores/sessionStore";
+import { useMessageStore } from "~/stores/messageStore";
 
 // Import stores to ensure they're initialized and subscribed to EventBus
 import "~/stores/sessionStore";
@@ -21,14 +29,19 @@ import "~/stores/uiStore";
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const sessions = useSessionStore((state) => state.sessions);
   const selectedSession = useSessionStore((state) => state.selectedSession);
   const navigationTarget = useSessionStore((state) => state.navigationTarget);
   const selectSession = useSessionStore((state) => state.selectSession);
   const refreshSessions = useSessionStore((state) => state.refreshSessions);
+  const sendMessage = useMessageStore((state) => state.sendMessage);
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Use ref to prevent double execution in React Strict Mode
+  const promptProcessedRef = useRef(false);
 
   // Detect mobile viewport (1200px breakpoint)
   useEffect(() => {
@@ -73,6 +86,33 @@ function AppContent() {
       disconnectWebSocket();
       window.removeEventListener("navigate-to-pending", handlePendingNav);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
+
+  // Handle URL query parameter for auto-starting session with prompt
+  useEffect(() => {
+    const promptParam = searchParams.get("prompt");
+
+    console.log("[App] URL prompt parameter check:", {
+      promptParam,
+      timestamp: Date.now(),
+      alreadyProcessed: promptProcessedRef.current,
+    });
+
+    if (promptParam && !promptProcessedRef.current) {
+      console.log("[App] 🚀 Auto-start with prompt parameter:", promptParam);
+
+      // Mark as processed to prevent double execution
+      promptProcessedRef.current = true;
+
+      // Clear URL parameter immediately to prevent re-triggering on refresh
+      setSearchParams({}, { replace: true });
+
+      // Auto-send message (will create new session automatically)
+      console.log("[App] 📤 Calling sendMessage with:", { promptParam });
+      sendMessage(undefined, promptParam, []);
+      console.log("[App] ✅ sendMessage called");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run once on mount
 

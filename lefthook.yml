@@ -7,9 +7,16 @@ commit-msg:
       run: npx commitlint --edit {1}
 
 pre-commit:
-  # Disabled: moved to pre-push for faster commits
-  # Only commitlint runs on commit
-  commands: {}
+  commands:
+    format-fix:
+      glob: "*.{js,ts,jsx,tsx,json,md,yml,yaml}"
+      run: pnpm prettier --write {staged_files}
+      stage_fixed: true
+
+    lint-fix:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: pnpm eslint --fix {staged_files}
+      stage_fixed: true
 
 pre-push:
   parallel: false
