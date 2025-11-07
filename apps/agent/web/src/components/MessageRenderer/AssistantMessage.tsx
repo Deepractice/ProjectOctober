@@ -34,9 +34,7 @@ export function AssistantMessage({
 
       {/* Content rendering */}
       {isJSON ? (
-        <JSONRenderer content={trimmedContent} /> || (
-          <div className="whitespace-pre-wrap">{formattedContent}</div>
-        )
+        <JSONRenderer content={trimmedContent} />
       ) : messageType === "assistant" ? (
         <Markdown className="prose prose-sm max-w-none dark:prose-invert prose-gray">
           {formattedContent}

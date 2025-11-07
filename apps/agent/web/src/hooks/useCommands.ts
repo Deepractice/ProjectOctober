@@ -268,8 +268,8 @@ export const useCommands = ({
 
   // Handle custom command execution
   const handleCustomCommand = useCallback(
-    async (result, args) => {
-      const { content, hasBashCommands, hasFileIncludes } = result;
+    async (result, _args) => {
+      const { content, hasBashCommands, hasFileIncludes: _hasFileIncludes } = result;
 
       // Show confirmation for bash commands
       if (hasBashCommands) {

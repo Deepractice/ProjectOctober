@@ -43,9 +43,9 @@ function MessagesArea({
   // State
   isLoadingSessionMessages,
   chatMessages,
-  selectedSession,
+  selectedSession: _selectedSession,
   currentSessionId,
-  provider,
+  provider: _provider,
   isLoadingMoreMessages,
   hasMoreMessages,
   totalMessages,
@@ -55,8 +55,8 @@ function MessagesArea({
   isLoading,
 
   // Functions/Callbacks
-  setProvider,
-  textareaRef,
+  setProvider: _setProvider,
+  textareaRef: _textareaRef,
   loadEarlierMessages,
   createDiff,
   onFileOpen,

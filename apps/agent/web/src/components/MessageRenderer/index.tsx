@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { UserMessage } from "./UserMessage";
@@ -219,7 +219,7 @@ interface MessageRendererProps {
 const MessageRenderer = memo(
   ({
     message,
-    index,
+    index: _index,
     prevMessage,
     createDiff,
     onFileOpen,
@@ -239,7 +239,8 @@ const MessageRenderer = memo(
 
     // Auto-expand tool use when it comes into view
     React.useEffect(() => {
-      if (!autoExpandTools || !messageRef.current || !message.isToolUse) return;
+      const currentElement = messageRef.current;
+      if (!autoExpandTools || !currentElement || !message.isToolUse) return;
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -256,12 +257,10 @@ const MessageRenderer = memo(
         { threshold: 0.1 }
       );
 
-      observer.observe(messageRef.current);
+      observer.observe(currentElement);
 
       return () => {
-        if (messageRef.current) {
-          observer.unobserve(messageRef.current);
-        }
+        observer.unobserve(currentElement);
       };
     }, [autoExpandTools, isExpanded, message.isToolUse]);
 

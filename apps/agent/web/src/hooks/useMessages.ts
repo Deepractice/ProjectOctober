@@ -13,7 +13,11 @@ import { api, authenticatedFetch } from "~/utils/api";
  *
  * @returns {Object} Message state and handlers
  */
-export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_PAGE = 20 }) {
+export function useMessages({
+  selectedProject: _selectedProject,
+  decodeHtmlEntities,
+  MESSAGES_PER_PAGE = 20,
+}) {
   // Message state
   const [sessionMessages, setSessionMessages] = useState([]);
   const [isLoadingSessionMessages, setIsLoadingSessionMessages] = useState(false);
@@ -383,6 +387,7 @@ export function useMessages({ selectedProject, decodeHtmlEntities, MESSAGES_PER_
     } finally {
       setIsLoadingSessionMessages(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- decodeHtmlEntities is a stable helper function
   }, []);
 
   /**

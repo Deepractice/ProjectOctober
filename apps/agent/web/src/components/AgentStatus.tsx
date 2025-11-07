@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "~/lib/utils";
 
 interface AgentStatusProps {
   status?: {
@@ -13,7 +12,12 @@ interface AgentStatusProps {
   provider?: "claude" | "cursor";
 }
 
-function AgentStatus({ status, onAbort, isLoading, provider = "claude" }: AgentStatusProps) {
+function AgentStatus({
+  status,
+  onAbort,
+  isLoading,
+  provider: _provider = "claude",
+}: AgentStatusProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
   const [fakeTokens, setFakeTokens] = useState(0);

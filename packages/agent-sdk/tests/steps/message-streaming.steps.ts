@@ -19,8 +19,7 @@ Given("network connectivity is unstable", function () {
   // Mock the session to throw error on send
   if (this.currentSession) {
     const session = this.currentSession;
-    const originalSend = session.send.bind(session);
-    session.send = async function (content: string) {
+    session.send = async function (_content: string) {
       // Set error state
       (session as any)._setState("error");
       // Simulate network error

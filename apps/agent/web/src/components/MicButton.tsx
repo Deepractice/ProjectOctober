@@ -226,7 +226,7 @@ export function MicButton({ onTranscript, className = "" }: MicButtonProps) {
     }
   };
 
-  const { icon, className: buttonClass, disabled } = getButtonAppearance();
+  const { icon, className: _buttonClass, disabled } = getButtonAppearance();
 
   return (
     <div className="relative">

@@ -10,6 +10,7 @@ import { promises as fsPromises } from "fs";
 import mime from "mime-types";
 import { getConfig } from "@deepractice-ai/agent-sdk";
 
+/** @type {import('express').Router} */
 const router = express.Router();
 
 async function getProjectInfo() {

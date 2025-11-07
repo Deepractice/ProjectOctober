@@ -29,7 +29,7 @@ export function JSONRenderer({ content }: JSONRendererProps) {
         </div>
       </div>
     );
-  } catch (e) {
+  } catch (_e) {
     // Not valid JSON, return null and let parent handle
     return null;
   }

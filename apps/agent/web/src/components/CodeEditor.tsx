@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
@@ -11,7 +11,7 @@ import { EditorView, showPanel, ViewPlugin } from "@codemirror/view";
 import { unifiedMergeView, getChunks } from "@codemirror/merge";
 import { showMinimap } from "@replit/codemirror-minimap";
 import { X, Save, Download, Maximize2, Minimize2 } from "lucide-react";
-import { api } from "~/api/client";
+import { api } from "~/api";
 
 function CodeEditor({
   file,
@@ -336,7 +336,7 @@ function CodeEditor({
     loadFileContent();
   }, [file, projectPath]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       console.log("Saving file:", {
@@ -376,7 +376,7 @@ function CodeEditor({
     } finally {
       setSaving(false);
     }
-  };
+  }, [file.path, file.projectName, content]);
 
   const handleDownload = () => {
     const blob = new Blob([content], { type: "text/plain" });
@@ -461,7 +461,7 @@ function CodeEditor({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [content]);
+  }, [content, handleSave, onClose]);
 
   if (loading) {
     return (

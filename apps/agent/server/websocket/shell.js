@@ -9,7 +9,7 @@ import { WebSocket } from "ws";
 let pty;
 try {
   pty = await import("node-pty");
-} catch (error) {
+} catch (_error) {
   console.warn("⚠️  node-pty not available - shell feature disabled");
   console.warn("   To enable shell feature, install node-pty: npm install node-pty");
 }

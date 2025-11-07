@@ -148,6 +148,7 @@ export function useChatScrolling({
       setIsUserScrolledUp(false);
       setTimeout(() => scrollToBottom(), 200);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chatMessages.length intentionally excluded to avoid loop
   }, [selectedSession?.id, selectedProject?.name, scrollToBottom, isLoadingSessionRef]);
 
   // Add scroll event listener

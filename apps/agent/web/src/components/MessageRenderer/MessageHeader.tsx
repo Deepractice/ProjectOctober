@@ -1,5 +1,3 @@
-import AgentLogo from "~/components/AgentLogo.jsx";
-
 interface MessageHeaderProps {
   messageType: "assistant" | "user" | "error" | "tool";
 }

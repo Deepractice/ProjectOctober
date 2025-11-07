@@ -4,12 +4,13 @@
 
 export interface Session {
   id: string;
-  title: string;
+  title?: string;
   summary?: string; // Session summary for display
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   lastActivity: string; // Last activity timestamp
   messageCount?: number; // Number of messages in session
+  cwd?: string; // Current working directory for the session
   __provider?: "claude" | "cursor";
 }
 

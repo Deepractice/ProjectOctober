@@ -24,7 +24,7 @@ function DiffDisplay({
   rawInput = "",
   autoExpandTools = false,
 }) {
-  const fileName = filePath?.split("/").pop() || "";
+  const _fileName = filePath?.split("/").pop() || "";
   const isNewFile = label === "New File";
 
   return (

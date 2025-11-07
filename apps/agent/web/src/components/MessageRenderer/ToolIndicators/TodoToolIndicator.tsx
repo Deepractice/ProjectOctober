@@ -40,7 +40,7 @@ export function TodoToolIndicator({ toolInput, toolName }: TodoToolIndicatorProp
           </div>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Parsing failed, show simple indicator
     }
   }

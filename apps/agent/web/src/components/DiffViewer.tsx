@@ -7,7 +7,7 @@ interface DiffViewerProps {
   wrapText?: boolean;
 }
 
-function DiffViewer({ diff, fileName, isMobile, wrapText }: DiffViewerProps) {
+function DiffViewer({ diff, fileName: _fileName, isMobile, wrapText }: DiffViewerProps) {
   if (!diff) {
     return (
       <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">

@@ -58,6 +58,7 @@ export function useChatInput({ selectedProject }) {
         setInput(savedInput);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- input intentionally excluded to avoid load loops
   }, [selectedProject?.name]);
 
   // Initial textarea setup - set to 2 rows height

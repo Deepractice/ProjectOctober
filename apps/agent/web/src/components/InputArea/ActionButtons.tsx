@@ -15,7 +15,7 @@ interface ActionButtonsProps {
 function ActionButtons({
   onImageUpload,
   onToggleCommandMenu,
-  showCommandMenu = false,
+  showCommandMenu: _showCommandMenu = false,
   commandCount = 0,
   onSubmit,
   isLoading = false,

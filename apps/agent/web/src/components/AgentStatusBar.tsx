@@ -39,8 +39,8 @@ function AgentStatusBar({
 
   // Other props
   isLoading,
-  onAbort,
-  provider,
+  onAbort: _onAbort,
+  provider: _provider,
   showThinking,
 
   // Children (render prop pattern for custom rendering)

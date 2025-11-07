@@ -27,6 +27,7 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         eventBus.emit({
           type: "session.created",
           sessionId: wsMessage.sessionId || "",
+          messages: [], // WebSocket message doesn't contain messages, they'll be loaded separately
         });
         break;
 

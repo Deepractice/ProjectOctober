@@ -22,80 +22,29 @@
  *
  * Then access: ws.chatMessages, ws.isLoading, ws.setPermissionMode, etc.
  *
- * NOTE: This file depends on useWebSocketState and useWebSocketHandlers
+ * TODO: This file depends on useWebSocketState and useWebSocketHandlers
  * which need to be migrated from the old agent-ui package or recreated.
+ * Currently disabled to avoid build errors.
  */
 
-import { useWebSocketState } from "./useWebSocketState";
-import { useWebSocketHandlers } from "./useWebSocketHandlers";
-import { useEffect } from "react";
+// import { useWebSocketState } from "./useWebSocketState";
+// import { useWebSocketHandlers } from "./useWebSocketHandlers";
+// import { useEffect } from "react";
 
 export function useWebSocket({
   // Project and session context
-  selectedProject,
-  selectedSession,
+  selectedProject: _selectedProject,
+  selectedSession: _selectedSession,
 
   // Session lifecycle callbacks
-  onSessionProcessing,
-  onNavigateToSession,
+  onSessionProcessing: _onSessionProcessing,
+  onNavigateToSession: _onNavigateToSession,
 
   // Scroll behavior
-  scrollToBottom,
-  isNearBottom,
-  autoScrollToBottom,
-}) {
-  // Initialize state management
-  const state = useWebSocketState({
-    initialSessionId: selectedSession?.id || null,
-    initialPermissionMode: "bypassPermissions", // Fixed to bypass mode
-  });
-
-  // Permission mode is locked to bypassPermissions
-  // No localStorage loading or mode switching allowed
-
-  // Setup WebSocket message handlers (now writes to messageStore)
-  useWebSocketHandlers({
-    currentSessionId: state.currentSessionId,
-    selectedSession,
-    selectedProject,
-    setIsLoading: state.setIsLoading,
-    setCanAbortSession: state.setCanAbortSession,
-    setAgentStatus: state.setAgentStatus,
-    setIsSystemSessionChange: state.setIsSystemSessionChange,
-    setTokenBudget: state.setTokenBudget,
-    setCurrentSessionId: state.setCurrentSessionId,
-    streamBufferRef: state.streamBufferRef,
-    streamTimerRef: state.streamTimerRef,
-    onSessionProcessing,
-    onNavigateToSession,
-  });
-
-  // Return complete API
-  return {
-    // State values
-    chatMessages: state.chatMessages,
-    isLoading: state.isLoading,
-    currentSessionId: state.currentSessionId,
-    canAbortSession: state.canAbortSession,
-    claudeStatus: state.claudeStatus,
-    isSystemSessionChange: state.isSystemSessionChange,
-    tokenBudget: state.tokenBudget,
-    permissionMode: state.permissionMode,
-    isUserScrolledUp: state.isUserScrolledUp,
-
-    // State setters (for external control when needed)
-    setChatMessages: state.setChatMessages,
-    setIsLoading: state.setIsLoading,
-    setCurrentSessionId: state.setCurrentSessionId,
-    setCanAbortSession: state.setCanAbortSession,
-    setAgentStatus: state.setAgentStatus,
-    setIsSystemSessionChange: state.setIsSystemSessionChange,
-    setTokenBudget: state.setTokenBudget,
-    setPermissionMode: state.setPermissionMode,
-    setIsUserScrolledUp: state.setIsUserScrolledUp,
-
-    // Refs (for streaming)
-    streamBufferRef: state.streamBufferRef,
-    streamTimerRef: state.streamTimerRef,
-  };
+  scrollToBottom: _scrollToBottom,
+  isNearBottom: _isNearBottom,
+  autoScrollToBottom: _autoScrollToBottom,
+}: any) {
+  // TODO: Implement this hook when dependencies are available
+  throw new Error("useWebSocket hook is not yet implemented. Dependencies need to be migrated.");
 }

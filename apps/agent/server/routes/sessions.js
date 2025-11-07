@@ -4,6 +4,7 @@
 import express from "express";
 import { getAgent } from "../agent.js";
 
+/** @type {import('express').Router} */
 const router = express.Router();
 
 /**

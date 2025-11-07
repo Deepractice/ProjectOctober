@@ -35,7 +35,6 @@ const CommandMenu = ({
   const getMenuPosition = () => {
     const isMobile = window.innerWidth < 640;
     const viewportHeight = window.innerHeight;
-    const menuHeight = 300;
 
     if (isMobile) {
       const inputBottom = position.bottom || 90;

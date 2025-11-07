@@ -4,7 +4,6 @@
  */
 
 import React from "react";
-import AgentLogo from "~/components/AgentLogo";
 import type { Session, ProjectInfo } from "~/types";
 
 export type TabType = "chat" | "shell" | "files";

@@ -11,7 +11,7 @@ function ToolUseDisplay({
   message,
   autoExpandTools = false,
   showRawParameters = false,
-  showThinking = false,
+  showThinking: _showThinking = false,
   onFileOpen,
   onShowSettings,
   selectedProject,
@@ -55,7 +55,7 @@ function ToolUseDisplay({
                       {input.path && <span className="ml-2">in: {input.path}</span>}
                     </span>
                   );
-                } catch (e) {
+                } catch (_e) {
                   return null;
                 }
               })()}
@@ -225,8 +225,8 @@ function renderToolInput(
                       old_string: oldContent,
                       new_string: currentContent,
                     });
-                  } catch (error) {
-                    console.error("Error preparing diff:", error);
+                  } catch (_error) {
+                    console.error("Error preparing diff:", _error);
                     onFileOpen(input.file_path);
                   }
                 }}
@@ -249,7 +249,7 @@ function renderToolInput(
           </details>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through to default display
     }
   }
@@ -297,7 +297,7 @@ function renderToolInput(
                       old_string: "",
                       new_string: newContent,
                     });
-                  } catch (error) {
+                  } catch (_error) {
                     onFileOpen(input.file_path, {
                       old_string: "",
                       new_string: input.content || "",
@@ -323,7 +323,7 @@ function renderToolInput(
           </details>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }
@@ -383,7 +383,7 @@ function renderToolInput(
           </details>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }
@@ -405,7 +405,7 @@ function renderToolInput(
           )}
         </div>
       );
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }
@@ -428,7 +428,7 @@ function renderToolInput(
           </div>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }
@@ -463,7 +463,7 @@ function renderToolInput(
           </details>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }
@@ -581,8 +581,8 @@ function renderToolResultContent(
   message,
   autoExpandTools,
   onFileOpen,
-  selectedProject,
-  createDiff
+  _selectedProject,
+  _createDiff
 ) {
   const content = String(message.toolResult.content || "");
 
@@ -617,7 +617,7 @@ function renderToolResultContent(
           </div>
         );
       }
-    } catch (e) {
+    } catch (_e) {
       // Fall through
     }
   }

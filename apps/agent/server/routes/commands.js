@@ -8,6 +8,7 @@ import matter from "gray-matter";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** @type {import('express').Router} */
 const router = express.Router();
 
 /**
@@ -310,7 +311,7 @@ Custom commands can be created in:
     try {
       await fs.access(claudeMdPath);
       exists = true;
-    } catch (err) {
+    } catch (_err) {
       // File doesn't exist
     }
 
@@ -337,7 +338,7 @@ Custom commands can be created in:
     };
   },
 
-  "/rewind": async (args, context) => {
+  "/rewind": async (args, _context) => {
     const steps = args[0] ? parseInt(args[0]) : 1;
 
     if (isNaN(steps) || steps < 1) {

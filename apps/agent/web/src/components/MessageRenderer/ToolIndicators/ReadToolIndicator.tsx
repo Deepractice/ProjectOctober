@@ -35,7 +35,7 @@ export function ReadToolIndicator({ toolInput, onFileOpen }: ReadToolIndicatorPr
         </div>
       );
     }
-  } catch (e) {
+  } catch (_e) {
     // Parsing failed, show simple indicator
   }
 

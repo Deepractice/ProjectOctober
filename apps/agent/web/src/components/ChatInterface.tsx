@@ -57,7 +57,7 @@ export function ChatInterface() {
   const [input, setInput] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [attachedImages, setAttachedImages] = useState<File[]>([]);
-  const [uploadingImages, setUploadingImages] = useState<Map<string, number>>(new Map());
+  const [uploadingImages, _setUploadingImages] = useState<Map<string, number>>(new Map());
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
 
   // Check if current session is loading (or pending session is being created)
@@ -171,7 +171,7 @@ export function ChatInterface() {
           provider={provider}
           textareaRef={textareaRef}
           loadEarlierMessages={() => {}}
-          createDiff={(old, newContent) => ""}
+          createDiff={(_old, _newContent) => ""}
           onFileOpen={() => {}}
           onShowSettings={() => {}}
           autoExpandTools={autoExpandTools}
@@ -233,7 +233,7 @@ export function ChatInterface() {
           getRootProps,
           getInputProps,
           isDragActive,
-          open,
+          open: open || (() => {}),
         }}
         setAttachedImages={setAttachedImages}
         selectFile={() => {}}

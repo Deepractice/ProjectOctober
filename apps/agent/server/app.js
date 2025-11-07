@@ -6,7 +6,6 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 
 import { config } from "./index.js";
 import mcpRoutes from "./routes/mcp.js";
@@ -19,6 +18,11 @@ import mediaRoutes from "./routes/media.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Create Express application instance
+ * @param {import('ws').WebSocketServer} wss - WebSocket server instance
+ * @returns {import('express').Application}
+ */
 export function createApp(wss) {
   const app = express();
 

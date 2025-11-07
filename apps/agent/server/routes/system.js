@@ -12,6 +12,7 @@ import { spawn } from "child_process";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/** @type {import('express').Router} */
 const router = express.Router();
 
 // Get server configuration

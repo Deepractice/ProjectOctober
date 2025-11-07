@@ -1,6 +1,5 @@
 import React from "react";
 import AgentStatus from "~/components/AgentStatus";
-import TokenUsagePie from "~/components/TokenUsagePie";
 import ImageAttachments from "./ImageAttachments";
 import Textarea from "./Textarea";
 import type { Session, ChatMessage, ProjectInfo } from "~/types";
@@ -18,11 +17,11 @@ interface InputAreaProps {
   selectedProject: ProjectInfo;
   attachedImages: File[];
   uploadingImages: Map<string, number>;
-  imageErrors: Record<string, string>;
+  imageErrors: Map<string, string>;
   permissionMode: string;
   selectedSession: Session | null;
   claudeStatus: string | null;
-  provider: string;
+  provider: "claude" | "cursor";
   showThinking: boolean;
   tokenBudget: { used: number; total: number } | null;
   isTextareaExpanded: boolean;
@@ -50,7 +49,7 @@ interface InputAreaProps {
     getRootProps: () => any;
     getInputProps: () => any;
     isDragActive: boolean;
-    open?: () => void;
+    open: () => void;
   };
   setAttachedImages: React.Dispatch<React.SetStateAction<File[]>>;
   selectFile: (file: any) => void;
@@ -77,18 +76,18 @@ function InputArea({
   // State
   isInputFocused,
   input,
-  cursorPosition,
+  cursorPosition: _cursorPosition,
   isLoading,
-  selectedProject,
+  selectedProject: _selectedProject,
   attachedImages,
   uploadingImages,
   imageErrors,
-  permissionMode,
-  selectedSession,
+  permissionMode: _permissionMode,
+  selectedSession: _selectedSession,
   claudeStatus,
   provider,
-  showThinking,
-  tokenBudget,
+  showThinking: _showThinking,
+  tokenBudget: _tokenBudget,
   isTextareaExpanded,
   isUserScrolledUp,
   chatMessages,
@@ -105,7 +104,7 @@ function InputArea({
 
   // Functions/Callbacks
   handleAbortSession,
-  handleModeSwitch,
+  handleModeSwitch: _handleModeSwitch,
   scrollToBottom,
   setInput,
   setIsTextareaExpanded,
@@ -135,7 +134,7 @@ function InputArea({
     >
       <div className="flex-1">
         <AgentStatus
-          status={claudeStatus}
+          status={claudeStatus ? { text: claudeStatus } : undefined}
           isLoading={isLoading}
           onAbort={handleAbortSession}
           provider={provider}
