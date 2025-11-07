@@ -39,18 +39,17 @@ jobs:
       - name: Extract Version Info
         id: extract_version
         run: |
-          # Use agent-service version as the main release version
-          SERVICE_VERSION=$(jq -r '.version' "services/agent-service/package.json")
-          TAG="v${SERVICE_VERSION}"
+          # Use apps/agent version as the main release version
+          AGENT_VERSION=$(jq -r '.version' "apps/agent/package.json")
+          TAG="v${AGENT_VERSION}"
 
           # Collect all package versions
           VERSIONS=""
 
-          # Add agent-config version
-          if [ -f "packages/agent-config/package.json" ]; then
-            CONFIG_NAME=$(jq -r '.name' "packages/agent-config/package.json")
-            CONFIG_VERSION=$(jq -r '.version' "packages/agent-config/package.json")
-            VERSIONS="${VERSIONS}${CONFIG_NAME}@${CONFIG_VERSION}\n"
+          # Add apps/agent version (merged: web + server + CLI)
+          if [ -f "apps/agent/package.json" ]; then
+            AGENT_NAME=$(jq -r '.name' "apps/agent/package.json")
+            VERSIONS="${VERSIONS}${AGENT_NAME}@${AGENT_VERSION}\n"
           fi
 
           # Add agent-sdk version
@@ -58,19 +57,6 @@ jobs:
             SDK_NAME=$(jq -r '.name' "packages/agent-sdk/package.json")
             SDK_VERSION=$(jq -r '.version' "packages/agent-sdk/package.json")
             VERSIONS="${VERSIONS}${SDK_NAME}@${SDK_VERSION}\n"
-          fi
-
-          # Add agent-service version
-          if [ -f "services/agent-service/package.json" ]; then
-            SERVICE_NAME=$(jq -r '.name' "services/agent-service/package.json")
-            VERSIONS="${VERSIONS}${SERVICE_NAME}@${SERVICE_VERSION}\n"
-          fi
-
-          # Add agent-web version
-          if [ -f "apps/agent-web/package.json" ]; then
-            WEB_NAME=$(jq -r '.name' "apps/agent-web/package.json")
-            WEB_VERSION=$(jq -r '.version' "apps/agent-web/package.json")
-            VERSIONS="${VERSIONS}${WEB_NAME}@${WEB_VERSION}\n"
           fi
 
           echo "version<<EOF" >> $GITHUB_OUTPUT
@@ -100,12 +86,12 @@ jobs:
 
           NOTES_EOF
 
-          # Extract CHANGELOG from packages/agent-config
-          if [ -f "packages/agent-config/CHANGELOG.md" ]; then
+          # Extract CHANGELOG from apps/agent (merged: web + server + CLI)
+          if [ -f "apps/agent/CHANGELOG.md" ]; then
             echo "" >> release-notes.md
-            echo "### @deepractice-ai/agent-config" >> release-notes.md
+            echo "### @deepractice-ai/agent" >> release-notes.md
             echo "" >> release-notes.md
-            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "packages/agent-config/CHANGELOG.md" >> release-notes.md
+            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "apps/agent/CHANGELOG.md" >> release-notes.md
           fi
 
           # Extract CHANGELOG from packages/agent-sdk
@@ -114,22 +100,6 @@ jobs:
             echo "### @deepractice-ai/agent-sdk" >> release-notes.md
             echo "" >> release-notes.md
             awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "packages/agent-sdk/CHANGELOG.md" >> release-notes.md
-          fi
-
-          # Extract CHANGELOG from services/agent-service
-          if [ -f "services/agent-service/CHANGELOG.md" ]; then
-            echo "" >> release-notes.md
-            echo "### @deepractice-ai/agent-service" >> release-notes.md
-            echo "" >> release-notes.md
-            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "services/agent-service/CHANGELOG.md" >> release-notes.md
-          fi
-
-          # Extract CHANGELOG from apps/agent-web
-          if [ -f "apps/agent-web/CHANGELOG.md" ]; then
-            echo "" >> release-notes.md
-            echo "### @deepractice-ai/agent-web" >> release-notes.md
-            echo "" >> release-notes.md
-            awk '/^## /{if(++count==2)exit;if(count==1)next}count==1' "apps/agent-web/CHANGELOG.md" >> release-notes.md
           fi
 
           # Write to GitHub output using file content

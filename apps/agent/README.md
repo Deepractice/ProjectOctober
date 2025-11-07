@@ -15,15 +15,17 @@ A full-stack AI Agent application with web UI, server, and CLI - powered by Clau
 ### Using npx (Recommended)
 
 ```bash
-npx @deepractice-ai/agent http --port 5200 --anthropic-api-key YOUR_API_KEY
+npx @deepractice-ai/agent http --anthropic-api-key YOUR_API_KEY
 ```
 
 ### Global Installation
 
 ```bash
 npm install -g @deepractice-ai/agent
-agentx http --port 5200 --anthropic-api-key YOUR_API_KEY
+agentx http --anthropic-api-key YOUR_API_KEY
 ```
+
+Visit http://localhost:5200 to access the web UI.
 
 ### Using Environment Variables
 
@@ -81,6 +83,26 @@ The server provides:
 - **WebSocket**: `ws://localhost:5200/ws`
 - **API**: `http://localhost:5200/api/*`
 
+## Docker
+
+### Using Docker Hub
+
+```bash
+docker run -d -p 5200:5200 \
+  -e ANTHROPIC_API_KEY=your_api_key \
+  -v $(pwd):/project \
+  deepracticexs/agent:latest
+```
+
+### Using Aliyun ACR (China)
+
+```bash
+docker run -d -p 5200:5200 \
+  -e ANTHROPIC_API_KEY=your_api_key \
+  -v $(pwd):/project \
+  registry.cn-hangzhou.aliyuncs.com/deepractice/agent:latest
+```
+
 ## Development
 
 This package is part of the Deepractice AI Agent monorepo. For development:
@@ -91,6 +113,8 @@ cd Agent
 pnpm install
 pnpm dev
 ```
+
+Access development server at http://localhost:5173 (with HMR).
 
 ## Architecture
 

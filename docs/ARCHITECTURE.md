@@ -9,71 +9,66 @@ Agent is a **full-stack desktop-class application** packaged as a Docker contain
 ```
 Agent/
 ├── apps/
-│   └── agent-web/              # React frontend application
-│       ├── src/                # UI source code
-│       ├── vite.config.js      # Vite build configuration
-│       └── dist/               # Build output (production)
+│   └── agent/                  # Full-stack application (merged)
+│       ├── web/                # React frontend source
+│       │   ├── src/            # UI components, stores, types
+│       │   ├── vite.config.ts  # Vite build configuration
+│       │   └── index.html      # Entry HTML
+│       ├── server/             # Node.js backend source
+│       │   ├── routes/         # API endpoints
+│       │   ├── websocket/      # WebSocket handlers
+│       │   ├── core/           # Agent integration, config
+│       │   ├── app.ts          # Express app configuration
+│       │   └── index.ts        # Server entry point
+│       ├── cli/                # CLI tool source
+│       │   └── index.ts        # Commander.js CLI
+│       ├── dist/               # Build output
+│       │   ├── web/            # Frontend static files
+│       │   ├── server/         # Server bundle
+│       │   └── cli/            # CLI binary
+│       └── package.json        # @deepractice-ai/agent
 │
-├── packages/
-│   ├── agent-config/           # Configuration management library
-│   ├── agent-sdk/              # Claude SDK integration library
-│   └── agent-ui/               # Shared UI components (legacy)
-│
-└── services/
-    └── agent-service/          # Node.js backend server
-        ├── src/
-        │   ├── routes/         # API endpoints
-        │   ├── websocket/      # WebSocket handlers
-        │   ├── agent.js        # Claude Agent integration
-        │   ├── app.js          # Express app configuration
-        │   └── index.js        # Server entry point
-        └── dist/               # Frontend build (copied in production)
+└── packages/
+    └── agent-sdk/              # Claude SDK integration library
+        └── dist/               # Build output
 ```
 
 ## Component Architecture
 
-### agent-service (Backend + Gateway)
+### apps/agent (Full-Stack Application)
 
-**Role**: Unified entry point for the entire application
+**Role**: Unified application containing frontend, backend, and CLI
 
 **Responsibilities**:
 
-- Serve REST API endpoints (`/api/*`)
-- Handle WebSocket connections (`/ws`, `/shell`)
-- Serve static frontend files in production (`/*`)
+- **Server**: REST API endpoints (`/api/*`), WebSocket (`/ws`, `/shell`)
+- **Frontend**: React UI with Zustand state management
+- **CLI**: Command-line interface (`agentx` binary)
 - Integrate with Claude Agent SDK
 - Manage sessions, commands, and project state
+- Serve static frontend files in production
 
-**Port**: 5200 (unified for both dev and prod)
-
-**Key Files**:
-
-- `src/index.js` - Server startup, configuration loading
-- `src/app.js` - Express app, route mounting, static file serving
-- `src/agent.js` - Claude Agent SDK integration
-- `src/websocket/chat.js` - Chat WebSocket handler
-- `src/websocket/shell.js` - Terminal WebSocket handler
-
-### agent-web (Frontend Application)
-
-**Role**: React-based user interface
-
-**Responsibilities**:
-
-- Render UI components
-- Manage client-side state
-- Communicate with backend via HTTP and WebSocket
-- Provide code editor, terminal, and chat interface
-
-**Development Port**: 5173 (Vite default, with HMR)
-**Production**: Static files served by agent-service
+**Ports**:
+- Production: 5200 (unified)
+- Development: 5173 (Vite) + 5200 (server)
 
 **Key Files**:
 
+**Server** (`server/`):
+- `index.ts` - Server startup, configuration loading
+- `app.ts` - Express app, route mounting, static file serving
+- `core/agent.ts` - Claude Agent SDK integration
+- `websocket/chat.ts` - Chat WebSocket handler
+- `websocket/shell.ts` - Terminal WebSocket handler
+
+**Frontend** (`web/`):
 - `src/App.tsx` - Main application component
 - `src/components/ChatInterface.tsx` - Chat UI
 - `src/components/Terminal.tsx` - Terminal emulator
 - `src/stores/sessionStore.ts` - Zustand state management
+
+**CLI** (`cli/`):
+- `index.ts` - Commander.js CLI with HTTP server command
 
 **State Management Architecture**:
 
@@ -114,11 +109,14 @@ src/
 └── types/            # TypeScript types
 ```
 
-### packages/\* (Shared Libraries)
+### packages/agent-sdk (Shared Library)
 
-**agent-config**: Configuration management with multi-source loading (env, file, database)
-**agent-sdk**: Claude Agent SDK wrapper and session management
-**agent-ui**: Shared UI components (being phased out, moved to agent-web)
+**Role**: Claude Agent SDK wrapper and integration utilities
+
+**Responsibilities**:
+- Wrap @anthropic-ai/sdk for easier usage
+- Provide session management utilities
+- Shared types for Claude API integration
 
 ## Port Design
 
@@ -127,18 +125,18 @@ src/
 ```
 Development:
   User → http://localhost:5173 (Vite dev server)
-         ├─ /api/* → proxy to :5200 (agent-service)
+         ├─ /api/* → proxy to :5200 (agent server)
          ├─ /ws → proxy to :5200 (WebSocket)
          └─ /* → Vite HMR
 
-Production (Docker):
-  User → http://localhost:5200 (agent-service)
+Production (Docker/CLI):
+  User → http://localhost:5200 (agent server)
          ├─ /api/* → handled by Express
          ├─ /ws → handled by WebSocket server
-         └─ /* → static files from dist/
+         └─ /* → static files from dist/web/
 ```
 
-**Key Principle**: agent-service is always the source of truth on port 5200. In development, Vite runs alongside on 5173 for HMR, but all API/WebSocket traffic goes to agent-service.
+**Key Principle**: The agent server is always the source of truth on port 5200. In development, Vite runs alongside on 5173 for HMR, but all API/WebSocket traffic goes to the server.
 
 ## Data Flow
 
@@ -147,7 +145,7 @@ Production (Docker):
 ```
 Browser
   ↓ GET /api/sessions
-agent-service (Express)
+apps/agent server (Express)
   ↓ read from SQLite
   ↓ return JSON
 Browser
@@ -158,9 +156,9 @@ Browser
 ```
 Browser
   ↓ WebSocket connection to /ws
-agent-service (WebSocket Server)
+apps/agent server (WebSocket Server)
   ↓ authenticate & route
-websocket/chat.js
+server/websocket/chat.ts
   ↓ create Claude Agent session
 Claude SDK
   ↓ stream responses
@@ -172,7 +170,7 @@ Browser (real-time updates)
 ```
 Browser
   ↓ WebSocket connection to /shell
-agent-service (WebSocket Server)
+apps/agent server (WebSocket Server)
   ↓ spawn PTY process
 node-pty
   ↓ execute shell commands
