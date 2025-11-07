@@ -74,9 +74,17 @@ export const useSessionStore = create<SessionState>()(
       },
 
       addSession: (session) =>
-        set((state) => ({
-          sessions: [session, ...state.sessions],
-        })),
+        set((state) => {
+          // Check if session already exists to prevent duplicates
+          const exists = state.sessions.some((s) => s.id === session.id);
+          if (exists) {
+            console.log("[SessionStore] Session already exists, skipping add:", session.id);
+            return state;
+          }
+          return {
+            sessions: [session, ...state.sessions],
+          };
+        }),
 
       updateSession: (sessionId, updates) =>
         set((state) => ({
