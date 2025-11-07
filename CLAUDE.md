@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Language
+
+Alwayse response user in Chinese。
+
+
 ## Project Overview
 
 **Deepractice Agent** is a visual AI agent interface that provides Claude capabilities through a web UI. It's a full-stack desktop-class application packaged as a Docker container, following "separated development, unified deployment" architecture.
