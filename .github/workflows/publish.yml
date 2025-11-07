@@ -37,18 +37,18 @@ jobs:
       - name: Build Packages
         run: pnpm build
 
-      - name: Publish agent-sdk to NPM
-        if: hashFiles('packages/agent-sdk/package.json') != ''
+      - name: Publish agent to NPM
+        if: hashFiles('apps/agent/package.json') != ''
         run: |
-          cd packages/agent-sdk
+          cd apps/agent
           pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish agent-cli to NPM
-        if: hashFiles('apps/agent-cli/package.json') != ''
+      - name: Publish agent-sdk to NPM
+        if: hashFiles('packages/agent-sdk/package.json') != ''
         run: |
-          cd apps/agent-cli
+          cd packages/agent-sdk
           pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -58,16 +58,16 @@ jobs:
           echo "## ✅ NPM Packages Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+          if [ -f "apps/agent/package.json" ]; then
+            AGENT_NAME=$(jq -r '.name' "apps/agent/package.json")
+            AGENT_VERSION=$(jq -r '.version' "apps/agent/package.json")
+            echo "- \`${AGENT_NAME}@${AGENT_VERSION}\` (CLI + Server + Web UI)" >> $GITHUB_STEP_SUMMARY
+          fi
+
           if [ -f "packages/agent-sdk/package.json" ]; then
             SDK_NAME=$(jq -r '.name' "packages/agent-sdk/package.json")
             SDK_VERSION=$(jq -r '.version' "packages/agent-sdk/package.json")
             echo "- \`${SDK_NAME}@${SDK_VERSION}\`" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ -f "apps/agent-cli/package.json" ]; then
-            CLI_NAME=$(jq -r '.name' "apps/agent-cli/package.json")
-            CLI_VERSION=$(jq -r '.version' "apps/agent-cli/package.json")
-            echo "- \`${CLI_NAME}@${CLI_VERSION}\`" >> $GITHUB_STEP_SUMMARY
           fi
 
   publish-docker:
@@ -103,9 +103,9 @@ jobs:
 
       - name: Wait for NPM Package Availability
         run: |
-          echo "Waiting for @deepractice-ai/agent-cli to be available on NPM..."
+          echo "Waiting for @deepractice-ai/agent to be available on NPM..."
           for i in {1..12}; do
-            if npm view @deepractice-ai/agent-cli@latest version &>/dev/null; then
+            if npm view @deepractice-ai/agent@latest version &>/dev/null; then
               echo "Package is available!"
               exit 0
             fi

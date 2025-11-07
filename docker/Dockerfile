@@ -1,6 +1,6 @@
 #
 # Deepractice Agent - NPM-based Lightweight Dockerfile
-# Uses published @deepractice-ai/agent-cli from npm
+# Uses published @deepractice-ai/agent from npm
 #
 
 ARG RUNTIME_VERSION=latest
@@ -9,8 +9,8 @@ FROM deepracticexs/agent-runtime:${RUNTIME_VERSION}
 # Switch to root for installations
 USER root
 
-# Install agent-cli globally from npm
-RUN npm install -g @deepractice-ai/agent-cli
+# Install agent globally from npm (includes CLI, server, and web UI)
+RUN npm install -g @deepractice-ai/agent
 
 # Environment variables
 ENV NODE_ENV=production \

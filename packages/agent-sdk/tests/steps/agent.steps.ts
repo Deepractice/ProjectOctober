@@ -203,7 +203,7 @@ Given("{int} sessions exist", async function (count: number) {
     try {
       const session = await this.agent!.createSession();
       this.sessions.set(session.id, session);
-    } catch (e) {
+    } catch (_e) {
       // Continue creating sessions even if some fail
       console.log(`Failed to create session ${i + 1}/${count}`);
     }
@@ -388,7 +388,7 @@ Then("I should receive an event:", function (docString: any) {
     try {
       const parsed = JSON.parse(docStr);
       expectedType = parsed.type;
-    } catch (e) {
+    } catch (_e) {
       const typeMatch = docStr.match(/"type"\s*:\s*"(\w+)"/);
       if (typeMatch) {
         expectedType = typeMatch[1];
@@ -433,7 +433,7 @@ Then("I can filter by state", function () {
 
 Then(
   "I should receive {int} sessions starting from offset {int}",
-  function (limit: number, offset: number) {
+  function (limit: number, _offset: number) {
     expect(this.queriedSessions).toBeDefined();
     expect(this.queriedSessions.length).toBeLessThanOrEqual(limit);
   }

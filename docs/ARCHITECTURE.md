@@ -9,71 +9,70 @@ Agent is a **full-stack desktop-class application** packaged as a Docker contain
 ```
 Agent/
 ├── apps/
-│   └── agent-web/              # React frontend application
-│       ├── src/                # UI source code
-│       ├── vite.config.js      # Vite build configuration
-│       └── dist/               # Build output (production)
+│   └── agent/                  # Full-stack application (merged)
+│       ├── web/                # React frontend source
+│       │   ├── src/            # UI components, stores, types
+│       │   ├── vite.config.ts  # Vite build configuration
+│       │   └── index.html      # Entry HTML
+│       ├── server/             # Node.js backend source
+│       │   ├── routes/         # API endpoints
+│       │   ├── websocket/      # WebSocket handlers
+│       │   ├── core/           # Agent integration, config
+│       │   ├── app.ts          # Express app configuration
+│       │   └── index.ts        # Server entry point
+│       ├── cli/                # CLI tool source
+│       │   └── index.ts        # Commander.js CLI
+│       ├── dist/               # Build output
+│       │   ├── web/            # Frontend static files
+│       │   ├── server/         # Server bundle
+│       │   └── cli/            # CLI binary
+│       └── package.json        # @deepractice-ai/agent
 │
-├── packages/
-│   ├── agent-config/           # Configuration management library
-│   ├── agent-sdk/              # Claude SDK integration library
-│   └── agent-ui/               # Shared UI components (legacy)
-│
-└── services/
-    └── agent-service/          # Node.js backend server
-        ├── src/
-        │   ├── routes/         # API endpoints
-        │   ├── websocket/      # WebSocket handlers
-        │   ├── agent.js        # Claude Agent integration
-        │   ├── app.js          # Express app configuration
-        │   └── index.js        # Server entry point
-        └── dist/               # Frontend build (copied in production)
+└── packages/
+    └── agent-sdk/              # Claude SDK integration library
+        └── dist/               # Build output
 ```
 
 ## Component Architecture
 
-### agent-service (Backend + Gateway)
+### apps/agent (Full-Stack Application)
 
-**Role**: Unified entry point for the entire application
+**Role**: Unified application containing frontend, backend, and CLI
 
 **Responsibilities**:
 
-- Serve REST API endpoints (`/api/*`)
-- Handle WebSocket connections (`/ws`, `/shell`)
-- Serve static frontend files in production (`/*`)
+- **Server**: REST API endpoints (`/api/*`), WebSocket (`/ws`, `/shell`)
+- **Frontend**: React UI with Zustand state management
+- **CLI**: Command-line interface (`agentx` binary)
 - Integrate with Claude Agent SDK
 - Manage sessions, commands, and project state
+- Serve static frontend files in production
 
-**Port**: 5200 (unified for both dev and prod)
+**Ports**:
 
-**Key Files**:
-
-- `src/index.js` - Server startup, configuration loading
-- `src/app.js` - Express app, route mounting, static file serving
-- `src/agent.js` - Claude Agent SDK integration
-- `src/websocket/chat.js` - Chat WebSocket handler
-- `src/websocket/shell.js` - Terminal WebSocket handler
-
-### agent-web (Frontend Application)
-
-**Role**: React-based user interface
-
-**Responsibilities**:
-
-- Render UI components
-- Manage client-side state
-- Communicate with backend via HTTP and WebSocket
-- Provide code editor, terminal, and chat interface
-
-**Development Port**: 5173 (Vite default, with HMR)
-**Production**: Static files served by agent-service
+- Production: 5200 (unified)
+- Development: 5173 (Vite) + 5200 (server)
 
 **Key Files**:
+
+**Server** (`server/`):
+
+- `index.ts` - Server startup, configuration loading
+- `app.ts` - Express app, route mounting, static file serving
+- `core/agent.ts` - Claude Agent SDK integration
+- `websocket/chat.ts` - Chat WebSocket handler
+- `websocket/shell.ts` - Terminal WebSocket handler
+
+**Frontend** (`web/`):
 
 - `src/App.tsx` - Main application component
 - `src/components/ChatInterface.tsx` - Chat UI
 - `src/components/Terminal.tsx` - Terminal emulator
 - `src/stores/sessionStore.ts` - Zustand state management
+
+**CLI** (`cli/`):
+
+- `index.ts` - Commander.js CLI with HTTP server command
 
 **State Management Architecture**:
 
@@ -114,11 +113,15 @@ src/
 └── types/            # TypeScript types
 ```
 
-### packages/\* (Shared Libraries)
+### packages/agent-sdk (Shared Library)
 
-**agent-config**: Configuration management with multi-source loading (env, file, database)
-**agent-sdk**: Claude Agent SDK wrapper and session management
-**agent-ui**: Shared UI components (being phased out, moved to agent-web)
+**Role**: Claude Agent SDK wrapper and integration utilities
+
+**Responsibilities**:
+
+- Wrap @anthropic-ai/sdk for easier usage
+- Provide session management utilities
+- Shared types for Claude API integration
 
 ## Port Design
 
@@ -127,18 +130,18 @@ src/
 ```
 Development:
   User → http://localhost:5173 (Vite dev server)
-         ├─ /api/* → proxy to :5200 (agent-service)
+         ├─ /api/* → proxy to :5200 (agent server)
          ├─ /ws → proxy to :5200 (WebSocket)
          └─ /* → Vite HMR
 
-Production (Docker):
-  User → http://localhost:5200 (agent-service)
+Production (Docker/CLI):
+  User → http://localhost:5200 (agent server)
          ├─ /api/* → handled by Express
          ├─ /ws → handled by WebSocket server
-         └─ /* → static files from dist/
+         └─ /* → static files from dist/web/
 ```
 
-**Key Principle**: agent-service is always the source of truth on port 5200. In development, Vite runs alongside on 5173 for HMR, but all API/WebSocket traffic goes to agent-service.
+**Key Principle**: The agent server is always the source of truth on port 5200. In development, Vite runs alongside on 5173 for HMR, but all API/WebSocket traffic goes to the server.
 
 ## Data Flow
 
@@ -147,7 +150,7 @@ Production (Docker):
 ```
 Browser
   ↓ GET /api/sessions
-agent-service (Express)
+apps/agent server (Express)
   ↓ read from SQLite
   ↓ return JSON
 Browser
@@ -158,9 +161,9 @@ Browser
 ```
 Browser
   ↓ WebSocket connection to /ws
-agent-service (WebSocket Server)
+apps/agent server (WebSocket Server)
   ↓ authenticate & route
-websocket/chat.js
+server/websocket/chat.ts
   ↓ create Claude Agent session
 Claude SDK
   ↓ stream responses
@@ -172,7 +175,7 @@ Browser (real-time updates)
 ```
 Browser
   ↓ WebSocket connection to /shell
-agent-service (WebSocket Server)
+apps/agent server (WebSocket Server)
   ↓ spawn PTY process
 node-pty
   ↓ execute shell commands
@@ -183,37 +186,47 @@ File system / Project
 
 ### Development Environment
 
-**Start Command**: `pnpm dev` (runs both services in parallel)
+**Start Command**: `pnpm dev` (runs both frontend and server in parallel)
 
-1. **agent-service** starts on port 5200
-   - Loads config from `.env`
-   - Starts Express + WebSocket server
-   - Does NOT serve static files (dev mode)
-
-2. **agent-web** starts on port 5173
+1. **Frontend (Vite)** starts on port 5173
    - Vite dev server with HMR
    - Proxies `/api/*`, `/ws`, `/shell` to :5200
    - Hot reload on file changes
+   - Source: `apps/agent/web/`
+
+2. **Server** starts on port 5200
+   - Loads config from `.env`
+   - Starts Express + WebSocket server
+   - Does NOT serve static files (dev mode)
+   - Source: `apps/agent/server/`
 
 **Developer Access**: Open http://localhost:5173
 
-### Production Environment (Docker)
+### Production Environment (Docker/NPM)
 
-**Image**: `deepracticexs/agent:latest`
+**NPM Package**: `@deepractice-ai/agent` (published to npm)
+**Docker Image**: `deepracticexs/agent:latest`
 
 **Build Process**:
 
-1. Build agent-web → `apps/agent-web/dist/`
-2. Copy dist to `services/agent-service/dist/`
-3. Package agent-service + dist into Docker image
+1. Build frontend → `apps/agent/dist/web/`
+2. Build server → `apps/agent/dist/server/`
+3. Build CLI → `apps/agent/dist/cli/bin.js`
+4. Publish to npm as `@deepractice-ai/agent`
+5. Docker image installs from npm: `npm install -g @deepractice-ai/agent`
 
 **Runtime**:
 
-- Single Node.js process running agent-service
-- Serves static files from `dist/`
+- Single Node.js process running agent server
+- Serves static files from `dist/web/`
 - All requests go to port 5200
+- CLI available as `agentx` command
 
-**User Access**: `docker run -p 5200:5200 deepracticexs/agent`
+**Usage**:
+
+- Docker: `docker run -p 5200:5200 deepracticexs/agent`
+- NPM: `npx @deepractice-ai/agent http`
+- Global: `npm install -g @deepractice-ai/agent && agentx http`
 
 ## Technology Stack
 
@@ -241,11 +254,11 @@ File system / Project
 
 - **pnpm** - Package manager (workspace support)
 - **Turbo** - Build orchestration
-- **Zod** - Schema validation (agent-config)
+- **Zod** - Schema validation
 
 ## Configuration System
 
-Agent uses a layered configuration system provided by `@deepractice-ai/agent-config`:
+Agent uses environment-based configuration with .env files:
 
 **Priority Order** (highest to lowest):
 
@@ -291,15 +304,17 @@ docker run -d \
 # Install dependencies
 pnpm install
 
-# Start dev environment (both services)
+# Start dev environment (frontend + server)
 pnpm dev
 
 # Build for production
 pnpm build
 
 # Run production build locally
-cd services/agent-service
-PORT=5200 node src/index.js
+cd apps/agent
+pnpm start
+# or use CLI
+agentx http --port 5200
 ```
 
 ## Session Management
@@ -332,23 +347,32 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 
 **Structure**: Follows industry best practices (Nx, Turborepo patterns)
 
-### Why agent-service Serves Static Files?
+### Why Server Serves Static Files?
 
 **Reasons**:
 
-- Simplifies deployment (single container)
+- Simplifies deployment (single container, single npm package)
 - Reduces infrastructure complexity (no separate frontend server)
 - Better for desktop-class applications (like VS Code, Cursor)
 - WebSocket connections share same origin
 
-### Why Separate agent-web and agent-service in Development?
+### Why Separate Frontend and Server in Development?
 
 **Reasons**:
 
 - Fast HMR in frontend (Vite dev server)
-- Backend can reload independently
+- Server can reload independently
 - Clear separation of concerns
 - Better debugging experience
+
+### Why Merge into Single Package?
+
+**Reasons**:
+
+- Simpler dependency management (one package.json for the app)
+- Easier deployment (publish once to npm, use as CLI or in Docker)
+- Better user experience (install one package, get everything)
+- Reduced overhead (no workspace complexity for small monorepo)
 
 ## Future Considerations
 

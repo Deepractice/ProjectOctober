@@ -1,6 +1,5 @@
 import { Given, When, Then, DataTable } from "@deepracticex/vitest-cucumber";
 import { expect } from "vitest";
-import { firstValueFrom } from "rxjs";
 
 Given("warmup pool has {int} ready sessions", function (count: number) {
   // This is checked via agent.getStatus().warmupPoolSize
@@ -325,7 +324,7 @@ Then("the first {int} sessions should use warm sessions", function (count: numbe
   expect(this.sessions.size).toBeGreaterThanOrEqual(count);
 });
 
-Then("the remaining {int} sessions should use cold start", function (count: number) {
+Then("the remaining {int} sessions should use cold start", function (_count: number) {
   // TODO: Verify some sessions took longer (cold start)
   expect(this.sessions.size).toBeGreaterThan(0);
 });
@@ -413,7 +412,7 @@ Then("I cannot retrieve the session anymore", function () {
 
 Then(
   "I should receive {int} messages starting from offset {int}",
-  function (limit: number, offset: number) {
+  function (limit: number, _offset: number) {
     expect(this.queriedMessages).toBeDefined();
     expect(this.queriedMessages.length).toBeLessThanOrEqual(limit);
   }

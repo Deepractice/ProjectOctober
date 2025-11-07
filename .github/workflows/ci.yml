@@ -80,20 +80,29 @@ jobs:
 
       - name: Check Build Artifacts
         run: |
-          # Check agent-web (frontend)
-          if [ -d "apps/agent-web/dist" ]; then
-            echo "✅ agent-web built successfully"
-            ls -la "apps/agent-web/dist" | head -20
-          else
-            echo "❌ agent-web build failed - no dist directory"
-            exit 1
-          fi
+          # Check apps/agent (merged: web + server + CLI)
+          if [ -d "apps/agent/dist" ]; then
+            echo "✅ apps/agent built successfully"
+            echo "Checking dist structure:"
+            ls -la "apps/agent/dist"
 
-          # Check agent-config package
-          if [ -d "packages/agent-config/dist" ]; then
-            echo "✅ agent-config built successfully"
+            # Verify CLI binary exists
+            if [ -f "apps/agent/dist/cli/bin.js" ]; then
+              echo "✅ CLI binary found"
+            else
+              echo "❌ CLI binary missing"
+              exit 1
+            fi
+
+            # Verify server files exist
+            if [ -f "apps/agent/dist/server/index.js" ]; then
+              echo "✅ Server bundle found"
+            else
+              echo "❌ Server bundle missing"
+              exit 1
+            fi
           else
-            echo "❌ agent-config build failed - no dist directory"
+            echo "❌ apps/agent build failed - no dist directory"
             exit 1
           fi
 
@@ -104,6 +113,3 @@ jobs:
             echo "❌ agent-sdk build failed - no dist directory"
             exit 1
           fi
-
-          # agent-service is a Node.js service without build step
-          echo "✅ agent-service (no build required)"

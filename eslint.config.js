@@ -3,6 +3,7 @@ import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
   // Global ignores must be first
@@ -54,11 +55,53 @@ export default [
         URLSearchParams: "readonly",
         TextEncoder: "readonly",
         TextDecoder: "readonly",
+        // Browser globals (for web/ directory)
+        window: "readonly",
+        document: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
+        fetch: "readonly",
+        Response: "readonly",
+        Request: "readonly",
+        Headers: "readonly",
+        FormData: "readonly",
+        Blob: "readonly",
+        File: "readonly",
+        FileReader: "readonly",
+        WebSocket: "readonly",
+        Event: "readonly",
+        CustomEvent: "readonly",
+        HTMLElement: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLTextAreaElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLButtonElement: "readonly",
+        MouseEvent: "readonly",
+        KeyboardEvent: "readonly",
+        Node: "readonly",
+        Navigator: "readonly",
+        navigator: "readonly",
+        location: "readonly",
+        alert: "readonly",
+        confirm: "readonly",
+        prompt: "readonly",
+        crypto: "readonly",
+        IntersectionObserver: "readonly",
+        MediaRecorder: "readonly",
+        MediaStream: "readonly",
+        DataTransferItem: "readonly",
+        // TypeScript/React types
+        React: "readonly",
+        JSX: "readonly",
+        RequestInit: "readonly",
+        HeadersInit: "readonly",
+        NodeJS: "readonly",
       },
     },
     plugins: {
       "@typescript-eslint": tseslint,
       prettier: prettierPlugin,
+      "react-hooks": reactHooks,
     },
     rules: {
       "prettier/prettier": "error",
@@ -75,6 +118,9 @@ export default [
       "no-undef": "error",
       // Allow control characters in regex (for terminal escape codes)
       "no-control-regex": "off",
+      // React hooks rules
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 ];
