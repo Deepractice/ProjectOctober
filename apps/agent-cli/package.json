@@ -38,29 +38,13 @@
   },
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.29",
-    "@deepracticex/logger": "^1.1.1",
-    "chokidar": "^4.0.3",
-    "commander": "^13.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.18.2",
-    "gray-matter": "^4.0.3",
-    "jsonwebtoken": "^9.0.2",
-    "mime-types": "^3.0.1",
-    "multer": "^2.0.1",
-    "node-fetch": "^2.7.0",
-    "ws": "^8.14.2"
-  },
-  "optionalDependencies": {
-    "node-pty": "^1.1.0-beta34"
+    "commander": "^13.0.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@deepractice-ai/agent-service": "workspace:*",
-    "@deepractice-ai/agent-web": "workspace:*",
+    "@deepractice-ai/agent": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",

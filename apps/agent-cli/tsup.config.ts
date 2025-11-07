@@ -15,40 +15,40 @@ export default defineConfig({
     const distDir = "./dist";
     const runtimeDir = join(distDir, "runtime");
 
-    console.log("📦 Copying runtime resources...");
+    console.log("📦 Copying runtime resources from apps/agent...");
 
     // Create runtime directory
     if (!existsSync(runtimeDir)) {
       mkdirSync(runtimeDir, { recursive: true });
     }
 
-    // Copy agent-service bundled file
-    const serviceSrc = "../../services/agent-service/dist/index.js";
-    const serviceDest = join(runtimeDir, "service.js");
+    // Copy agent server bundle
+    const agentServerSrc = "../agent/dist/server/index.js";
+    const agentServerDest = join(runtimeDir, "agent.js");
 
-    if (existsSync(serviceSrc)) {
-      cpSync(serviceSrc, serviceDest);
-      console.log("✅ Copied agent-service bundle");
+    if (existsSync(agentServerSrc)) {
+      cpSync(agentServerSrc, agentServerDest);
+      console.log("✅ Copied agent server bundle");
     } else {
       console.error(
-        "❌ agent-service/dist/index.js not found. Run `pnpm build` in agent-service first."
+        "❌ apps/agent/dist/server/index.js not found. Run `pnpm build` in apps/agent first."
       );
       process.exit(1);
     }
 
-    // Copy agent-web dist directory
-    const webSrc = "../agent-web/dist";
-    const webDest = join(runtimeDir, "web");
+    // Copy agent web dist directory
+    const agentWebSrc = "../agent/dist/web";
+    const agentWebDest = join(runtimeDir, "web");
 
-    if (existsSync(webSrc)) {
-      cpSync(webSrc, webDest, { recursive: true });
-      console.log("✅ Copied agent-web dist");
+    if (existsSync(agentWebSrc)) {
+      cpSync(agentWebSrc, agentWebDest, { recursive: true });
+      console.log("✅ Copied agent web dist");
     } else {
-      console.error("❌ agent-web/dist not found. Run `pnpm build` in agent-web first.");
+      console.error("❌ apps/agent/dist/web not found. Run `pnpm build` in apps/agent first.");
       process.exit(1);
     }
 
     console.log("🎉 Runtime resources copied successfully!");
-    console.log(`📂 Structure:\n   dist/runtime/service.js\n   dist/runtime/web/`);
+    console.log(`📂 Structure:\n   dist/runtime/agent.js\n   dist/runtime/web/`);
   },
 });

@@ -55,15 +55,13 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
   }
   console.log("");
 
-  // Now dynamically import and start agent-service
+  // Now dynamically import and start the agent
   try {
-    // Detect runtime environment and choose the correct service path
+    // Detect runtime environment and choose the correct agent path
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
 
-    // Path to bundled service (in npm package or after build)
-    // When tsup bundles with splitting, chunks might be at different levels
-    // So we always resolve from dist root
+    // Path to bundled agent (in npm package or after build)
     let distRoot = __dirname;
     while (!existsSync(join(distRoot, "runtime"))) {
       const parent = dirname(distRoot);
@@ -71,26 +69,29 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
       distRoot = parent;
     }
 
-    const bundledServicePath = join(distRoot, "runtime/service.js");
+    const bundledAgentPath = join(distRoot, "runtime/agent.js");
 
-    // Path to source service (in monorepo development)
-    const sourceServicePath = join(__dirname, "../../../../services/agent-service/src/index.js");
+    // Path to source agent (in monorepo development)
+    const sourceAgentPath = join(__dirname, "../../../agent/dist/server/index.js");
 
-    let servicePath: string;
-    if (existsSync(bundledServicePath)) {
-      servicePath = bundledServicePath;
-      console.log("📦 Loading bundled agent-service...\n");
-    } else if (existsSync(sourceServicePath)) {
-      servicePath = sourceServicePath;
-      console.log("📦 Loading agent-service from source...\n");
+    let agentPath: string;
+    if (existsSync(bundledAgentPath)) {
+      agentPath = bundledAgentPath;
+      console.log("📦 Loading bundled agent...\n");
+    } else if (existsSync(sourceAgentPath)) {
+      agentPath = sourceAgentPath;
+      console.log("📦 Loading agent from source...\n");
     } else {
       throw new Error(
-        "Could not find agent-service. Please rebuild the CLI or check your installation."
+        "Could not find agent. Please rebuild the CLI or check your installation.\n" +
+        `  Looked for:\n` +
+        `  - ${bundledAgentPath}\n` +
+        `  - ${sourceAgentPath}`
       );
     }
 
     // Import the startServer function
-    const { startServer } = await import(servicePath);
+    const { startServer } = await import(agentPath);
 
     // Start the server with our options
     await startServer({
@@ -98,7 +99,7 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
       loadEnv: false, // Don't load .env files, we already set environment
     });
   } catch (error) {
-    console.error("❌ Failed to start agent-service:", error);
+    console.error("❌ Failed to start agent:", error);
     process.exit(1);
   }
 }
