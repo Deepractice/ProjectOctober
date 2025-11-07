@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Deepractice AI Agent - Full-stack application (Server + Web UI + CLI)",
   "type": "module",
   "main": "./dist/server/index.js",
@@ -35,8 +35,6 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.29",
-    "@deepractice-ai/agent-config": "workspace:*",
-    "@deepractice-ai/agent-sdk": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
     "chokidar": "^4.0.3",
     "commander": "^13.0.0",
