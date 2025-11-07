@@ -10,6 +10,7 @@ import type {
 } from "~/types";
 import { SessionManager } from "./session-manager";
 import { createSDKLogger } from "./utils/logger";
+import { SQLiteAgentPersister } from "./persistence/sqlite-persister";
 import type { Logger } from "@deepracticex/logger";
 
 /**
@@ -23,7 +24,12 @@ export class ClaudeAgent implements Agent {
   constructor(config: AgentConfig) {
     this.logger = createSDKLogger(config.logger);
     this.logger.debug({ workspace: config.workspace, model: config.model }, "Creating ClaudeAgent");
-    this.sessionManager = new SessionManager(config, this.logger);
+
+    // Create persister if not provided (default: SQLite)
+    const persister = config.persister || new SQLiteAgentPersister(config.workspace, this.logger);
+
+    // Pass persister to SessionManager
+    this.sessionManager = new SessionManager(config, this.logger, persister);
   }
 
   async initialize(): Promise<void> {

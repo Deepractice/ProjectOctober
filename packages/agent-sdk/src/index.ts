@@ -1,5 +1,6 @@
 // Public API
 export { createAgent } from "./api/agent";
+export { createAgentPersister, SQLiteAgentPersister } from "./api";
 
 // Config API (from agent-config)
 export { getConfig, getConfigValue } from "./core/config/api/getConfig";
@@ -28,6 +29,8 @@ export type {
   ContentBlock,
   TextBlock,
   ImageBlock,
+  AgentPersister,
+  MessagePersister,
 } from "./types";
 
 // Config types (from agent-config)

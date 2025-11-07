@@ -1,8 +1,11 @@
+import type { AgentPersister } from "./persister";
+
 export interface AgentConfig {
   workspace: string;
   model?: string;
   mcpServers?: Record<string, McpServerConfig>;
   logger?: LoggerConfig;
+  persister?: AgentPersister; // Optional: inject custom persister
 }
 
 export interface LoggerConfig {

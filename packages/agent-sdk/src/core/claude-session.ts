@@ -10,6 +10,7 @@ import type {
   UserMessage,
   SessionOptions,
   ContentBlock,
+  MessagePersister,
 } from "~/types";
 import type { ClaudeAdapter } from "./claude-adapter";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -39,6 +40,7 @@ export class ClaudeSession implements Session {
   private options: SessionOptions;
   private realSessionId: string | null = null; // Claude SDK session ID
   private logger: Logger;
+  private messagePersister?: MessagePersister;
 
   constructor(
     id: string,
@@ -48,7 +50,8 @@ export class ClaudeSession implements Session {
     isWarmSession: boolean,
     logger: Logger,
     initialMessages: AnyMessage[] = [],
-    initialTokenUsage?: TokenUsage
+    initialTokenUsage?: TokenUsage,
+    messagePersister?: MessagePersister
   ) {
     this.id = id;
     this.createdAt = new Date();
@@ -56,6 +59,7 @@ export class ClaudeSession implements Session {
     this.adapter = adapter;
     this.options = options;
     this.logger = logger;
+    this.messagePersister = messagePersister;
 
     // Initialize with historical messages if provided
     this.messages = [...initialMessages];
@@ -71,6 +75,62 @@ export class ClaudeSession implements Session {
       { sessionId: id, isWarmSession, hasInitialMessages: initialMessages.length > 0 },
       "ClaudeSession constructed"
     );
+
+    // Load persisted messages if available
+    this.loadPersistedMessages();
+  }
+
+  /**
+   * Load persisted messages from MessagePersister
+   * This runs asynchronously in background
+   */
+  private async loadPersistedMessages(): Promise<void> {
+    if (!this.messagePersister) {
+      this.logger.debug({ sessionId: this.id }, "No message persister, skipping load");
+      return;
+    }
+
+    try {
+      const persistedMessages = await this.messagePersister.getMessages(this.id);
+
+      if (persistedMessages && persistedMessages.length > 0) {
+        this.logger.info(
+          { sessionId: this.id, count: persistedMessages.length },
+          "Loaded persisted messages"
+        );
+
+        // Replace initial messages with persisted ones (persisted is source of truth)
+        this.messages = persistedMessages;
+
+        // Emit all persisted messages to subscribers
+        for (const message of persistedMessages) {
+          this.messageSubject.next(message);
+        }
+      } else {
+        this.logger.debug({ sessionId: this.id }, "No persisted messages found");
+      }
+    } catch (error) {
+      this.logger.error({ error, sessionId: this.id }, "Failed to load persisted messages");
+      // Don't throw - session should still work with initial messages
+    }
+  }
+
+  /**
+   * Persist a message to storage
+   * This runs asynchronously in background
+   */
+  private persistMessage(message: AnyMessage): void {
+    if (!this.messagePersister) {
+      return;
+    }
+
+    // Fire and forget - don't block the main flow
+    this.messagePersister.saveMessage(this.id, message).catch((error) => {
+      this.logger.error(
+        { error, sessionId: this.id, messageId: message.id },
+        "Failed to persist message"
+      );
+    });
   }
 
   get state(): SessionState {
@@ -128,6 +188,9 @@ export class ClaudeSession implements Session {
 
     this.messages.push(userMessage);
     this.messageSubject.next(userMessage);
+
+    // Persist user message
+    this.persistMessage(userMessage);
 
     this.logger.debug(
       { sessionId: this.id, totalMessages: this.messages.length },
@@ -246,6 +309,9 @@ export class ClaudeSession implements Session {
 
         this.messages.push(message);
         this.messageSubject.next(message);
+
+        // Persist each message
+        this.persistMessage(message);
       }
 
       this.logger.debug(

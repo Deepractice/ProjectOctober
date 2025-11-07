@@ -9,10 +9,17 @@ import { ClaudeAgent } from "~/core/claude-agent";
  *
  * @example
  * ```typescript
+ * // Using default SQLite persister
  * const agent = createAgent({
  *   workspace: '/path/to/project',
- *   warmupPoolSize: 3,
  *   model: 'claude-sonnet-4'
+ * });
+ *
+ * // Using custom persister
+ * const agent = createAgent({
+ *   workspace: '/path/to/project',
+ *   model: 'claude-sonnet-4',
+ *   persister: new CustomAgentPersister(...)
  * });
  *
  * await agent.initialize();

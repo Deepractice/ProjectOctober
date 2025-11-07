@@ -13,6 +13,7 @@ import type {
   SessionMetadata,
   TokenUsage,
   SessionCreateOptions,
+  AgentPersister,
 } from "~/types";
 import { ClaudeSession } from "./claude-session";
 import { ClaudeAdapter } from "./claude-adapter";
@@ -31,12 +32,15 @@ export class SessionManager {
     totalResponseTime: 0,
   };
   private logger: Logger;
+  private persister: AgentPersister;
 
   constructor(
     private readonly config: AgentConfig,
-    logger: Logger
+    logger: Logger,
+    persister: AgentPersister
   ) {
     this.logger = logger;
+    this.persister = persister;
     this.adapter = new ClaudeAdapter(config, logger);
     this.sessionDir = this.resolveSessionDirectory(config.workspace);
     this.logger.debug({ sessionDir: this.sessionDir }, "SessionManager created");
@@ -88,7 +92,10 @@ export class SessionManager {
       this.adapter,
       { model: options?.model }, // SessionOptions for adapter
       false, // No warmup session
-      this.logger
+      this.logger,
+      [], // initialMessages
+      undefined, // initialTokenUsage
+      this.persister.messages // MessagePersister
     );
 
     // Temporarily add to map with placeholder ID
@@ -112,6 +119,15 @@ export class SessionManager {
 
     // Update session's internal ID to real SDK session_id
     (session as any).id = realSessionId;
+
+    // Save session to database (must be done before saving messages)
+    await this.persister.saveSession({
+      id: realSessionId,
+      summary: session.summary(),
+      createdAt: session.createdAt,
+      lastActivity: new Date(),
+      cwd: this.config.workspace,
+    });
 
     this.logger.info(
       { placeholderId, realSessionId, messageCount: session.getMessages().length },
@@ -283,7 +299,8 @@ export class SessionManager {
             false, // Not from warmup pool
             this.logger,
             sessionData.messages, // Pass historical messages
-            sessionData.tokenUsage // Pass token usage
+            sessionData.tokenUsage, // Pass token usage
+            this.persister.messages // MessagePersister
           );
 
           // For historical sessions, set realSessionId to enable resume
