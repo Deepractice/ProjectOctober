@@ -1,4 +1,6 @@
 import { defineConfig } from 'tsup'
+import { copyFileSync } from 'fs'
+import { join } from 'path'
 
 export default defineConfig({
   entry: {
@@ -17,5 +19,12 @@ export default defineConfig({
     'ws',
     'node-pty',
     '@deepractice-ai/agent-sdk'
-  ]
+  ],
+  onSuccess: async () => {
+    // Copy package.json to dist for CLI version reading
+    copyFileSync(
+      join(process.cwd(), 'package.json'),
+      join(process.cwd(), 'dist', 'package.json')
+    )
+  }
 })
