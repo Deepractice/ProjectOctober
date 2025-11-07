@@ -1,11 +1,8 @@
 /**
  * HTTP Command
  * Starts the HTTP server with WebSocket support
- * Sets up environment variables and loads agent-service
+ * Sets up environment variables and starts the agent server
  */
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-import { existsSync } from "fs";
 import type { HttpCommandOptions } from "../types.js";
 
 /**
@@ -55,43 +52,9 @@ export async function httpCommand(options: HttpCommandOptions): Promise<void> {
   }
   console.log("");
 
-  // Now dynamically import and start the agent
+  // Import and start the agent server
   try {
-    // Detect runtime environment and choose the correct agent path
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-
-    // Path to bundled agent (in npm package or after build)
-    let distRoot = __dirname;
-    while (!existsSync(join(distRoot, "runtime"))) {
-      const parent = dirname(distRoot);
-      if (parent === distRoot) break; // Reached filesystem root
-      distRoot = parent;
-    }
-
-    const bundledAgentPath = join(distRoot, "runtime/agent.js");
-
-    // Path to source agent (in monorepo development)
-    const sourceAgentPath = join(__dirname, "../../../agent/dist/server/index.js");
-
-    let agentPath: string;
-    if (existsSync(bundledAgentPath)) {
-      agentPath = bundledAgentPath;
-      console.log("📦 Loading bundled agent...\n");
-    } else if (existsSync(sourceAgentPath)) {
-      agentPath = sourceAgentPath;
-      console.log("📦 Loading agent from source...\n");
-    } else {
-      throw new Error(
-        "Could not find agent. Please rebuild the CLI or check your installation.\n" +
-        `  Looked for:\n` +
-        `  - ${bundledAgentPath}\n` +
-        `  - ${sourceAgentPath}`
-      );
-    }
-
-    // Import the startServer function
-    const { startServer } = await import(agentPath);
+    const { startServer } = await import("../server/index.js");
 
     // Start the server with our options
     await startServer({

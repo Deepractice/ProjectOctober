@@ -1,15 +1,21 @@
 {
   "name": "@deepractice-ai/agent",
   "version": "0.5.0",
-  "description": "Deepractice AI Agent - Full-stack application (Server + Web UI)",
-  "private": true,
+  "description": "Deepractice AI Agent - Full-stack application (Server + Web UI + CLI)",
   "type": "module",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
+  "bin": {
+    "agentx": "./dist/bin/agent-cli.js"
+  },
   "exports": {
     ".": "./dist/server/index.js",
     "./server": "./dist/server/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:server\"",
     "dev:web": "vite --host --logLevel error",
@@ -17,10 +23,14 @@
     "dev:clean": "lsof -ti:5200 | xargs kill -9 2>/dev/null || true && pnpm dev",
     "build": "pnpm build:web && pnpm build:server",
     "build:web": "vite build",
-    "build:server": "tsup",
+    "build:server": "tsup && chmod +x dist/bin/agent-cli.js",
     "start": "NODE_ENV=production node dist/server/index.js",
+    "prepublishOnly": "pnpm build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.29",
@@ -28,6 +38,7 @@
     "@deepractice-ai/agent-sdk": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
     "chokidar": "^4.0.3",
+    "commander": "^13.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
