@@ -3,9 +3,9 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: {
     'server/index': 'server/index.ts',
-    'bin/agent-cli': 'bin/agent-cli.ts',
-    'cli': 'cli.ts',
-    'commands/http': 'commands/http.ts',
+    'cli/bin/agent-cli': 'cli/bin/agent-cli.ts',
+    'cli/cli': 'cli/cli.ts',
+    'cli/commands/http': 'cli/commands/http.ts',
   },
   format: ['esm'],
   dts: false, // Disable DTS generation for now (JS files need TS conversion)
