@@ -29,6 +29,13 @@ Agent/
 │       └── package.json        # @deepractice-ai/agent
 │
 └── packages/
+    ├── agent-types/            # Shared TypeScript type definitions
+    │   ├── src/                # Type definitions
+    │   │   ├── message.ts      # Message types (UserMessage, AgentMessage, ContentBlock)
+    │   │   ├── session.ts      # Session types
+    │   │   ├── events.ts       # EventBus event types
+    │   │   └── websocket.ts    # WebSocket message types
+    │   └── dist/               # Build output
     └── agent-sdk/              # Claude SDK integration library
         └── dist/               # Build output
 ```
@@ -113,6 +120,27 @@ src/
 └── types/            # TypeScript types
 ```
 
+### packages/agent-types (Shared Type Definitions)
+
+**Role**: Single source of truth for TypeScript type definitions
+
+**Responsibilities**:
+
+- Define message types (UserMessage, AgentMessage, ContentBlock)
+- Define session types (SessionState, SessionMetadata, TokenUsage)
+- Define event types (EventBus events for inter-component communication)
+- Define WebSocket message types (client-server communication)
+- Support multi-modal messages (text + images via ContentBlock[])
+
+**Key Types**:
+
+- `ContentBlock` - Union type for text and image blocks
+- `UserMessage` - User messages with `content: string | ContentBlock[]`
+- `AgentMessage` - Agent responses (formerly AssistantMessage)
+- `SessionEvent`, `MessageEvent`, `AgentEvent` - EventBus events
+
+**Consumers**: `@deepractice-ai/agent-sdk`, `@deepractice-ai/agent` (frontend + backend)
+
 ### packages/agent-sdk (Shared Library)
 
 **Role**: Claude Agent SDK wrapper and integration utilities
@@ -121,7 +149,8 @@ src/
 
 - Wrap @anthropic-ai/sdk for easier usage
 - Provide session management utilities
-- Shared types for Claude API integration
+- Use agent-types for type definitions
+- Handle multi-modal message conversion
 
 ## Port Design
 
@@ -383,5 +412,14 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 
 ---
 
-**Last Updated**: 2025-11-05
+**Last Updated**: 2025-11-07
 **Maintainer**: Deepractice Engineering Team
+
+## Recent Changes
+
+### 2025-11-07: Type System Refactor & Multi-modal Support
+
+- **Created `@deepractice-ai/agent-types`** - Centralized type definitions package
+- **Renamed `AssistantMessage` → `AgentMessage`** - Throughout entire codebase
+- **Added multi-modal support** - ContentBlock[] for text + images
+- **Event type changes** - `message.assistant` → `message.agent`
