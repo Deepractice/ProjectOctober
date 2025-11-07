@@ -5,9 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dev:vite & pnpm dev:service",
-    "dev:vite": "turbo run dev --filter=@deepractice-ai/agent-web",
-    "dev:service": "wait-on http://localhost:5173 -t 30000 && turbo run dev --filter=@deepractice-ai/agent-service",
+    "dev": "turbo run dev --filter=@deepractice-ai/agent",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
