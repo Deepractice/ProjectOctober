@@ -82,7 +82,7 @@ Before you start, make sure you have:
 
 ```bash
 # Install globally
-npm install -g @deepractice-ai/agent-cli
+npm install -g @deepractice-ai/agent
 
 # Run the server
 agentx http --anthropic-api-key sk-ant-xxxxx
