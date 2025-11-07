@@ -22,13 +22,6 @@
       "~/*": ["./web/src/*"]
     }
   },
-  "include": [
-    "server/**/*",
-    "web/src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "web/dist"
-  ]
+  "include": ["server/**/*", "web/src/**/*"],
+  "exclude": ["node_modules", "dist", "web/dist"]
 }

@@ -58,14 +58,14 @@ Options:
 
 ## Environment Variables
 
-| Variable              | Description                          | Default       |
-| --------------------- | ------------------------------------ | ------------- |
-| `ANTHROPIC_API_KEY`   | Claude API key (required)            | -             |
-| `PORT`                | Server port                          | `5200`        |
-| `HOST`                | Server host                          | `0.0.0.0`     |
-| `PROJECT_PATH`        | Project directory path               | Current dir   |
-| `ANTHROPIC_BASE_URL`  | Custom API endpoint                  | Official API  |
-| `NODE_ENV`            | Environment mode                     | `production`  |
+| Variable             | Description               | Default      |
+| -------------------- | ------------------------- | ------------ |
+| `ANTHROPIC_API_KEY`  | Claude API key (required) | -            |
+| `PORT`               | Server port               | `5200`       |
+| `HOST`               | Server host               | `0.0.0.0`    |
+| `PROJECT_PATH`       | Project directory path    | Current dir  |
+| `ANTHROPIC_BASE_URL` | Custom API endpoint       | Official API |
+| `NODE_ENV`           | Environment mode          | `production` |
 
 ## Accessing the Application
 
@@ -76,6 +76,7 @@ http://localhost:5200
 ```
 
 The server provides:
+
 - **Web UI**: `http://localhost:5200`
 - **WebSocket**: `ws://localhost:5200/ws`
 - **API**: `http://localhost:5200/api/*`

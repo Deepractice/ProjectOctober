@@ -1,20 +1,20 @@
-import { WebSocket, WebSocketServer } from 'ws'
-import type { Config } from '@deepractice-ai/agent-sdk'
+import { WebSocket, WebSocketServer } from "ws";
+import type { Config } from "@deepractice-ai/agent-sdk";
 
 export interface ServerOptions {
-  host?: string
-  loadEnv?: boolean
+  host?: string;
+  loadEnv?: boolean;
 }
 
 export interface ConnectedClient {
-  ws: WebSocket
-  id: string
+  ws: WebSocket;
+  id: string;
 }
 
-export type ConnectedClients = Set<WebSocket>
+export type ConnectedClients = Set<WebSocket>;
 
 export interface ServerContext {
-  config: Config
-  wss: WebSocketServer
-  connectedClients: ConnectedClients
+  config: Config;
+  wss: WebSocketServer;
+  connectedClients: ConnectedClients;
 }
