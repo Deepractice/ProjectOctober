@@ -115,7 +115,7 @@ jobs:
         run: |
           gh release create ${{ steps.extract_version.outputs.tag }} \
             --title "Release ${{ steps.extract_version.outputs.tag }}" \
-            --notes "${{ steps.release_notes.outputs.notes }}" \
+            --notes-file release-notes.md \
             --latest
 
       - name: Delete Release Branch
