@@ -50,9 +50,6 @@ importers:
 
   apps/agent:
     dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.1.29
-        version: 0.1.30(zod@4.1.12)
       '@assistant-ui/react':
         specifier: ^0.11.37
         version: 0.11.37(@types/react-dom@18.3.7(@types/react@18.3.26))(@types/react@18.3.26)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -83,6 +80,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.38.6
         version: 6.38.6
+      '@deepractice-ai/agent-sdk':
+        specifier: workspace:*
+        version: link:../../packages/agent-sdk
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
@@ -4377,17 +4377,6 @@ snapshots:
   '@anthropic-ai/claude-agent-sdk@0.1.30(zod@3.25.76)':
     dependencies:
       zod: 3.25.76
-    optionalDependencies:
-      '@img/sharp-darwin-arm64': 0.33.5
-      '@img/sharp-darwin-x64': 0.33.5
-      '@img/sharp-linux-arm': 0.33.5
-      '@img/sharp-linux-arm64': 0.33.5
-      '@img/sharp-linux-x64': 0.33.5
-      '@img/sharp-win32-x64': 0.33.5
-
-  '@anthropic-ai/claude-agent-sdk@0.1.30(zod@4.1.12)':
-    dependencies:
-      zod: 4.1.12
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
       '@img/sharp-darwin-x64': 0.33.5
