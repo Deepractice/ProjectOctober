@@ -26,7 +26,10 @@ interface MessagesAreaProps {
   setProvider: (provider: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   loadEarlierMessages: () => void;
-  createDiff: (oldContent: string, newContent: string) => string;
+  createDiff: (
+    oldContent: string,
+    newContent: string
+  ) => Array<{ type: string; content: string; lineNum: number }>;
   onFileOpen: (filePath: string) => void;
   onShowSettings: () => void;
   autoExpandTools: boolean;

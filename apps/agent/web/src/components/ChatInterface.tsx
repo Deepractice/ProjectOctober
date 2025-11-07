@@ -10,6 +10,7 @@ import InputArea from "~/components/InputArea";
 import { useSessionStore } from "~/stores/sessionStore";
 import { useMessageStore } from "~/stores/messageStore";
 import { useUIStore } from "~/stores/uiStore";
+import { useDiffCalculation } from "~/hooks/useDiffCalculation";
 import type { ChatMessage } from "~/types";
 
 export function ChatInterface() {
@@ -19,6 +20,9 @@ export function ChatInterface() {
   const sendMessage = useMessageStore((state) => state.sendMessage);
   const pendingSessionId = useMessageStore((state) => state.pendingSessionId);
   const { autoExpandTools, showRawParameters, showThinking, agentStatus, provider } = useUIStore();
+
+  // Initialize diff calculation hook
+  const createDiff = useDiffCalculation();
 
   // Determine effective session ID (pending or real)
   const effectiveSessionId = pendingSessionId || selectedSession?.id;
@@ -171,7 +175,7 @@ export function ChatInterface() {
           provider={provider}
           textareaRef={textareaRef}
           loadEarlierMessages={() => {}}
-          createDiff={(_old, _newContent) => ""}
+          createDiff={createDiff}
           onFileOpen={() => {}}
           onShowSettings={() => {}}
           autoExpandTools={autoExpandTools}

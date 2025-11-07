@@ -204,7 +204,10 @@ interface MessageRendererProps {
   message: any;
   index: number;
   prevMessage: any | null;
-  createDiff: (oldCode: string, newCode: string) => any;
+  createDiff: (
+    oldCode: string,
+    newCode: string
+  ) => Array<{ type: string; content: string; lineNum: number }>;
   onFileOpen?: (filePath: string) => void;
   onShowSettings?: () => void;
   autoExpandTools: boolean;
