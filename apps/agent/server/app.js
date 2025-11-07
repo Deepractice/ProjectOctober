@@ -51,15 +51,15 @@ export function createApp(wss) {
   app.use("/api", mediaRoutes);
 
   // Static files in production
-  const distPath = path.join(__dirname, "../dist");
-  const isProduction = config().nodeEnv === "production" && fs.existsSync(distPath);
+  const webDistPath = path.join(__dirname, "../web");
+  const isProduction = config().nodeEnv === "production" && fs.existsSync(webDistPath);
 
   if (isProduction) {
-    console.log("📦 Serving static files from:", distPath);
+    console.log("📦 Serving static files from:", webDistPath);
 
     // Serve static assets with cache
     app.use(
-      express.static(distPath, {
+      express.static(webDistPath, {
         maxAge: "1d",
         etag: true,
         index: false, // Don't auto-serve index.html for directory requests
@@ -68,7 +68,7 @@ export function createApp(wss) {
 
     // SPA fallback for all non-API routes
     app.get("*", (_req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      res.sendFile(path.join(webDistPath, "index.html"));
     });
   } else {
     console.log("🔧 Development mode: Proxying to Vite dev server at http://localhost:5173");
