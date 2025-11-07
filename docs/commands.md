@@ -30,9 +30,9 @@ pnpm dev
 Starts the complete development environment:
 
 1. Starts Vite dev server on http://localhost:5173 (frontend hot reload)
-2. Starts agent-service on http://localhost:5200 (unified API + frontend proxy)
+2. Starts agent server on http://localhost:5200 (unified API + WebSocket)
 
-**Access the application at http://localhost:5200**
+**Access the application at http://localhost:5173** (with HMR)
 
 In development mode:
 
@@ -49,9 +49,8 @@ pnpm build
 
 Builds all packages in the monorepo in dependency order:
 
-1. `packages/agent-ui` → library (dist/)
-2. `apps/agent-web` → web application (dist/)
-3. `services/agent-service` → (no build step)
+1. `packages/agent-sdk` → library (dist/)
+2. `apps/agent` → full-stack application (dist/web/, dist/server/, dist/cli/)
 
 ### Code Quality
 
@@ -84,64 +83,65 @@ pnpm clean
 Run commands in specific packages using the `--filter` flag:
 
 ```bash
-# Start only the backend service
-pnpm --filter @deepractice-ai/agent-service dev
+# Build only the agent application
+pnpm --filter @deepractice-ai/agent build
 
-# Start only the web frontend
-pnpm --filter @deepractice-ai/agent-web dev
+# Start agent in dev mode
+pnpm --filter @deepractice-ai/agent dev
 
-# Build only the UI library
-pnpm --filter @deepractice-ai/agent-ui build
+# Build only the SDK library
+pnpm --filter @deepractice-ai/agent-sdk build
 ```
 
-### services/agent-service
+### apps/agent (Full-Stack Application)
 
 ```bash
-cd services/agent-service
+cd apps/agent
 
-# Development mode (NODE_ENV=development)
+# Development mode (frontend + server)
 pnpm dev
 
-# Production mode (NODE_ENV=production)
+# Development - frontend only
+pnpm dev:web
+
+# Development - server only
+pnpm dev:server
+
+# Production mode
 pnpm start
 
-# Lint JavaScript code
-pnpm lint
-```
-
-**Port:** 5200 (configured via `PORT` env var, default 5200)
-
-### apps/agent-web
-
-```bash
-cd apps/agent-web
-
-# Start Vite dev server
-pnpm dev
-
-# Build for production
+# Build everything (web + server + CLI)
 pnpm build
 
-# Preview production build
-pnpm preview
+# Build frontend only
+pnpm build:web
+
+# Build server only
+pnpm build:server
 
 # Lint and type check
 pnpm lint
 pnpm typecheck
 ```
 
-**Port:** 5173 (Vite default dev server port)
+**Ports:**
 
-### packages/agent-ui
+- Development: 5173 (Vite) + 5200 (server)
+- Production: 5200 (unified)
+
+**Outputs:**
+
+- `dist/web/` - Frontend static files
+- `dist/server/` - Server bundle
+- `dist/cli/bin.js` - CLI binary (executable)
+
+### packages/agent-sdk (SDK Library)
 
 ```bash
-cd packages/agent-ui
+cd packages/agent-sdk
 
-# Build library (TypeScript + Vite)
+# Build library (TypeScript)
 pnpm build
-
-# Build in watch mode
-pnpm build:watch
 
 # Lint and type check
 pnpm lint
@@ -150,10 +150,7 @@ pnpm typecheck
 
 **Outputs:**
 
-- `dist/index.js` - ESM bundle
-- `dist/index.cjs` - CommonJS bundle
-- `dist/index.d.ts` - TypeScript definitions
-- `dist/agent-ui.css` - Styles
+- `dist/` - Compiled TypeScript
 
 ## Command Naming Conventions
 
@@ -248,11 +245,11 @@ Commands are orchestrated by Turborepo (`turbo.json`):
 ### `pnpm build` Flow
 
 ```
-packages/agent-ui  →  apps/agent-web
-     (library)          (consumes library)
+packages/agent-sdk  →  apps/agent
+     (library)         (consumes SDK)
 ```
 
-Build order is automatically determined by Turbo based on dependencies.
+Build order is automatically determined by Turbo based on workspace dependencies.
 
 ## Environment Variables
 
@@ -261,8 +258,8 @@ See `.env.example` for all available variables.
 **Common variables:**
 
 ```bash
-# Agent Service
-PORT=5200                       # Agent service port (unified entry point)
+# Agent Server
+PORT=5200                       # Agent server port (unified entry point)
 ANTHROPIC_API_KEY=sk-xxx        # Required for Claude SDK
 ANTHROPIC_BASE_URL=https://...  # Optional, custom API endpoint
 PROJECT_PATH=/path/to/project   # Default workspace for Claude SDK
@@ -273,12 +270,12 @@ NODE_ENV=development            # Environment mode
 
 ## Troubleshooting
 
-### "Cannot find module '@deepractice-ai/agent-ui'"
+### "Cannot find module '@deepractice-ai/agent-sdk'"
 
-The library hasn't been built yet. Run:
+The SDK library hasn't been built yet. Run:
 
 ```bash
-pnpm --filter @deepractice-ai/agent-ui build
+pnpm --filter @deepractice-ai/agent-sdk build
 # or
 pnpm build
 ```
@@ -301,16 +298,16 @@ pnpm clean
 pnpm build
 ```
 
-### Changes to agent-ui not reflected
+### Changes to agent-sdk not reflected
 
-The library needs to be rebuilt after changes:
+The SDK library needs to be rebuilt after changes:
 
 ```bash
-# Option 1: Rebuild manually
-pnpm --filter @deepractice-ai/agent-ui build
+# Rebuild manually
+pnpm --filter @deepractice-ai/agent-sdk build
 
-# Option 2: Watch mode (auto-rebuild on changes)
-pnpm --filter @deepractice-ai/agent-ui build:watch
+# Or rebuild everything
+pnpm build
 ```
 
 ## Best Practices

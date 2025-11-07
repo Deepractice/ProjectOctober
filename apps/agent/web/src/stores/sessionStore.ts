@@ -168,7 +168,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
   const store = useSessionStore.getState();
 
   switch (event.type) {
-    case "session.navigate.new":
+    case "session.navigate.new": {
       // Lazy session creation: just navigate to root
       console.log("[SessionStore] Navigating to new session (/)");
 
@@ -178,6 +178,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
         useSessionStore.setState({ navigationTarget: "/" });
       }
       break;
+    }
 
     case "session.create":
       // Business orchestration: create session with first message
@@ -276,7 +277,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
       store.removeSession(event.sessionId);
       break;
 
-    case "session.selected":
+    case "session.selected": {
       console.log("[SessionStore] Received session.selected event:", event.sessionId);
       const session = store.sessions.find((s) => s.id === event.sessionId);
 
@@ -321,6 +322,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
         }
       })();
       break;
+    }
 
     case "session.processing":
       if (event.isProcessing) {

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Agent uses `@deepractice-ai/agent-config` for unified configuration management. All configuration is schema-driven with type safety and validation.
+Agent uses environment-based configuration management with .env files and schema validation. All configuration is type-safe and validated at startup.
 
 ## Quick Start
 
@@ -33,22 +33,21 @@ See [env/README.md](../env/README.md) for detailed environment configuration gui
 
 ```
 ┌─────────────────────────────────────┐
-│  @deepractice-ai/agent-config       │
-│  (Schema-driven config system)      │
+│  apps/agent                          │
+│  (Built-in config system)            │
 └─────────────────────────────────────┘
             │
-            ├─ Loaders (Input)
-            │  ├─ EnvLoader (priority: 10)    → env/[environment]/.env, env/[environment]/.env.local, env/.env.secret
-            │  ├─ DBLoader (priority: 20)     → Database (future)
-            │  └─ UILoader (priority: 30)     → Web UI (future)
+            ├─ Loading Priority
+            │  ├─ CLI arguments (highest)
+            │  ├─ Environment variables
+            │  └─ .env files (lowest)
             │
-            ├─ Validation (Zod)
-            │  ├─ Development mode (relaxed)
-            │  └─ Production mode (strict)
+            ├─ Validation (Runtime)
+            │  └─ Type checking + defaults
             │
-            └─ Persisters (Output)
-               ├─ FilePersister → env/.env.local
-               └─ DBPersister → Database (future)
+            └─ Sources
+               ├─ .env files in project root
+               └─ System environment variables
 ```
 
 ## Environment Variables
@@ -122,30 +121,23 @@ Final ANTHROPIC_API_KEY                 = sk-xxx (from .env.secret, no DB/UI ove
 
 ## Usage in Code
 
-### Backend (agent-service)
+### Server
 
-**Initialization:**
+Configuration is loaded automatically from environment variables and .env files:
 
-```javascript
-import { initConfig, config } from "./config/index.js";
+```typescript
+// apps/agent/server/core/config.ts
+import dotenv from "dotenv";
 
-// Initialize at startup
-await initConfig();
+// Load .env file
+dotenv.config();
 
-// Use configuration
-const port = config().port;
-const apiKey = config().anthropicApiKey;
+// Access configuration
+const port = process.env.PORT || 5200;
+const apiKey = process.env.ANTHROPIC_API_KEY;
 ```
 
-**Custom .env path:**
-
-```javascript
-await initConfig({
-  envPath: "/custom/path/.env",
-});
-```
-
-### Frontend (agent-web)
+### Frontend
 
 Frontend uses Vite's standard environment variables:
 
@@ -154,7 +146,18 @@ Frontend uses Vite's standard environment variables:
 const apiUrl = import.meta.env.VITE_API_URL;
 ```
 
-No need for agent-config in frontend (yet).
+### CLI
+
+CLI arguments override environment variables:
+
+```bash
+# Using environment variable
+export ANTHROPIC_API_KEY=sk-xxx
+agentx http
+
+# Using CLI argument (takes precedence)
+agentx http --anthropic-api-key sk-xxx
+```
 
 ## Development vs Production
 
@@ -337,37 +340,24 @@ Ensure variable is declared in `globalEnv`:
 
 ## Advanced Usage
 
-### Custom Validation
+### Environment Variable Validation
 
-Configuration uses Zod schemas. See `packages/agent-config/src/core/schemas/base.ts` for details.
-
-### Programmatic Updates
+Configuration is validated at runtime with type checking:
 
 ```typescript
-import { updateConfig } from "@deepractice-ai/agent-config";
+// apps/agent/server/core/config.ts
+function loadConfig() {
+  const port = parseInt(process.env.PORT || "5200");
 
-// Update and persist to file
-await updateConfig(
-  {
-    port: 5202,
-    contextWindow: 200000,
-  },
-  { persist: true }
-);
-```
+  if (isNaN(port)) {
+    throw new Error("PORT must be a valid number");
+  }
 
-### Validation Only
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is required");
+  }
 
-```typescript
-import { validateConfig } from "@deepractice-ai/agent-config";
-
-const result = validateConfig({
-  port: "invalid", // Should be number
-});
-
-if (!result.valid) {
-  console.error(result.errors);
-  // [{path: 'port', message: 'Expected number, received string'}]
+  return { port, anthropicApiKey: process.env.ANTHROPIC_API_KEY };
 }
 ```
 
@@ -406,5 +396,5 @@ Planned features for agent-config:
 ## See Also
 
 - [Commands Reference](./commands.md)
-- [Port Allocation](./port-allocation.md)
-- [Package README](../packages/agent-config/README.md)
+- [Architecture Overview](./ARCHITECTURE.md)
+- [Agent Package README](../apps/agent/README.md)

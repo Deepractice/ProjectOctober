@@ -9,26 +9,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Key Characteristics**:
 
 - Monorepo using pnpm workspaces + Turbo
-- React frontend (agent-web) + Node.js backend (agent-service)
+- Full-stack application (apps/agent) with React frontend + Node.js backend + CLI
 - Single port deployment (5200) with embedded frontend
-- Integrates with @anthropic-ai/claude-agent-sdk
+- Published as npm package: `@deepractice-ai/agent`
+- Integrates with @anthropic-ai/sdk
 
 ## Commands
 
 ### Development
 
 ```bash
-# Start full development environment (Vite + agent-service)
+# Start full development environment (Vite + server)
 pnpm dev
 
 # Start only frontend (port 5173)
-pnpm dev:vite
+cd apps/agent && pnpm dev:web
 
-# Start only backend (port 5200, waits for Vite)
-pnpm dev:service
+# Start only server (port 5200)
+cd apps/agent && pnpm dev:server
 
 # Clean port and restart (if port 5200 is occupied)
-cd services/agent-service && pnpm dev:clean
+cd apps/agent && pnpm dev:clean
 ```
 
 **Access**: http://localhost:5173 (development with HMR)
@@ -59,13 +60,7 @@ pnpm clean
 
 ```bash
 # Run tests in watch mode
-pnpm --filter @deepractice-ai/agent-config test:watch
-
-# Run specific feature file
-pnpm vitest run packages/agent-config/features/api/get-config.feature
-
-# Coverage report
-pnpm --filter @deepractice-ai/agent-config test:coverage
+pnpm --filter @deepractice-ai/agent test:watch
 
 # Run package-specific tests
 pnpm --filter <package-name> test
@@ -74,11 +69,11 @@ pnpm --filter <package-name> test
 ### Package-Specific Commands
 
 ```bash
-# Build agent-config in watch mode
-pnpm --filter @deepractice-ai/agent-config dev
+# Rebuild agent only
+pnpm --filter @deepractice-ai/agent build
 
-# Rebuild agent-web only
-pnpm --filter @deepractice-ai/agent-web build
+# Rebuild agent-sdk only
+pnpm --filter @deepractice-ai/agent-sdk build
 ```
 
 ## Architecture
@@ -157,50 +152,56 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
 ```
 Agent/
 ├── apps/
-│   └── agent-web/              # React frontend (Vite + TypeScript)
-├── packages/
-│   ├── agent-config/           # Configuration management (env, validation)
-│   └── agent-sdk/              # Claude SDK wrapper
-└── services/
-    └── agent-service/          # Node.js backend (Express + WebSocket)
+│   └── agent/                  # Full-stack application
+│       ├── web/                # React frontend (Vite + TypeScript)
+│       ├── server/             # Node.js backend (Express + WebSocket)
+│       ├── cli/                # CLI tool (Commander.js)
+│       └── dist/               # Build output (web/, server/, cli/)
+└── packages/
+    └── agent-sdk/              # Claude SDK wrapper
 ```
 
-### Package Architecture Pattern
+### Application Structure (apps/agent)
 
-All `packages/*` follow this structure:
+The main application follows this structure:
 
 ```
-packages/[name]/
-├── src/
-│   ├── api/           # Public exports (user-facing API)
-│   ├── types/         # Type definitions (exported)
-│   ├── core/          # Internal implementation (NOT exported)
-│   └── index.ts       # Entry point (exports api/ and types/)
-├── features/          # BDD feature files (.feature)
-└── tests/
-    ├── support/       # Hooks, world context
-    └── steps/         # Step definitions
+apps/agent/
+├── web/               # Frontend source
+│   ├── src/           # React components, stores, types
+│   └── vite.config.ts # Vite configuration
+├── server/            # Backend source
+│   ├── routes/        # API endpoints
+│   ├── websocket/     # WebSocket handlers
+│   └── core/          # Agent integration, config
+├── cli/               # CLI source
+│   └── index.ts       # Commander.js CLI
+└── dist/              # Build output
+    ├── web/           # Frontend static files
+    ├── server/        # Server bundle
+    └── cli/           # CLI binary
 ```
 
-**Key Principle**: `core/` is never exported - it's internal implementation that can be refactored freely.
+**Key Principle**: All three parts (web, server, CLI) are bundled together and published as one npm package.
 
 ### Development vs Production
 
 **Development** (2 processes):
 
 - Vite dev server on 5173 (HMR, proxies /api/\* to 5200)
-- agent-service on 5200 (API + WebSocket)
+- Agent server on 5200 (API + WebSocket)
 
 **Production** (1 process):
 
-- agent-service on 5200 serves everything:
-  - Static frontend from `dist/`
+- Agent server on 5200 serves everything:
+  - Static frontend from `dist/web/`
   - API at `/api/*`
   - WebSocket at `/ws`, `/shell`
+  - CLI available as `agentx` command
 
 ### Port Allocation
 
-- **5200**: agent-service (unified entry point, always)
+- **5200**: Agent server (unified entry point, always)
 - **5173**: Vite dev server (development only, default)
 - **5203**: Reserved for PromptX MCP server (future)
 
@@ -295,10 +296,9 @@ import { createLogger } from "@deepracticex/logger"; // External
 
 ### Adding Config Variables
 
-1. Update schema: `packages/agent-config/src/core/schemas/base.ts`
-2. Update EnvLoader: `packages/agent-config/src/core/loaders/EnvLoader.ts`
-3. Update templates: `env/.env.example`, `env/.env.development`, etc.
-4. Test: Run config tests in `agent-config`
+1. Update config loading: `apps/agent/server/core/config.ts`
+2. Update templates: `env/.env.example`, `env/.env.development`, etc.
+3. Test: Run server in dev mode to verify
 
 ### Creating Changesets
 
@@ -314,7 +314,7 @@ Before submitting PRs, generate changeset file:
 
 ```yaml
 ---
-"@deepractice-ai/agent-service": patch
+"@deepractice-ai/agent": patch
 ---
 Fix configuration loading issue
 ```
@@ -328,7 +328,14 @@ Fix configuration loading issue
 - Atomic commits across full stack
 - Easier refactoring
 
-### Why agent-service Serves Static Files?
+### Why Single Package Architecture?
+
+- Simpler deployment (one npm package, one Docker image)
+- Better user experience (install once, get everything)
+- Easier dependency management
+- Reduces monorepo overhead
+
+### Why Server Serves Static Files?
 
 - Simplifies deployment (single container)
 - Reduces infrastructure complexity
@@ -338,7 +345,7 @@ Fix configuration loading issue
 ### Why Separate Development Servers?
 
 - Fast HMR in frontend (Vite)
-- Backend can reload independently
+- Server can reload independently
 - Clear separation of concerns
 - Better debugging experience
 
@@ -351,7 +358,7 @@ Fix configuration loading issue
 lsof -ti:5200 | xargs kill -9
 
 # Or use dev:clean script
-cd services/agent-service && pnpm dev:clean
+cd apps/agent && pnpm dev:clean
 ```
 
 ### Build Cache Issues
@@ -361,14 +368,14 @@ pnpm clean
 pnpm build
 ```
 
-### Changes to agent-config Not Reflected
+### Changes to agent-sdk Not Reflected
 
 ```bash
-# Rebuild the package
-pnpm --filter @deepractice-ai/agent-config build
+# Rebuild the SDK package
+pnpm --filter @deepractice-ai/agent-sdk build
 
-# Or use watch mode during development
-pnpm --filter @deepractice-ai/agent-config dev
+# Or rebuild everything
+pnpm build
 ```
 
 ### Cannot Find Module Error

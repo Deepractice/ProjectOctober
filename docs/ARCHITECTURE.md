@@ -49,12 +49,14 @@ Agent/
 - Serve static frontend files in production
 
 **Ports**:
+
 - Production: 5200 (unified)
 - Development: 5173 (Vite) + 5200 (server)
 
 **Key Files**:
 
 **Server** (`server/`):
+
 - `index.ts` - Server startup, configuration loading
 - `app.ts` - Express app, route mounting, static file serving
 - `core/agent.ts` - Claude Agent SDK integration
@@ -62,12 +64,14 @@ Agent/
 - `websocket/shell.ts` - Terminal WebSocket handler
 
 **Frontend** (`web/`):
+
 - `src/App.tsx` - Main application component
 - `src/components/ChatInterface.tsx` - Chat UI
 - `src/components/Terminal.tsx` - Terminal emulator
 - `src/stores/sessionStore.ts` - Zustand state management
 
 **CLI** (`cli/`):
+
 - `index.ts` - Commander.js CLI with HTTP server command
 
 **State Management Architecture**:
@@ -114,6 +118,7 @@ src/
 **Role**: Claude Agent SDK wrapper and integration utilities
 
 **Responsibilities**:
+
 - Wrap @anthropic-ai/sdk for easier usage
 - Provide session management utilities
 - Shared types for Claude API integration
@@ -181,37 +186,47 @@ File system / Project
 
 ### Development Environment
 
-**Start Command**: `pnpm dev` (runs both services in parallel)
+**Start Command**: `pnpm dev` (runs both frontend and server in parallel)
 
-1. **agent-service** starts on port 5200
-   - Loads config from `.env`
-   - Starts Express + WebSocket server
-   - Does NOT serve static files (dev mode)
-
-2. **agent-web** starts on port 5173
+1. **Frontend (Vite)** starts on port 5173
    - Vite dev server with HMR
    - Proxies `/api/*`, `/ws`, `/shell` to :5200
    - Hot reload on file changes
+   - Source: `apps/agent/web/`
+
+2. **Server** starts on port 5200
+   - Loads config from `.env`
+   - Starts Express + WebSocket server
+   - Does NOT serve static files (dev mode)
+   - Source: `apps/agent/server/`
 
 **Developer Access**: Open http://localhost:5173
 
-### Production Environment (Docker)
+### Production Environment (Docker/NPM)
 
-**Image**: `deepracticexs/agent:latest`
+**NPM Package**: `@deepractice-ai/agent` (published to npm)
+**Docker Image**: `deepracticexs/agent:latest`
 
 **Build Process**:
 
-1. Build agent-web → `apps/agent-web/dist/`
-2. Copy dist to `services/agent-service/dist/`
-3. Package agent-service + dist into Docker image
+1. Build frontend → `apps/agent/dist/web/`
+2. Build server → `apps/agent/dist/server/`
+3. Build CLI → `apps/agent/dist/cli/bin.js`
+4. Publish to npm as `@deepractice-ai/agent`
+5. Docker image installs from npm: `npm install -g @deepractice-ai/agent`
 
 **Runtime**:
 
-- Single Node.js process running agent-service
-- Serves static files from `dist/`
+- Single Node.js process running agent server
+- Serves static files from `dist/web/`
 - All requests go to port 5200
+- CLI available as `agentx` command
 
-**User Access**: `docker run -p 5200:5200 deepracticexs/agent`
+**Usage**:
+
+- Docker: `docker run -p 5200:5200 deepracticexs/agent`
+- NPM: `npx @deepractice-ai/agent http`
+- Global: `npm install -g @deepractice-ai/agent && agentx http`
 
 ## Technology Stack
 
@@ -239,11 +254,11 @@ File system / Project
 
 - **pnpm** - Package manager (workspace support)
 - **Turbo** - Build orchestration
-- **Zod** - Schema validation (agent-config)
+- **Zod** - Schema validation
 
 ## Configuration System
 
-Agent uses a layered configuration system provided by `@deepractice-ai/agent-config`:
+Agent uses environment-based configuration with .env files:
 
 **Priority Order** (highest to lowest):
 
@@ -289,15 +304,17 @@ docker run -d \
 # Install dependencies
 pnpm install
 
-# Start dev environment (both services)
+# Start dev environment (frontend + server)
 pnpm dev
 
 # Build for production
 pnpm build
 
 # Run production build locally
-cd services/agent-service
-PORT=5200 node src/index.js
+cd apps/agent
+pnpm start
+# or use CLI
+agentx http --port 5200
 ```
 
 ## Session Management
@@ -330,23 +347,32 @@ Sessions are stored in SQLite database at `~/.claude/agent/sessions.db`:
 
 **Structure**: Follows industry best practices (Nx, Turborepo patterns)
 
-### Why agent-service Serves Static Files?
+### Why Server Serves Static Files?
 
 **Reasons**:
 
-- Simplifies deployment (single container)
+- Simplifies deployment (single container, single npm package)
 - Reduces infrastructure complexity (no separate frontend server)
 - Better for desktop-class applications (like VS Code, Cursor)
 - WebSocket connections share same origin
 
-### Why Separate agent-web and agent-service in Development?
+### Why Separate Frontend and Server in Development?
 
 **Reasons**:
 
 - Fast HMR in frontend (Vite dev server)
-- Backend can reload independently
+- Server can reload independently
 - Clear separation of concerns
 - Better debugging experience
+
+### Why Merge into Single Package?
+
+**Reasons**:
+
+- Simpler dependency management (one package.json for the app)
+- Easier deployment (publish once to npm, use as CLI or in Docker)
+- Better user experience (install one package, get everything)
+- Reduced overhead (no workspace complexity for small monorepo)
 
 ## Future Considerations
 
