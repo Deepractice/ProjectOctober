@@ -106,11 +106,38 @@ router.get("/:sessionId/messages", async (req, res) => {
 
     const messages = session.getMessages(limit ? parseInt(limit) : undefined, parseInt(offset));
 
+    // 🖼️ IMAGE TRACKING: Log image data in messages
+    const userMessagesWithImages = messages.filter((m) => {
+      if (m.type !== "user") return false;
+      const content = m.content;
+      return Array.isArray(content) && content.some((b) => b.type === "image");
+    });
+
     console.log("🟣 [API] Returning messages:", {
       sessionId,
       messageCount: messages.length,
       messageTypes: messages.map((m) => m.type),
       messageIds: messages.map((m) => m.id),
+      userMessages: messages.filter((m) => m.type === "user").length,
+      userMessagesWithImages: userMessagesWithImages.length,
+    });
+
+    console.log("🖼️ [IMAGE-TRACK] Message details:", {
+      sessionId,
+      messages: messages.map((m) => ({
+        id: m.id,
+        type: m.type,
+        contentType: typeof m.content,
+        isArray: Array.isArray(m.content),
+        hasImages:
+          m.type === "user" &&
+          Array.isArray(m.content) &&
+          m.content.some((b) => b.type === "image"),
+        imageCount:
+          m.type === "user" && Array.isArray(m.content)
+            ? m.content.filter((b) => b.type === "image").length
+            : 0,
+      })),
     });
 
     res.json({ messages });

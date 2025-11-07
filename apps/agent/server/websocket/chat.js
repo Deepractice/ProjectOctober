@@ -41,6 +41,19 @@ export function handleChatConnection(ws, connectedClients) {
           imageCount: images?.length || 0,
         });
 
+        // 🖼️ IMAGE TRACKING: Log image data received from frontend
+        if (images && images.length > 0) {
+          console.log("🖼️ [IMAGE-TRACK] Images received from frontend:", {
+            sessionId,
+            imageCount: images.length,
+            images: images.map((img) => ({
+              type: img.type,
+              dataLength: img.data?.length || 0,
+              dataPreview: img.data ? img.data.substring(0, 50) + "..." : "no data",
+            })),
+          });
+        }
+
         try {
           // sessionId is now REQUIRED - sessions are only created via POST /api/sessions/create
           if (!sessionId) {
@@ -148,6 +161,20 @@ export function handleChatConnection(ws, connectedClients) {
             console.log("🔵 [WebSocket] Constructed content blocks:", {
               totalBlocks: contentBlocks.length,
               blockTypes: contentBlocks.map((b) => b.type),
+            });
+
+            // 🖼️ IMAGE TRACKING: Log ContentBlock[] details
+            console.log("🖼️ [IMAGE-TRACK] ContentBlock[] constructed:", {
+              sessionId,
+              totalBlocks: contentBlocks.length,
+              imageBlocks: contentBlocks.filter((b) => b.type === "image").length,
+              blocks: contentBlocks.map((b) => ({
+                type: b.type,
+                hasSource: b.type === "image" && !!b.source,
+                sourceType: b.type === "image" ? b.source?.type : undefined,
+                mediaType: b.type === "image" ? b.source?.media_type : undefined,
+                dataLength: b.type === "image" ? b.source?.data?.length : undefined,
+              })),
             });
           }
 

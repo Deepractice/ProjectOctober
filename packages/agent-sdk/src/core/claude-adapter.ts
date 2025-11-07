@@ -121,8 +121,9 @@ export class ClaudeAdapter {
       // This works with nvm, volta, or any node version manager
       executable: process.execPath,
       // Capture stderr output from Claude SDK subprocess
+      // Note: Claude SDK uses stderr for debug output, not actual errors
       stderr: (data: string) => {
-        this.logger.error({ stderr: data }, "Claude SDK stderr output");
+        this.logger.debug({ stderr: data }, "Claude SDK stderr output");
       },
     };
   }

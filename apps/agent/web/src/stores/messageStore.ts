@@ -26,7 +26,7 @@ export interface MessageState {
   pendingSessionId: string | null; // Temporary session ID before backend creates real one
 
   // Internal state actions (used by EventBus subscribers)
-  addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
+  addUserMessage: (sessionId: string, content: string, images?: any[]) => Promise<void>;
   addAgentMessage: (sessionId: string, content: string) => void;
   addStreamingChunk: (sessionId: string, chunk: string) => void;
   completeStreaming: (sessionId: string) => void;
@@ -40,7 +40,7 @@ export interface MessageState {
   setLoadingMessages: (sessionId: string, loading: boolean) => void;
 
   // Business action methods (for components to call)
-  sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => void;
+  sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => Promise<void>;
 }
 
 export const useMessageStore = create<MessageState>()(
@@ -52,7 +52,7 @@ export const useMessageStore = create<MessageState>()(
       pendingSessionId: null,
 
       // Actions
-      addUserMessage: (sessionId, content, images) => {
+      addUserMessage: async (sessionId, content, images) => {
         const messageId = generateMessageId("user");
         const contentPreview =
           typeof content === "string"
@@ -65,13 +65,34 @@ export const useMessageStore = create<MessageState>()(
           hasImages: !!images?.length,
         });
 
+        // Convert File objects to data URLs for immediate rendering
+        let processedImages: Array<{ data: string; name: string }> = [];
+        if (images && images.length > 0) {
+          // Check if images are File objects (need conversion)
+          if (images[0] instanceof File) {
+            processedImages = await Promise.all(
+              images.map(async (file: File) => {
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(file);
+                });
+                return { data: dataUrl, name: file.name };
+              })
+            );
+          } else {
+            // Already processed (e.g., from backend)
+            processedImages = images;
+          }
+        }
+
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
           const newMessage: ChatMessage = {
             type: "user" as const,
             content,
-            images: images || [],
+            images: processedImages,
             timestamp: new Date(),
             id: messageId,
           };
@@ -276,7 +297,7 @@ export const useMessageStore = create<MessageState>()(
       },
 
       // Business action methods (components call these)
-      sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => {
+      sendMessage: async (sessionId: string | undefined, content: string, images?: any[]) => {
         const { pendingSessionId } = get();
 
         // Case 1: Brand new session (no sessionId, no pending)
@@ -290,7 +311,7 @@ export const useMessageStore = create<MessageState>()(
 
           // Optimistically add user message to UI
           const store = get();
-          store.addUserMessage(tempId, content, images);
+          await store.addUserMessage(tempId, content, images);
 
           // Navigate to pending session URL immediately
           // We'll add a special navigation event for pending sessions
@@ -313,7 +334,7 @@ export const useMessageStore = create<MessageState>()(
           console.log("[MessageStore] Sending message to pending session:", pendingSessionId);
           // Just add to UI, wait for real session to be created
           const store = get();
-          store.addUserMessage(pendingSessionId, content, images);
+          await store.addUserMessage(pendingSessionId, content, images);
           return;
         }
 
@@ -376,7 +397,7 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
 
         // 1. Add user message to UI immediately
         console.log("[MessageStore] Adding user message to UI");
-        store.addUserMessage(event.sessionId, event.content, event.images);
+        await store.addUserMessage(event.sessionId, event.content, event.images);
         console.log("[MessageStore] User message added to store");
 
         // 2. Emit message.user event for other stores (like UIStore)
