@@ -1,5 +1,14 @@
 # @deepractice-ai/agent-sdk
 
+## 0.6.1
+
+### Patch Changes
+
+- dce9d18: Sync package versions and fix documentation
+  - Fix incorrect package name in README installation instructions
+  - Sync agent-sdk version to match agent package (0.6.0)
+  - Ensure version consistency across fixed package groups
+
 ## 0.4.1
 
 ### Patch Changes
