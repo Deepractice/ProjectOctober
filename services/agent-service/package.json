@@ -18,7 +18,6 @@
     "@deepractice-ai/agent-config": "workspace:*",
     "@deepractice-ai/agent-sdk": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
-    "bcrypt": "^6.0.0",
     "chokidar": "^4.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
@@ -28,13 +27,12 @@
     "mime-types": "^3.0.1",
     "multer": "^2.0.1",
     "node-fetch": "^2.7.0",
-    "node-pty": "^1.1.0-beta34",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
     "ws": "^8.14.2"
   },
+  "optionalDependencies": {
+    "node-pty": "^1.1.0-beta34"
+  },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",

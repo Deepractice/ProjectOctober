@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-cli",
-  "version": "0.4.1",
+  "version": "0.4.11",
   "description": "CLI for running Deepractice AI Agent",
   "type": "module",
   "bin": {
@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsup && chmod +x dist/bin/agent-cli.js",
+    "build": "pnpm clean && tsup && chmod +x dist/bin/agent-cli.js",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm build",
     "lint": "eslint .",
@@ -39,9 +39,7 @@
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.29",
-    "@deepractice-ai/agent-sdk": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
-    "bcrypt": "^6.0.0",
     "chokidar": "^4.0.3",
     "commander": "^13.0.0",
     "cors": "^2.8.5",
@@ -52,10 +50,10 @@
     "mime-types": "^3.0.1",
     "multer": "^2.0.1",
     "node-fetch": "^2.7.0",
-    "node-pty": "^1.1.0-beta34",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
     "ws": "^8.14.2"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.1.0-beta34"
   },
   "publishConfig": {
     "access": "public"
@@ -63,7 +61,6 @@
   "devDependencies": {
     "@deepractice-ai/agent-service": "workspace:*",
     "@deepractice-ai/agent-web": "workspace:*",
-    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",

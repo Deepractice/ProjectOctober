@@ -13,22 +13,21 @@ export default defineConfig({
     "cors",
     "dotenv",
     "multer",
-    "bcrypt",
     "jsonwebtoken",
     "node-pty",
     "chokidar",
-    "sqlite3",
-    "sqlite",
     "gray-matter",
     "mime-types",
     "node-fetch",
     "@anthropic-ai/claude-agent-sdk",
-    "@deepracticex/logger",
-    "@deepractice-ai/agent-sdk",
   ],
 
-  // Bundle workspace packages (only config, sdk will be external)
-  noExternal: ["@deepractice-ai/agent-config"],
+  // Bundle workspace packages only (config and sdk)
+  // Logger has native/dynamic dependencies (pino), keep it external
+  noExternal: [
+    "@deepractice-ai/agent-config",
+    "@deepractice-ai/agent-sdk",
+  ],
 
   // Keep the original module format (ESM)
   splitting: false,

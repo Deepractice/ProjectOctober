@@ -3,10 +3,31 @@
  * Handles terminal shell connections and PTY management
  */
 import os from "os";
-import pty from "node-pty";
 import { WebSocket } from "ws";
 
+// Try to import node-pty (optional dependency)
+let pty;
+try {
+  pty = await import("node-pty");
+} catch (error) {
+  console.warn("⚠️  node-pty not available - shell feature disabled");
+  console.warn("   To enable shell feature, install node-pty: npm install node-pty");
+}
+
 export function handleShellConnection(ws) {
+  // Check if node-pty is available
+  if (!pty) {
+    console.log("❌ Shell feature not available (node-pty not installed)");
+    ws.send(
+      JSON.stringify({
+        type: "output",
+        data: "\r\n\x1b[31mShell feature is not available.\x1b[0m\r\n\x1b[33mnode-pty is not installed or failed to compile.\x1b[0m\r\n",
+      })
+    );
+    ws.close();
+    return;
+  }
+
   console.log("🐚 Shell client connected");
   let shellProcess = null;
 
