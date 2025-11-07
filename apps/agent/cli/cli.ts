@@ -33,7 +33,6 @@ program
   .option("--project <path>", "Project directory path")
   .option("--anthropic-api-key <key>", "Anthropic API key")
   .option("--anthropic-base-url <url>", "Anthropic API base URL")
-  .option("--node-env <env>", "Node environment (development/production)", "production")
   .action(httpCommand);
 
 program.parse();

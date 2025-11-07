@@ -8,5 +8,4 @@ export interface HttpCommandOptions {
   project?: string;
   anthropicApiKey?: string;
   anthropicBaseUrl?: string;
-  nodeEnv: string;
 }

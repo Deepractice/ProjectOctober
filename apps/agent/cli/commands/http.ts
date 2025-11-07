@@ -9,8 +9,7 @@ import type { HttpCommandOptions } from "../types.js";
  * Setup environment variables from CLI options
  */
 function setupEnvironment(options: HttpCommandOptions): void {
-  // Set NODE_ENV
-  process.env.NODE_ENV = options.nodeEnv;
+  // NODE_ENV is already set to "production" in bin.ts
 
   // Set PORT
   process.env.PORT = options.port;
