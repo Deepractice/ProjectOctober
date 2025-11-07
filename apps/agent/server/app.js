@@ -52,7 +52,7 @@ export function createApp(wss) {
 
   // Static files in production
   const webDistPath = path.join(__dirname, "../web");
-  const isProduction = config().nodeEnv === "production" && fs.existsSync(webDistPath);
+  const isProduction = config().nodeEnv === "production";
 
   if (isProduction) {
     console.log("📦 Serving static files from:", webDistPath);
