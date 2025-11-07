@@ -118,7 +118,10 @@ export class ClaudeSession implements Session {
       {
         sessionId: this.id,
         messageId: userMessage.id,
-        contentPreview: content.substring(0, 50),
+        contentPreview:
+          typeof content === "string"
+            ? content.substring(0, 50)
+            : `ContentBlock[${content.length}]`,
       },
       "Adding user message manually"
     );
@@ -190,8 +193,10 @@ export class ClaudeSession implements Session {
       );
     } catch (error) {
       this._state = "error";
+      const contentLength =
+        typeof content === "string" ? content.length : JSON.stringify(content).length;
       this.logger.error(
-        { err: error, sessionId: this.id, contentLength: content.length },
+        { err: error, sessionId: this.id, contentLength },
         "Failed to send message"
       );
       this.messageSubject.error(error);
@@ -221,6 +226,12 @@ export class ClaudeSession implements Session {
 
       for (const message of messages) {
         const msg = message as any;
+        const contentPreview =
+          typeof msg.content === "string"
+            ? msg.content.substring(0, 50)
+            : Array.isArray(msg.content)
+              ? `ContentBlock[${msg.content.length}]`
+              : String(msg.content || "").substring(0, 50);
         this.logger.debug(
           {
             sessionId: this.id,
@@ -228,7 +239,7 @@ export class ClaudeSession implements Session {
             messageId: message.id,
             isToolUse: msg.isToolUse,
             toolName: msg.toolName,
-            contentPreview: msg.content?.substring(0, 50),
+            contentPreview,
           },
           "Adding message to stream"
         );
@@ -281,13 +292,17 @@ export class ClaudeSession implements Session {
         }
       }
 
-      // Regular user message
-      const textContent = this.extractTextContent(content);
+      // Regular user message - preserve original content (string or ContentBlock[])
+      // Don't use extractTextContent here because it loses images!
+      const contentForLog = Array.isArray(content)
+        ? `ContentBlock[${content.length}]`
+        : String(content).substring(0, 50);
+
       this.logger.debug(
         {
           sessionId: this.id,
-          contentLength: textContent.length,
-          contentPreview: textContent.substring(0, 50),
+          contentType: Array.isArray(content) ? "ContentBlock[]" : "string",
+          contentPreview: contentForLog,
         },
         "Creating user message"
       );
@@ -295,7 +310,7 @@ export class ClaudeSession implements Session {
       results.push({
         id: sdkMessage.uuid || `user-${Date.now()}`,
         type: "user",
-        content: textContent,
+        content: content as string | ContentBlock[], // ✅ Preserve original content (string | ContentBlock[])
         timestamp,
       });
       return results;
@@ -328,8 +343,8 @@ export class ClaudeSession implements Session {
               "Creating assistant text message"
             );
             results.push({
-              id: sdkMessage.uuid || `assistant-${Date.now()}-${results.length}`,
-              type: "assistant",
+              id: sdkMessage.uuid || `agent-${Date.now()}-${results.length}`,
+              type: "agent",
               content: block.text,
               timestamp,
             });
@@ -346,7 +361,7 @@ export class ClaudeSession implements Session {
             );
             results.push({
               id: sdkMessage.uuid || `tool-${Date.now()}-${results.length}`,
-              type: "assistant",
+              type: "agent",
               content: "",
               timestamp,
               isToolUse: true,
@@ -366,8 +381,8 @@ export class ClaudeSession implements Session {
             "Creating assistant string message"
           );
           results.push({
-            id: sdkMessage.uuid || `assistant-${Date.now()}`,
-            type: "assistant",
+            id: sdkMessage.uuid || `agent-${Date.now()}`,
+            type: "agent",
             content: textContent,
             timestamp,
           });
@@ -490,28 +505,38 @@ export class ClaudeSession implements Session {
     const firstUserMsg = messages.find((m) => {
       if (m.type !== "user") return false;
 
-      const content = m.content || "";
+      const content = m.content;
+
+      // Handle ContentBlock[] - not system messages
+      if (Array.isArray(content)) {
+        return content.length > 0;
+      }
+
+      // Handle string content
+      const contentStr = content || "";
 
       // Filter system messages (aligned with Claude Code CLI)
       const isSystemMessage =
-        content.startsWith("<command-name>") ||
-        content.startsWith("<command-message>") ||
-        content.startsWith("<command-args>") ||
-        content.startsWith("<local-command-stdout>") ||
-        content.startsWith("<system-reminder>") ||
-        content.startsWith("Caveat:") ||
-        content.startsWith("This session is being continued from a previous") ||
-        content === "Warmup";
+        contentStr.startsWith("<command-name>") ||
+        contentStr.startsWith("<command-message>") ||
+        contentStr.startsWith("<command-args>") ||
+        contentStr.startsWith("<local-command-stdout>") ||
+        contentStr.startsWith("<system-reminder>") ||
+        contentStr.startsWith("Caveat:") ||
+        contentStr.startsWith("This session is being continued from a previous") ||
+        contentStr === "Warmup";
 
-      return !isSystemMessage && content.length > 0;
+      return !isSystemMessage && contentStr.length > 0;
     });
 
     if (firstUserMsg && firstUserMsg.type === "user") {
       // Type guard: UserMessage has content property
       const userMsg = firstUserMsg as UserMessage;
       // Return first 100 characters, add ellipsis if truncated
-      const summary = userMsg.content.substring(0, 100);
-      return userMsg.content.length > 100 ? `${summary}...` : summary;
+      const contentStr =
+        typeof userMsg.content === "string" ? userMsg.content : JSON.stringify(userMsg.content);
+      const summary = contentStr.substring(0, 100);
+      return contentStr.length > 100 ? `${summary}...` : summary;
     }
 
     return "New Session";

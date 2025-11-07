@@ -1,7 +1,7 @@
 import type { Observable } from "rxjs";
 import type { SessionOptions } from "./config";
 import type { SessionEvent, AgentStatus } from "./events";
-import type { Session } from "./session";
+import type { Session, SessionCreateOptions } from "./session";
 
 /**
  * Agent interface - main entry point for the SDK
@@ -12,7 +12,7 @@ export interface Agent {
   destroy(): void;
 
   // Session management
-  createSession(options?: SessionOptions): Promise<Session>;
+  createSession(options: SessionCreateOptions): Promise<Session>;
   getSession(id: string): Session | null;
   getSessions(limit?: number, offset?: number): Session[];
 

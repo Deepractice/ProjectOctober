@@ -1,64 +1,47 @@
 /**
  * Chat Message Types (for UI rendering)
+ * These are UI-specific types that extend or adapt the shared agent-types
  */
 
-// Content block types (aligned with SDK)
-export type ContentBlock = TextBlock | ImageBlock;
+import type { ContentBlock, AgentMessage } from "@deepractice-ai/agent-types";
 
-export interface TextBlock {
-  type: "text";
-  text: string;
-}
+// Re-export ContentBlock from agent-types
+export type { ContentBlock } from "@deepractice-ai/agent-types";
 
-export interface ImageBlock {
-  type: "image";
-  source: {
-    type: "base64";
-    media_type: "image/png" | "image/jpeg" | "image/gif" | "image/webp";
-    data: string; // Base64 encoded image
-  };
-}
+// UI-specific message type (includes "error" which is not in base types)
+export type ChatMessageType = "user" | "agent" | "error";
 
-export type ChatMessageType = "user" | "assistant" | "error";
-
+// Base message for UI (with optional optimistic flag)
 export interface BaseMessage {
-  id: string; // Unique message ID (required - backend always provides this)
+  id: string;
   type: ChatMessageType;
-  content: string | ContentBlock[]; // Support both text and multi-content
+  content: string | ContentBlock[];
   timestamp: Date | string;
   isOptimistic?: boolean; // Client-side pending message
 }
 
+// User message (extends base with deprecated images field)
 export interface UserMessage extends BaseMessage {
   type: "user";
-  content: string | ContentBlock[]; // Support both text and multi-content
+  content: string | ContentBlock[];
   images?: string[]; // Deprecated: kept for backward compatibility
 }
 
-export interface ToolResult {
-  content: string;
-  isError: boolean;
-  timestamp: Date;
-  toolUseResult?: any;
-}
-
-export interface AssistantMessage extends BaseMessage {
-  type: "assistant";
-  content: string; // Assistant messages are always text for now
-  isToolUse?: boolean;
-  toolName?: string;
-  toolInput?: string;
-  toolId?: string; // Tool use ID for matching results
-  toolResult?: ToolResult | null;
-  isStreaming?: boolean;
-  reasoning?: string;
-}
-
+// Error message (UI-specific)
 export interface ErrorMessage extends BaseMessage {
   type: "error";
   error?: string;
 }
 
+// Agent message (alias for AgentMessage from agent-types)
+// We keep this as a type alias to maintain compatibility
+export type AssistantMessage = Omit<AgentMessage, "type"> & {
+  type: "agent";
+  timestamp: Date | string;
+  isOptimistic?: boolean;
+};
+
+// Union type for all chat messages
 export type ChatMessage = UserMessage | AssistantMessage | ErrorMessage;
 
 /**

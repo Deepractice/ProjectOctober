@@ -46,6 +46,15 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
               : wsMessage.data
             : null;
 
+        console.log("[WebSocketAdapter] agent-response messageData:", {
+          messageDataType: typeof messageData,
+          messageDataKeys: messageData ? Object.keys(messageData) : null,
+          hasContent: messageData ? "content" in messageData : false,
+          contentType: messageData?.content ? typeof messageData.content : "undefined",
+          isContentArray: Array.isArray(messageData?.content),
+          messageData: messageData,
+        });
+
         // Handle streaming start - emit agent.processing
         if (messageData?.type === "content_block_start") {
           eventBus.emit({
@@ -79,39 +88,54 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
             toolId: messageData.toolId || "",
           });
         }
-        // Handle content array
+        // Handle ContentBlock[] array - check message type first!
         else if (Array.isArray(messageData?.content)) {
-          for (const part of messageData.content) {
-            if (part.type === "tool_use") {
-              eventBus.emit({
-                type: "message.tool",
-                sessionId: wsMessage.sessionId || "",
-                toolName: part.name,
-                toolInput: part.input ? JSON.stringify(part.input, null, 2) : "",
-                toolId: part.id,
-              });
-            } else if (part.type === "text" && part.text?.trim()) {
-              eventBus.emit({
-                type: "message.assistant",
-                sessionId: wsMessage.sessionId || "",
-                content: part.text,
-              });
+          console.log("[WebSocketAdapter] Processing content array:", {
+            messageType: messageData.type,
+            blockCount: messageData.content.length,
+            blockTypes: messageData.content.map((b: any) => b.type),
+          });
+
+          // User message with ContentBlock[] - don't emit (already added optimistically)
+          if (messageData.type === "user") {
+            console.log("[WebSocketAdapter] Skipping user ContentBlock[] (already optimistic)");
+            // Don't emit anything - user messages are already added optimistically
+          }
+          // Assistant message with content array (tool_use, text blocks, etc.)
+          else {
+            for (const part of messageData.content) {
+              if (part.type === "tool_use") {
+                eventBus.emit({
+                  type: "message.tool",
+                  sessionId: wsMessage.sessionId || "",
+                  toolName: part.name,
+                  toolInput: part.input ? JSON.stringify(part.input, null, 2) : "",
+                  toolId: part.id,
+                });
+              } else if (part.type === "text" && part.text?.trim()) {
+                eventBus.emit({
+                  type: "message.agent",
+                  sessionId: wsMessage.sessionId || "",
+                  content: part.text,
+                });
+              }
             }
           }
         }
         // Handle string content - check message type
         else if (typeof messageData?.content === "string" && messageData.content.trim()) {
-          // ✅ FIX: Check the actual message type instead of assuming it's assistant
+          console.log("[WebSocketAdapter] Processing string content:", {
+            messageType: messageData.type,
+            contentLength: messageData.content.length,
+          });
+
           if (messageData.type === "user") {
-            eventBus.emit({
-              type: "message.user",
-              sessionId: wsMessage.sessionId || "",
-              content: messageData.content,
-            });
+            // User message - don't emit (already added optimistically)
+            console.log("[WebSocketAdapter] Skipping user string message (already optimistic)");
           } else {
-            // Default to assistant for backward compatibility
+            // Agent message - emit
             eventBus.emit({
-              type: "message.assistant",
+              type: "message.agent",
               sessionId: wsMessage.sessionId || "",
               content: messageData.content,
             });

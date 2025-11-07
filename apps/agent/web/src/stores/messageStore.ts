@@ -27,7 +27,7 @@ export interface MessageState {
 
   // Internal state actions (used by EventBus subscribers)
   addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
-  addAssistantMessage: (sessionId: string, content: string) => void;
+  addAgentMessage: (sessionId: string, content: string) => void;
   addStreamingChunk: (sessionId: string, chunk: string) => void;
   completeStreaming: (sessionId: string) => void;
   addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => void;
@@ -54,10 +54,14 @@ export const useMessageStore = create<MessageState>()(
       // Actions
       addUserMessage: (sessionId, content, images) => {
         const messageId = generateMessageId("user");
+        const contentPreview =
+          typeof content === "string"
+            ? content.substring(0, 50)
+            : JSON.stringify(content).substring(0, 50);
         console.log("[MessageStore] 🟢 Adding user message:", {
           sessionId,
           messageId,
-          contentPreview: content.substring(0, 50) + "...",
+          contentPreview: contentPreview + "...",
           hasImages: !!images?.length,
         });
 
@@ -83,23 +87,23 @@ export const useMessageStore = create<MessageState>()(
         });
       },
 
-      addAssistantMessage: (sessionId, content) => {
+      addAgentMessage: (sessionId, content) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
           newMap.set(sessionId, [
             ...messages,
             {
-              type: "assistant",
+              type: "agent",
               content,
               timestamp: new Date(),
-              id: generateMessageId("assistant"),
+              id: generateMessageId("agent"),
               isStreaming: false,
             },
           ]);
           return { sessionMessages: newMap };
         });
-        console.log("[MessageStore] Assistant message added:", sessionId);
+        console.log("[MessageStore] Agent message added:", sessionId);
       },
 
       addStreamingChunk: (sessionId, chunk) => {
@@ -108,7 +112,7 @@ export const useMessageStore = create<MessageState>()(
           const messages = newMap.get(sessionId) || [];
           const lastMsg = messages[messages.length - 1];
 
-          if (lastMsg && lastMsg.type === "assistant" && lastMsg.isStreaming) {
+          if (lastMsg && lastMsg.type === "agent" && lastMsg.isStreaming) {
             // Append to existing streaming message
             const updated = [...messages];
             updated[updated.length - 1] = {
@@ -121,7 +125,7 @@ export const useMessageStore = create<MessageState>()(
             newMap.set(sessionId, [
               ...messages,
               {
-                type: "assistant",
+                type: "agent",
                 content: chunk,
                 timestamp: new Date(),
                 id: generateMessageId("stream"),
@@ -140,7 +144,7 @@ export const useMessageStore = create<MessageState>()(
           if (!messages) return {};
 
           const lastMsg = messages[messages.length - 1];
-          if (lastMsg && lastMsg.type === "assistant" && lastMsg.isStreaming) {
+          if (lastMsg && lastMsg.type === "agent" && lastMsg.isStreaming) {
             const updated = [...messages];
             updated[updated.length - 1] = {
               ...lastMsg,
@@ -161,7 +165,7 @@ export const useMessageStore = create<MessageState>()(
           newMap.set(sessionId, [
             ...messages,
             {
-              type: "assistant",
+              type: "agent",
               content: "",
               timestamp: new Date(),
               id: generateMessageId("tool"),
@@ -184,7 +188,7 @@ export const useMessageStore = create<MessageState>()(
           if (!messages) return {};
 
           const updated = messages.map((msg) =>
-            msg.type === "assistant" && msg.toolId === toolId ? { ...msg, toolResult: result } : msg
+            msg.type === "agent" && msg.toolId === toolId ? { ...msg, toolResult: result } : msg
           );
           newMap.set(sessionId, updated);
           return { sessionMessages: newMap };
@@ -364,7 +368,11 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
       // Business orchestration: handle user sending a message
       try {
         console.log("[MessageStore] Received message.send event for session:", event.sessionId);
-        console.log("[MessageStore] Message content:", event.content.substring(0, 100) + "...");
+        const contentLog =
+          typeof event.content === "string"
+            ? event.content.substring(0, 100)
+            : JSON.stringify(event.content).substring(0, 100);
+        console.log("[MessageStore] Message content:", contentLog + "...");
 
         // 1. Add user message to UI immediately
         console.log("[MessageStore] Adding user message to UI");
@@ -412,8 +420,8 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
       // Don't add message again, it's already added by message.send
       break;
 
-    case "message.assistant":
-      store.addAssistantMessage(event.sessionId, event.content);
+    case "message.agent":
+      store.addAgentMessage(event.sessionId, event.content);
       break;
 
     case "message.streaming":

@@ -1,6 +1,9 @@
 /**
  * Sessions Watcher - Using Agent SDK
  * Subscribes to session events and notifies WebSocket clients
+ *
+ * @typedef {import('@deepractice-ai/agent-types').SessionsUpdatedMessage} SessionsUpdatedMessage
+ * @typedef {import('@deepractice-ai/agent-types').SessionSummary} SessionSummary
  */
 import { WebSocket } from "ws";
 import { getAgent } from "../agent.js";
@@ -8,6 +11,11 @@ import { logger } from "../utils/logger.js";
 
 let sessionSubscription = null;
 
+/**
+ * Setup sessions watcher to broadcast session events
+ *
+ * @param {Set<import('ws').WebSocket>} connectedClients - Set of connected WebSocket clients
+ */
 export async function setupSessionsWatcher(connectedClients) {
   if (sessionSubscription) {
     sessionSubscription.unsubscribe();
@@ -35,6 +43,12 @@ export async function setupSessionsWatcher(connectedClients) {
   }
 }
 
+/**
+ * Broadcast session event to all connected clients
+ *
+ * @param {Set<import('ws').WebSocket>} connectedClients - Set of connected WebSocket clients
+ * @param {Object} event - Session event to broadcast
+ */
 async function broadcastSessionEvent(connectedClients, event) {
   try {
     // Fetch current sessions
@@ -42,6 +56,7 @@ async function broadcastSessionEvent(connectedClients, event) {
     const sessions = agent.getSessions(100, 0);
 
     // Format sessions for frontend (same format as REST API)
+    /** @type {SessionSummary[]} */
     const formatted = sessions.map((s) => ({
       id: s.id,
       summary: s.summary(),

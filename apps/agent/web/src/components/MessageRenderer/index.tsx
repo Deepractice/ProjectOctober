@@ -235,7 +235,7 @@ const MessageRenderer = memo(
     const isGrouped =
       prevMessage &&
       prevMessage.type === message.type &&
-      ["assistant", "user", "tool", "error"].includes(prevMessage.type);
+      ["agent", "user", "tool", "error"].includes(prevMessage.type);
 
     const messageRef = React.useRef<HTMLDivElement>(null);
     const [isExpanded, setIsExpanded] = React.useState(false);

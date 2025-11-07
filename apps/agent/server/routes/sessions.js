@@ -1,5 +1,9 @@
 /**
  * Session API Routes - Using Agent SDK
+ *
+ * @typedef {import('@deepractice-ai/agent-types').AnyMessage} AnyMessage
+ * @typedef {import('@deepractice-ai/agent-types').AgentMessage} AgentMessage
+ * @typedef {import('@deepractice-ai/agent-types').UserMessage} UserMessage
  */
 import express from "express";
 import { getAgent } from "../agent.js";

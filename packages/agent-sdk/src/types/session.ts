@@ -1,44 +1,15 @@
 import type { Observable } from "rxjs";
-import type { AnyMessage, ContentBlock } from "./message";
-
-export type SessionState =
-  | "created"
-  | "active"
-  | "idle"
-  | "completed"
-  | "error"
-  | "aborted"
-  | "deleted";
-
-export interface TokenUsage {
-  used: number;
-  total: number;
-  breakdown: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheCreation: number;
-  };
-}
-
-export interface SessionMetadata {
-  projectPath: string;
-  model: string;
-  startTime: Date;
-  endTime?: Date;
-}
+import type {
+  AnyMessage,
+  ContentBlock,
+  SessionState,
+  SessionMetadata,
+  TokenUsage,
+} from "@deepractice-ai/agent-types";
 
 /**
- * Options for creating a new session
- * initialMessage is REQUIRED - sessions are only created when user sends first message
- */
-export interface SessionCreateOptions {
-  model?: string;
-  initialMessage: string; // Required: lazy session creation
-}
-
-/**
- * Session interface - represents a conversation with Claude
+ * Session interface - SDK-specific with Observable methods
+ * This is different from agent-types Session which is a data structure
  */
 export interface Session {
   readonly id: string;
@@ -63,4 +34,12 @@ export interface Session {
   // Utilities
   isActive(): boolean;
   isCompleted(): boolean;
+}
+
+/**
+ * Options for creating a new session
+ */
+export interface SessionCreateOptions {
+  model?: string;
+  initialMessage: string; // Required: lazy session creation
 }

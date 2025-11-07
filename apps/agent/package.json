@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@deepractice-ai/agent-sdk": "workspace:*",
+    "@deepractice-ai/agent-types": "workspace:*",
     "@deepracticex/logger": "^1.1.1",
     "commander": "^13.0.0",
     "cors": "^2.8.5",

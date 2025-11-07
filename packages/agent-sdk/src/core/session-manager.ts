@@ -152,8 +152,10 @@ export class SessionManager {
 
     // Sort by start time (newest first)
     all.sort((a, b) => {
-      const timeA = a.getMetadata().startTime.getTime();
-      const timeB = b.getMetadata().startTime.getTime();
+      const metaA = a.getMetadata().startTime;
+      const metaB = b.getMetadata().startTime;
+      const timeA = metaA instanceof Date ? metaA.getTime() : new Date(metaA).getTime();
+      const timeB = metaB instanceof Date ? metaB.getTime() : new Date(metaB).getTime();
       return timeB - timeA;
     });
 

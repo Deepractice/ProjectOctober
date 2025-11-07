@@ -1,7 +1,28 @@
 /**
  * WebSocket Message Types
+ * These types extend or adapt the shared agent-types WebSocket messages
  */
 
+import type {
+  SessionCreatedMessage as BaseSessionCreatedMessage,
+  SessionsUpdatedMessage as BaseSessionsUpdatedMessage,
+  AgentCompleteMessage as BaseAgentCompleteMessage,
+  SessionAbortedMessage as BaseSessionAbortedMessage,
+  SessionStatusMessage as BaseSessionStatusMessage,
+  AgentResponseMessage as BaseAgentResponseMessage,
+} from "@deepractice-ai/agent-types";
+
+// Re-export base types from agent-types
+export type {
+  SessionCreatedMessage,
+  SessionsUpdatedMessage,
+  AgentCompleteMessage,
+  SessionAbortedMessage,
+  SessionStatusMessage,
+  AgentResponseMessage,
+} from "@deepractice-ai/agent-types";
+
+// UI-specific WebSocket message types (additional types not in agent-types)
 export type WebSocketMessageType =
   | "session-created"
   | "sessions_updated"
@@ -15,68 +36,38 @@ export type WebSocketMessageType =
   | "session-status"
   | "claude-status";
 
-export interface BaseWebSocketMessage {
+interface LocalWebSocketMessage {
   type: WebSocketMessageType;
   sessionId?: string;
   timestamp?: string | number;
 }
 
-export interface SessionCreatedMessage extends BaseWebSocketMessage {
-  type: "session-created";
-  sessionId: string;
-}
-
-export interface SessionsUpdatedMessage extends BaseWebSocketMessage {
-  type: "sessions_updated";
-  sessions: import("./session").Session[];
-}
-
-export interface AgentCompleteMessage extends BaseWebSocketMessage {
-  type: "agent-complete";
-  sessionId: string;
-  exitCode?: number;
-}
-
-export interface SessionAbortedMessage extends BaseWebSocketMessage {
-  type: "session-aborted";
-  sessionId: string;
-}
-
-export interface SessionStatusMessage extends BaseWebSocketMessage {
-  type: "session-status";
-  sessionId: string;
-  isProcessing: boolean;
-}
-
-export interface AgentResponseMessage extends BaseWebSocketMessage {
-  type: "agent-response";
-  sessionId: string;
-  data?: any;
-}
-
-export interface AgentOutputMessage extends BaseWebSocketMessage {
+// Local AgentOutputMessage (not in agent-types)
+export interface AgentOutputMessage extends LocalWebSocketMessage {
   type: "claude-output";
   sessionId: string;
   data?: any;
 }
 
-export interface AgentErrorMessage extends BaseWebSocketMessage {
+// Local AgentErrorMessage (not in agent-types)
+export interface AgentErrorMessage extends LocalWebSocketMessage {
   type: "claude-error";
   sessionId: string;
   error?: string;
   data?: any;
 }
 
+// Union type (includes both agent-types messages and local extensions)
 export type WebSocketMessage =
-  | SessionCreatedMessage
-  | SessionsUpdatedMessage
-  | AgentCompleteMessage
-  | SessionAbortedMessage
-  | SessionStatusMessage
-  | AgentResponseMessage
+  | BaseSessionCreatedMessage
+  | BaseSessionsUpdatedMessage
+  | BaseAgentCompleteMessage
+  | BaseSessionAbortedMessage
+  | BaseSessionStatusMessage
+  | BaseAgentResponseMessage
   | AgentOutputMessage
   | AgentErrorMessage
-  | BaseWebSocketMessage;
+  | LocalWebSocketMessage;
 
 /**
  * Message Store State - Unified Message Management
@@ -101,9 +92,9 @@ export interface MessageState {
 
   // Unified chat message operations
   addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
-  addAssistantMessage: (sessionId: string, content: string) => void;
-  addAssistantChunk: (sessionId: string, chunk: string) => void; // For streaming
-  updateLastAssistantMessage: (sessionId: string, content: string) => void;
+  addAgentMessage: (sessionId: string, content: string) => void;
+  addAgentChunk: (sessionId: string, chunk: string) => void; // For streaming
+  updateLastAgentMessage: (sessionId: string, content: string) => void;
   addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => void;
   updateToolResult: (sessionId: string, toolId: string, result: any) => void;
   addErrorMessage: (sessionId: string, error: string) => void;

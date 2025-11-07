@@ -86,6 +86,9 @@ importers:
       '@deepractice-ai/agent-sdk':
         specifier: workspace:*
         version: link:../../packages/agent-sdk
+      '@deepractice-ai/agent-types':
+        specifier: workspace:*
+        version: link:../../packages/agent-types
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
@@ -247,6 +250,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.32.1
         version: 0.32.1(encoding@0.1.13)
+      '@deepractice-ai/agent-types':
+        specifier: workspace:*
+        version: link:../agent-types
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
@@ -281,6 +287,15 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(tsx@4.20.6)
+
+  packages/agent-types:
+    devDependencies:
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
 packages:
 

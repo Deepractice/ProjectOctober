@@ -1,8 +1,25 @@
 /**
  * Chat WebSocket Handler - Using Agent SDK
+ *
+ * Handles WebSocket connections for chat functionality.
+ * Supports multi-modal messages (text + images) and agent commands.
+ *
+ * @typedef {import('@deepractice-ai/agent-types').AgentCommandMessage} AgentCommandMessage
+ * @typedef {import('@deepractice-ai/agent-types').AbortSessionMessage} AbortSessionMessage
+ * @typedef {import('@deepractice-ai/agent-types').AgentResponseMessage} AgentResponseMessage
+ * @typedef {import('@deepractice-ai/agent-types').AgentCompleteMessage} AgentCompleteMessage
+ * @typedef {import('@deepractice-ai/agent-types').ClaudeErrorMessage} ClaudeErrorMessage
+ * @typedef {import('@deepractice-ai/agent-types').AgentMessage} AgentMessage
+ * @typedef {import('@deepractice-ai/agent-types').ContentBlock} ContentBlock
  */
 import { getAgent } from "../agent.js";
 
+/**
+ * Handle chat WebSocket connection
+ *
+ * @param {import('ws').WebSocket} ws - WebSocket connection
+ * @param {Set<import('ws').WebSocket>} connectedClients - Set of connected clients
+ */
 export function handleChatConnection(ws, connectedClients) {
   console.log("💬 Chat WebSocket connected");
   connectedClients.add(ws);
@@ -62,11 +79,20 @@ export function handleChatConnection(ws, connectedClients) {
                 return;
               }
 
+              const contentPreview =
+                typeof msg.content === "string"
+                  ? msg.content.substring(0, 50)
+                  : Array.isArray(msg.content)
+                    ? `ContentBlock[${msg.content.length}]`
+                    : String(msg.content).substring(0, 50);
+
               console.log("🔵 [WebSocket] Received NEW message from stream:", {
                 sessionId: session.id,
                 messageType: msg.type,
                 messageId: msg.id,
-                contentPreview: msg.content?.substring(0, 50) + "...",
+                contentPreview: contentPreview + "...",
+                contentType: typeof msg.content,
+                isArray: Array.isArray(msg.content),
               });
 
               ws.send(
@@ -91,12 +117,14 @@ export function handleChatConnection(ws, connectedClients) {
           });
 
           // Construct content - support both text-only and multi-modal
+          // @type {string | ContentBlock[]}
           let content = data.command;
 
           if (images && images.length > 0) {
             // Build ContentBlock[] format for multi-modal input
             console.log("🔵 [WebSocket] Processing images:", images.length);
 
+            /** @type {ContentBlock[]} */
             const contentBlocks = [
               {
                 type: "text",

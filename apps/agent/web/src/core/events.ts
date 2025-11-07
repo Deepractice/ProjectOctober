@@ -24,7 +24,7 @@ export type MessageEvent =
   | { type: "message.send"; sessionId: string; content: string; images?: any[] } // User action: send message
   | { type: "message.user"; sessionId: string; content: string; images?: any[] } // Store update: user message added
   | { type: "message.loaded"; sessionId: string; messages: ChatMessage[] } // Store update: messages loaded from API
-  | { type: "message.assistant"; sessionId: string; content: string }
+  | { type: "message.agent"; sessionId: string; content: string }
   | { type: "message.streaming"; sessionId: string; chunk: string }
   | { type: "message.complete"; sessionId: string }
   | { type: "message.tool"; sessionId: string; toolName: string; toolInput: string; toolId: string }

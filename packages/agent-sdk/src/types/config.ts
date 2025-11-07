@@ -20,8 +20,10 @@ export interface McpServerConfig {
   env?: Record<string, string>;
 }
 
-export interface SessionOptions {
-  resume?: string;
+// SDK-specific session options (extends shared SessionOptions)
+import type { SessionOptions as BaseSessionOptions } from "@deepractice-ai/agent-types";
+
+export interface SessionOptions extends BaseSessionOptions {
   model?: string;
   systemPrompt?: string;
 }

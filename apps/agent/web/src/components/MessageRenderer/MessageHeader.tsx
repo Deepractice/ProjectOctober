@@ -1,5 +1,5 @@
 interface MessageHeaderProps {
-  messageType: "assistant" | "user" | "error" | "tool";
+  messageType: "agent" | "user" | "error" | "tool";
 }
 
 export function MessageHeader({ messageType }: MessageHeaderProps) {

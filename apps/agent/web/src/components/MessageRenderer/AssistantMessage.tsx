@@ -7,7 +7,7 @@ interface AssistantMessageProps {
   timestamp: string;
   reasoning?: string;
   showThinking: boolean;
-  messageType: "assistant" | "error";
+  messageType: "agent" | "error";
   isGrouped: boolean;
 }
 
@@ -35,7 +35,7 @@ export function AssistantMessage({
       {/* Content rendering */}
       {isJSON ? (
         <JSONRenderer content={trimmedContent} />
-      ) : messageType === "assistant" ? (
+      ) : messageType === "agent" ? (
         <Markdown className="prose prose-sm max-w-none dark:prose-invert prose-gray">
           {formattedContent}
         </Markdown>
