@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { baseConfigSchema } from "../core/schemas/base.js";
+import { baseConfigSchema } from "../schemas/base.js";
 
 /**
  * Configuration type derived from schema

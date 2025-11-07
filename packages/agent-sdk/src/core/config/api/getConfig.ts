@@ -1,4 +1,4 @@
-import { ConfigManager, ConfigManagerOptions } from "../core/ConfigManager.js";
+import { ConfigManager, ConfigManagerOptions } from "../ConfigManager.js";
 import type { Config } from "../types/Config.js";
 import type { LoadOptions } from "../types/ConfigSource.js";
 

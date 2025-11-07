@@ -3,7 +3,7 @@
  * Centralized access to agent-config
  * Separated from index.js to avoid circular dependencies
  */
-import { getConfig } from "@deepractice-ai/agent-config";
+import { getConfig } from "@deepractice-ai/agent-sdk";
 
 // Singleton config instance
 let configInstance = null;

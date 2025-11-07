@@ -51,7 +51,9 @@
     "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@anthropic-ai/sdk": "^0.32.1",
     "@deepracticex/logger": "^1.1.1",
-    "rxjs": "^7.8.1"
+    "dotenv": "^16.4.7",
+    "rxjs": "^7.8.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@deepracticex/vitest-cucumber": "^1.4.0",

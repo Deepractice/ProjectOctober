@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { promises as fsPromises } from "fs";
 import mime from "mime-types";
-import { getConfig } from "@deepractice-ai/agent-config";
+import { getConfig } from "@deepractice-ai/agent-sdk";
 
 const router = express.Router();
 

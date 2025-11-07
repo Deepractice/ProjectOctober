@@ -83,12 +83,6 @@ importers:
       '@codemirror/view':
         specifier: ^6.38.6
         version: 6.38.6
-      '@deepractice-ai/agent-config':
-        specifier: workspace:*
-        version: link:../../packages/agent-config
-      '@deepractice-ai/agent-sdk':
-        specifier: workspace:*
-        version: link:../../packages/agent-sdk
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
@@ -248,51 +242,26 @@ importers:
         specifier: ^1.1.0-beta34
         version: 1.1.0-beta9
 
-  packages/agent-config:
-    dependencies:
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.6.1
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-    devDependencies:
-      '@deepracticex/vitest-cucumber':
-        specifier: ^1.4.0
-        version: 1.4.0(vitest@3.2.4)
-      '@types/node':
-        specifier: ^24.9.2
-        version: 24.9.2
-      '@vitest/coverage-v8':
-        specifier: ^3.0.0
-        version: 3.2.4(vitest@3.2.4)
-      '@vitest/ui':
-        specifier: ^3.0.0
-        version: 3.2.4(vitest@3.2.4)
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^3.0.0
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(tsx@4.20.6)
-
   packages/agent-sdk:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.30
-        version: 0.1.30(zod@4.1.12)
+        version: 0.1.30(zod@3.25.76)
       '@anthropic-ai/sdk':
         specifier: ^0.32.1
         version: 0.32.1(encoding@0.1.13)
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@deepracticex/vitest-cucumber':
         specifier: ^1.4.0
@@ -4404,6 +4373,17 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
+
+  '@anthropic-ai/claude-agent-sdk@0.1.30(zod@3.25.76)':
+    dependencies:
+      zod: 3.25.76
+    optionalDependencies:
+      '@img/sharp-darwin-arm64': 0.33.5
+      '@img/sharp-darwin-x64': 0.33.5
+      '@img/sharp-linux-arm': 0.33.5
+      '@img/sharp-linux-arm64': 0.33.5
+      '@img/sharp-linux-x64': 0.33.5
+      '@img/sharp-win32-x64': 0.33.5
 
   '@anthropic-ai/claude-agent-sdk@0.1.30(zod@4.1.12)':
     dependencies:

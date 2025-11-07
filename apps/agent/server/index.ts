@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 import { config as dotenvConfig } from "dotenv";
-import { getConfig, type Config } from "@deepractice-ai/agent-config";
+import { getConfig, type Config } from "@deepractice-ai/agent-sdk";
 import type { ServerOptions, ConnectedClients } from "./types.js";
 
 import { createApp } from "./app.js";

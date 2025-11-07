@@ -16,10 +16,7 @@ export default defineConfig({
     'express',
     'ws',
     'node-pty',
-    '@anthropic-ai/claude-agent-sdk'
-  ],
-  noExternal: [
-    '@deepractice-ai/agent-config',
+    '@anthropic-ai/claude-agent-sdk',
     '@deepractice-ai/agent-sdk'
   ]
 })

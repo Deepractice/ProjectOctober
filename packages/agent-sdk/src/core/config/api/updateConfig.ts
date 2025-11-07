@@ -1,8 +1,8 @@
-import { ConfigManager, ConfigManagerOptions } from "../core/ConfigManager.js";
+import { ConfigManager, ConfigManagerOptions } from "../ConfigManager.js";
 import type { Config, ConfigUpdate } from "../types/Config.js";
 import type { UpdateOptions } from "../types/ConfigSource.js";
-import { DBPersister } from "../core/persisters/DBPersister.js";
-import { FilePersister } from "../core/persisters/FilePersister.js";
+import { DBPersister } from "../persisters/DBPersister.js";
+import { FilePersister } from "../persisters/FilePersister.js";
 
 // Singleton instance (shared with getConfig)
 let manager: ConfigManager | null = null;

@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws'
-import type { Config } from '@deepractice-ai/agent-config'
+import type { Config } from '@deepractice-ai/agent-sdk'
 
 export interface ServerOptions {
   host?: string
