@@ -2,19 +2,37 @@
  * Chat Message Types (for UI rendering)
  */
 
+// Content block types (aligned with SDK)
+export type ContentBlock = TextBlock | ImageBlock;
+
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ImageBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+    data: string; // Base64 encoded image
+  };
+}
+
 export type ChatMessageType = "user" | "assistant" | "error";
 
 export interface BaseMessage {
   id: string; // Unique message ID (required - backend always provides this)
   type: ChatMessageType;
-  content: string;
+  content: string | ContentBlock[]; // Support both text and multi-content
   timestamp: Date | string;
   isOptimistic?: boolean; // Client-side pending message
 }
 
 export interface UserMessage extends BaseMessage {
   type: "user";
-  images?: string[];
+  content: string | ContentBlock[]; // Support both text and multi-content
+  images?: string[]; // Deprecated: kept for backward compatibility
 }
 
 export interface ToolResult {
@@ -26,6 +44,7 @@ export interface ToolResult {
 
 export interface AssistantMessage extends BaseMessage {
   type: "assistant";
+  content: string; // Assistant messages are always text for now
   isToolUse?: boolean;
   toolName?: string;
   toolInput?: string;

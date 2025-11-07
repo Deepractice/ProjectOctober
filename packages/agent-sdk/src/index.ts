@@ -24,6 +24,9 @@ export type {
   ToolMessage,
   SystemMessage,
   PerformanceMetrics,
+  ContentBlock,
+  TextBlock,
+  ImageBlock,
 } from "./types";
 
 // Config types (from agent-config)

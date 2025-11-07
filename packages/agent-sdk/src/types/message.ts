@@ -1,5 +1,22 @@
 export type MessageType = "user" | "assistant" | "tool" | "system";
 
+// Content block types for multi-modal messages
+export type ContentBlock = TextBlock | ImageBlock;
+
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ImageBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+    data: string; // Base64 encoded image
+  };
+}
+
 export interface ToolUse {
   id: string;
   name: string;
@@ -14,7 +31,7 @@ export interface BaseMessage {
 
 export interface UserMessage extends BaseMessage {
   type: "user";
-  content: string;
+  content: string | ContentBlock[]; // Support both text and multi-content
 }
 
 export interface AssistantMessage extends BaseMessage {

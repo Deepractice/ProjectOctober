@@ -1,5 +1,5 @@
 import type { Observable } from "rxjs";
-import type { AnyMessage } from "./message";
+import type { AnyMessage, ContentBlock } from "./message";
 
 export type SessionState =
   | "created"
@@ -46,7 +46,7 @@ export interface Session {
   readonly state: SessionState;
 
   // Actions
-  send(content: string): Promise<void>;
+  send(content: string | ContentBlock[]): Promise<void>;
   abort(): Promise<void>;
   complete(): Promise<void>;
   delete(): Promise<void>;

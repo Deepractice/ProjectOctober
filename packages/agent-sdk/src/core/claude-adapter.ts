@@ -1,7 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { Logger } from "@deepracticex/logger";
-import type { AgentConfig, SessionOptions } from "~/types";
+import type { AgentConfig, SessionOptions, ContentBlock } from "~/types";
 
 /**
  * ClaudeAdapter - wraps @anthropic-ai/claude-agent-sdk
@@ -25,13 +25,20 @@ export class ClaudeAdapter {
     );
   }
 
-  async *stream(prompt: string, options: SessionOptions = {}): AsyncGenerator<SDKMessage> {
+  async *stream(
+    prompt: string | ContentBlock[],
+    options: SessionOptions = {}
+  ): AsyncGenerator<SDKMessage> {
     const sdkOptions = this.mapOptions(options);
+    const sdkPrompt = this.convertToSDKPrompt(prompt);
+
+    const promptLength = typeof prompt === "string" ? prompt.length : JSON.stringify(prompt).length;
 
     // Log all key parameters for troubleshooting
     this.logger.info(
       {
-        promptLength: prompt.length,
+        promptLength,
+        isMultiModal: typeof prompt !== "string",
         model: sdkOptions.model,
         cwd: sdkOptions.cwd,
         permissionMode: sdkOptions.permissionMode,
@@ -44,7 +51,7 @@ export class ClaudeAdapter {
 
     try {
       const queryInstance = query({
-        prompt,
+        prompt: sdkPrompt,
         options: sdkOptions,
       });
 
@@ -68,9 +75,33 @@ export class ClaudeAdapter {
 
       this.logger.info({ messageCount }, "Claude SDK stream completed");
     } catch (err) {
-      this.logger.error({ err, promptLength: prompt.length }, "Claude SDK stream failed");
+      this.logger.error({ err, promptLength }, "Claude SDK stream failed");
       throw err;
     }
+  }
+
+  private convertToSDKPrompt(
+    content: string | ContentBlock[]
+  ): string | AsyncIterable<SDKUserMessage> {
+    // If it's just a string, return as-is
+    if (typeof content === "string") {
+      return content;
+    }
+
+    // For ContentBlock[], we need to wrap it in an SDKUserMessage format
+    // The Anthropic SDK expects message.content to be ContentBlock[]
+    // We'll return an async generator that yields a single user message
+    return (async function* () {
+      yield {
+        type: "user" as const,
+        session_id: "", // Will be filled by SDK
+        message: {
+          role: "user" as const,
+          content: content as any, // Anthropic SDK accepts ContentBlock[]
+        },
+        parent_tool_use_id: null,
+      } as SDKUserMessage;
+    })();
   }
 
   private mapOptions(options: SessionOptions): any {

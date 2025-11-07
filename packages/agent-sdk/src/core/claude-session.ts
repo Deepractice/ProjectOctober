@@ -9,6 +9,7 @@ import type {
   AnyMessage,
   UserMessage,
   SessionOptions,
+  ContentBlock,
 } from "~/types";
 import type { ClaudeAdapter } from "./claude-adapter";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -76,7 +77,7 @@ export class ClaudeSession implements Session {
     return this._state;
   }
 
-  async send(content: string): Promise<void> {
+  async send(content: string | ContentBlock[]): Promise<void> {
     if (this.isCompleted()) {
       this.logger.warn(
         { sessionId: this.id, state: this._state },
@@ -85,11 +86,18 @@ export class ClaudeSession implements Session {
       throw new Error(`Cannot send message: session is ${this._state}`);
     }
 
+    const contentPreview =
+      typeof content === "string"
+        ? content.substring(0, 50)
+        : JSON.stringify(content).substring(0, 50);
+    const contentLength =
+      typeof content === "string" ? content.length : JSON.stringify(content).length;
+
     this.logger.debug(
       {
         sessionId: this.id,
-        contentPreview: content.substring(0, 50),
-        contentLength: content.length,
+        contentPreview,
+        contentLength,
         currentMessagesCount: this.messages.length,
         hasRealSessionId: !!this.realSessionId,
         state: this._state,
@@ -99,7 +107,7 @@ export class ClaudeSession implements Session {
 
     // ✅ FIX: Manually add user message BEFORE sending to Claude SDK
     // Claude SDK doesn't return user messages in the stream, so we must add it ourselves
-    const userMessage: AnyMessage = {
+    const userMessage: UserMessage = {
       id: randomUUID(),
       type: "user",
       content,

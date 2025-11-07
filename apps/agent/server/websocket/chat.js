@@ -13,12 +13,15 @@ export function handleChatConnection(ws, connectedClients) {
 
       if (data.type === "agent-command") {
         const sessionId = data.options?.sessionId;
+        const images = data.options?.images;
         const agent = await getAgent();
 
         console.log("🔵 [WebSocket] Received agent-command:", {
           sessionId,
           commandPreview: data.command.substring(0, 50) + "...",
           hasSessionId: !!sessionId,
+          hasImages: !!images,
+          imageCount: images?.length || 0,
         });
 
         try {
@@ -87,9 +90,42 @@ export function handleChatConnection(ws, connectedClients) {
             },
           });
 
-          // Send message
+          // Construct content - support both text-only and multi-modal
+          let content = data.command;
+
+          if (images && images.length > 0) {
+            // Build ContentBlock[] format for multi-modal input
+            console.log("🔵 [WebSocket] Processing images:", images.length);
+
+            const contentBlocks = [
+              {
+                type: "text",
+                text: data.command,
+              },
+            ];
+
+            // Add each image as an image block
+            for (const img of images) {
+              contentBlocks.push({
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: img.type,
+                  data: img.data,
+                },
+              });
+            }
+
+            content = contentBlocks;
+            console.log("🔵 [WebSocket] Constructed content blocks:", {
+              totalBlocks: contentBlocks.length,
+              blockTypes: contentBlocks.map((b) => b.type),
+            });
+          }
+
+          // Send message (now supports both string and ContentBlock[])
           console.log("🔵 [WebSocket] Calling session.send()...");
-          await session.send(data.command);
+          await session.send(content);
           const messagesAfter = session.getMessages().length;
 
           console.log("🔵 [WebSocket] session.send() completed:", {
