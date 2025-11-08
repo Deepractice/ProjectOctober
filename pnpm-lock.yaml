@@ -119,6 +119,9 @@ importers:
       commander:
         specifier: ^13.0.0
         version: 13.1.0
+      config:
+        specifier: ^4.1.1
+        version: 4.1.1
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -183,6 +186,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.16
         version: 0.5.19(tailwindcss@3.4.18(tsx@4.20.6))
+      '@types/config':
+        specifier: ^3.3.5
+        version: 3.3.5
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -1585,6 +1591,9 @@ packages:
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
+  '@types/config@3.3.5':
+    resolution: {integrity: sha512-itq2HtXQBrNUKwMNZnb9mBRE3T99VYCdl1gjST9rq+9kFaB1iMMGuDeZnP88qid73DnpAMKH9ZolqDpS1Lz7+w==}
+
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
@@ -2160,6 +2169,10 @@ packages:
 
   confbox@0.1.8:
     resolution: {integrity: sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w==}
+
+  config@4.1.1:
+    resolution: {integrity: sha512-jljfwqNZ7QHwAW9Z9NDZdJARFiu5pjLqQO0K4ooY22iY/bIY78n0afI4ANEawfgQOxri0K/3oTayX8XIauWcLA==}
+    engines: {node: '>= 20.0.0'}
 
   consola@3.4.2:
     resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
@@ -6048,6 +6061,8 @@ snapshots:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
 
+  '@types/config@3.3.5': {}
+
   '@types/connect@3.4.38':
     dependencies:
       '@types/node': 24.9.2
@@ -6725,6 +6740,10 @@ snapshots:
       yargs: 17.7.2
 
   confbox@0.1.8: {}
+
+  config@4.1.1:
+    dependencies:
+      json5: 2.2.3
 
   consola@3.4.2: {}
 

@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
-import type { Config } from "@deepractice-ai/agent-sdk";
+import type { AppConfig } from "./core/config.js";
 
 export interface ServerOptions {
   host?: string;
@@ -14,7 +14,7 @@ export interface ConnectedClient {
 export type ConnectedClients = Set<WebSocket>;
 
 export interface ServerContext {
-  config: Config;
+  config: AppConfig;
   wss: WebSocketServer;
   connectedClients: ConnectedClients;
 }

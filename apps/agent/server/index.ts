@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 import { config as dotenvConfig } from "dotenv";
-import { getConfig, type Config } from "@deepractice-ai/agent-sdk";
+import { getAppConfig, type AppConfig } from "./core/config.js";
 import type { ServerOptions, ConnectedClients } from "./types.js";
 
 import { createApp } from "./app.js";
@@ -40,12 +40,12 @@ function loadEnvironmentFiles() {
   logger.info({ nodeEnv, rootDir, envDir }, "Environment files loaded");
 }
 // Module-level config instance
-let configInstance: Config | null = null;
+let configInstance: AppConfig | null = null;
 
 /**
  * Export config for other modules
  */
-export const config = (): Config => {
+export const config = (): AppConfig => {
   if (!configInstance) {
     throw new Error("Server not started. Call startServer() first.");
   }
@@ -74,22 +74,22 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
     "Environment variables from process.env"
   );
 
-  // Initialize agent-config (reads from process.env, validates, merges sources)
-  configInstance = await getConfig();
+  // Initialize configuration (reads from config files + environment variables)
+  configInstance = getAppConfig();
 
   logger.info("Configuration loaded and validated");
   logger.info(
     {
-      anthropicApiKey: configInstance.anthropicApiKey
-        ? `${configInstance.anthropicApiKey.substring(0, 6)}***`
+      anthropicApiKey: configInstance.anthropic.apiKey
+        ? `${configInstance.anthropic.apiKey.substring(0, 6)}***`
         : undefined,
-      anthropicBaseUrl: configInstance.anthropicBaseUrl,
-      port: configInstance.port,
+      anthropicBaseUrl: configInstance.anthropic.baseUrl,
+      port: configInstance.server.port,
     },
     "Final configuration values"
   );
 
-  const PORT = configInstance.port;
+  const PORT = configInstance.server.port;
 
   // Track connected WebSocket clients for session updates
   const connectedClients: ConnectedClients = new Set();
@@ -129,9 +129,9 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
   // Start server logic
   try {
     // Validate PROJECT_PATH before starting
-    const projectPath = configInstance.projectPath;
+    const projectPath = configInstance.project.path;
     if (!projectPath) {
-      console.error("❌ PROJECT_PATH is not configured in .env");
+      console.error("❌ PROJECT_PATH is not configured");
       console.error("   Please set PROJECT_PATH to a valid directory path");
       process.exit(1);
     }

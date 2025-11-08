@@ -1,0 +1,26 @@
+{
+  "server": {
+    "port": 5200,
+    "nodeEnv": "development"
+  },
+  "frontend": {
+    "vitePort": 5173,
+    "url": "http://localhost:5173"
+  },
+  "anthropic": {
+    "apiKey": "",
+    "baseUrl": "https://api.anthropic.com"
+  },
+  "project": {
+    "path": "."
+  },
+  "agent": {
+    "contextWindow": 160000
+  },
+  "logging": {
+    "level": "info"
+  },
+  "database": {
+    "path": null
+  }
+}

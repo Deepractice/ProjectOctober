@@ -1,0 +1,8 @@
+{
+  "server": {
+    "nodeEnv": "production"
+  },
+  "logging": {
+    "level": "info"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "server": {
+    "port": "PORT",
+    "nodeEnv": "NODE_ENV"
+  },
+  "frontend": {
+    "vitePort": "VITE_PORT",
+    "url": "FRONTEND_URL"
+  },
+  "anthropic": {
+    "apiKey": "ANTHROPIC_API_KEY",
+    "baseUrl": "ANTHROPIC_BASE_URL"
+  },
+  "project": {
+    "path": "PROJECT_PATH"
+  },
+  "agent": {
+    "contextWindow": "CONTEXT_WINDOW"
+  },
+  "logging": {
+    "level": "LOG_LEVEL"
+  },
+  "database": {
+    "path": "DATABASE_PATH"
+  }
+}
