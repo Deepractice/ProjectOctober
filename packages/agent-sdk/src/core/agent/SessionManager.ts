@@ -61,10 +61,17 @@ export class SessionManager {
       cwd: this.config.workspace,
     };
 
-    // Save session to database first
-    await this.persister.saveSession(sessionData);
-
-    this.logger.debug({ sessionId }, "Session metadata saved to database");
+    // Try to save session to database, but don't fail if persistence fails
+    try {
+      await this.persister.saveSession(sessionData);
+      this.logger.debug({ sessionId }, "Session metadata saved to database");
+    } catch (error) {
+      this.logger.warn(
+        { sessionId, error },
+        "Failed to save session metadata to database, continuing anyway"
+      );
+      // Continue - session creation should not fail just because persistence failed
+    }
 
     // Create session using factory (DI)
     const session = this.sessionFactory.create(

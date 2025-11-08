@@ -480,6 +480,7 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
   /**
    * Persist message synchronously (waits for completion)
    * Used for critical messages like user messages
+   * NOTE: Does not throw on persistence errors - emits error event instead
    */
   private async persistMessageSync(message: AnyMessage): Promise<void> {
     if (!this.persister) {
@@ -512,7 +513,8 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
         "Failed to persist message (sync)"
       );
 
-      throw error;
+      // Don't throw - persistence failures should not prevent message sending
+      // The error event is emitted above for applications to handle
     }
   }
 

@@ -8,19 +8,29 @@ import type { Session } from "~/types/session";
 // ============================================================
 
 Given("I have an initialized agent", async function (this: TestWorld) {
-  // Import createAgent here to avoid circular dependencies
+  // Import dependencies
   const { createAgent } = await import("~/api/common");
   const { TEST_CONFIG } = await import("../support/world");
+  const { createTestAdapter } = await import("../support/createTestAdapter");
 
   // Create agent if not already exists
   if (!this.agent) {
-    const result = createAgent({
-      workspace: TEST_CONFIG.workspace,
-      apiKey: TEST_CONFIG.apiKey,
-    });
+    // Create adapter based on environment configuration (USE_MOCK_ADAPTER)
+    const adapter = createTestAdapter();
+
+    const result = createAgent(
+      {
+        workspace: TEST_CONFIG.workspace,
+        apiKey: TEST_CONFIG.apiKey,
+      },
+      {
+        adapter,
+      }
+    );
 
     if (result.isOk()) {
       this.agent = result.value;
+      this.customAdapter = adapter;
     } else {
       throw new Error(`Failed to create agent: ${result.error.message}`);
     }

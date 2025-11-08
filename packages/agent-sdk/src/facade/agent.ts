@@ -11,7 +11,7 @@ import { SQLiteAgentPersister } from "~/persistence/sqlite/SQLiteAgentPersister"
 import { createSDKLogger } from "~/utils/logger";
 
 /**
- * Create a new Agent instance using DI
+ * Create a new Agent instance using DI (safe version with Result type)
  *
  * @param config - Agent configuration
  * @param deps - Optional dependency overrides (for testing or custom implementations)
@@ -19,28 +19,25 @@ import { createSDKLogger } from "~/utils/logger";
  *
  * @example
  * ```typescript
- * import { createAgent, isOk, unwrap } from '@deepractice-ai/agent-sdk';
+ * import { createAgentSafe } from '@deepractice-ai/agent-sdk';
  *
- * // Using Result (recommended)
- * const result = createAgent({ workspace: '/path/to/project' });
- * if (isOk(result)) {
+ * // Using Result for safe error handling
+ * const result = createAgentSafe({ workspace: '/path/to/project', apiKey: 'key' });
+ * if (result.isOk()) {
  *   const agent = result.value;
  *   await agent.initialize();
  * } else {
  *   console.error('Failed to create agent:', result.error);
  * }
  *
- * // Or unwrap (throws on error)
- * const agent = unwrap(createAgent({ workspace: '/path/to/project' }));
- *
  * // Custom adapter (via deps)
- * const result = createAgent(
- *   { workspace: '/path/to/project' },
- *   { adapter: new OpenAIAdapter(...) }
+ * const result = createAgentSafe(
+ *   { workspace: '/path/to/project', apiKey: 'key' },
+ *   { adapter: new CustomAdapter(...) }
  * );
  * ```
  */
-export function createAgent(
+export function createAgentSafe(
   config: AgentConfig,
   deps?: AgentDependencies
 ): Result<Agent, AgentError> {

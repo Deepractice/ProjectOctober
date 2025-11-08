@@ -6,6 +6,7 @@ import { createAgent } from "~/api/common";
 import type { AgentConfig, AgentDependencies } from "~/types/config";
 import type { AgentAdapter } from "~/types/adapter";
 import type { AgentPersister } from "~/types/persister";
+import { createTestAdapter } from "../support/createTestAdapter";
 
 // ============================================================
 // Given Steps
@@ -52,6 +53,18 @@ Given("I have a custom persister implementation", function (this: TestWorld) {
     async loadMessages() {
       return { ok: true, value: [] };
     },
+    async saveSession() {
+      return;
+    },
+    async getAllSessions() {
+      return [];
+    },
+    async getMessages() {
+      return [];
+    },
+    async deleteSession() {
+      return;
+    },
   } as AgentPersister;
 });
 
@@ -68,13 +81,13 @@ When("I create an agent with config:", function (this: TestWorld, dataTable: Dat
   }
 
   this.testConfig = config;
-  const result = createAgent(config as AgentConfig);
+  const result = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
 
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
+    this.agentResult = { ok: true, value: result.value };
   } else {
-    this.agentResult = result;
+    this.agentResult = { ok: false, error: result.error };
   }
 });
 
@@ -85,13 +98,15 @@ When("I create an agent without apiKey", function (this: TestWorld) {
   };
 
   this.testConfig = config;
-  const result = createAgent(config as AgentConfig);
+  // Note: This will fail at config validation, so adapter won't be used
+  // But we include it for consistency
+  const result = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
 
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
+    this.agentResult = { ok: true, value: result.value };
   } else {
-    this.agentResult = result;
+    this.agentResult = { ok: false, error: result.error };
   }
 });
 
@@ -109,9 +124,9 @@ When("I create an agent with the custom adapter", function (this: TestWorld) {
 
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
+    this.agentResult = { ok: true, value: result.value };
   } else {
-    this.agentResult = result;
+    this.agentResult = { ok: false, error: result.error };
   }
 });
 
@@ -122,6 +137,7 @@ When("I create an agent with the custom persister", async function (this: TestWo
   };
 
   const dependencies: AgentDependencies = {
+    adapter: createTestAdapter(), // Use test adapter based on env config
     persister: this.customPersister!,
   };
 
@@ -129,11 +145,11 @@ When("I create an agent with the custom persister", async function (this: TestWo
 
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
+    this.agentResult = { ok: true, value: result.value };
     // Initialize agent for persistence tests
     await this.agent.initialize();
   } else {
-    this.agentResult = result;
+    this.agentResult = { ok: false, error: result.error };
   }
 });
 
@@ -143,8 +159,8 @@ When("I create an agent with the custom persister", async function (this: TestWo
 
 Then("the agent should be created successfully", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isOk()).toBe(true);
-  if (this.agentResult!.isOk()) {
+  expect(this.agentResult!.ok).toBe(true);
+  if (this.agentResult!.ok) {
     expect(this.agentResult.value).toBeDefined();
     expect(this.agent).toBeDefined();
   }
@@ -175,24 +191,24 @@ Then("the agent config should match the provided values", function (this: TestWo
 
 Then("the agent creation should fail", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isErr()).toBe(true);
-  if (this.agentResult!.isErr()) {
+  expect(this.agentResult!.ok).toBe(false);
+  if (!this.agentResult!.ok) {
     expect(this.agentResult.error).toBeDefined();
   }
 });
 
 Then("the error code should be {string}", function (this: TestWorld, expectedCode: string) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isErr()).toBe(true);
-  if (this.agentResult!.isErr()) {
+  expect(this.agentResult!.ok).toBe(false);
+  if (!this.agentResult!.ok) {
     expect(this.agentResult.error.code).toBe(expectedCode);
   }
 });
 
 Then("the error message should contain {string}", function (this: TestWorld, expectedText: string) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isErr()).toBe(true);
-  if (this.agentResult!.isErr()) {
+  expect(this.agentResult!.ok).toBe(false);
+  if (!this.agentResult!.ok) {
     expect(this.agentResult.error.message).toContain(expectedText);
   }
 });
