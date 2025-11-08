@@ -34,6 +34,9 @@ export interface TestWorld {
     currentSession?: any;
     customModel?: string;
     quickChatMessage?: string;
+    lastMessage?: string;
+    imageBlock?: any;
+    sentContentBlocks?: any[];
   };
 
   // Custom implementations

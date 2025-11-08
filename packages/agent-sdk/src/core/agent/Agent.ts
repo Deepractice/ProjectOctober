@@ -100,6 +100,7 @@ export class AgentCore extends EventEmitter<AgentLevelEvents> implements Agent {
     session.on("session:deleted", (...args) => this.emit("session:deleted", ...args));
     session.on("message:user", (...args) => this.emit("message:user", ...args));
     session.on("message:agent", (...args) => this.emit("message:agent", ...args));
+    session.on("agent:idle", (...args) => this.emit("agent:idle", ...args));
     session.on("agent:thinking", (...args) => this.emit("agent:thinking", ...args));
     session.on("agent:speaking", (...args) => this.emit("agent:speaking", ...args));
     session.on("agent:completed", (...args) => this.emit("agent:completed", ...args));
