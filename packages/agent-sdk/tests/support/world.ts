@@ -30,6 +30,7 @@ export interface TestWorld {
     apiKey?: string;
     model?: string;
     baseUrl?: string;
+    initError?: Error;
   };
 
   // Custom implementations
