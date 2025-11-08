@@ -499,6 +499,14 @@ import {
   createWebSocketServer,
   WebSocketBridge,
 } from "@deepractice-ai/agent-sdk/server";
+
+// Create WebSocket server for real-time communication
+const server = createWebSocketServer({
+  port: 8080,
+  agent: myAgent,
+});
+
+server.start();
 ```
 
 ### Browser
@@ -511,6 +519,14 @@ import {
   createBrowserSession,
   WebSocketBridge,
 } from "@deepractice-ai/agent-sdk/browser";
+
+// Connect to WebSocket server
+const ws = new WebSocket("ws://localhost:8080");
+const bridge = new WebSocketBridge(ws);
+
+// Use browser-specific agent
+const agent = createBrowserAgent(bridge);
+await agent.initialize();
 ```
 
 ## Examples
@@ -627,6 +643,225 @@ async function streamingChat() {
 
 streamingChat();
 ```
+
+### Example: WebSocket Server (Node.js)
+
+```typescript
+import { createAgent, createWebSocketServer } from "@deepractice-ai/agent-sdk/server";
+
+async function startServer() {
+  // Create agent
+  const agent = createAgent({
+    workspace: process.cwd(),
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  });
+
+  await agent.initialize();
+
+  // Create WebSocket server
+  const server = createWebSocketServer({
+    port: 8080,
+    agent,
+  });
+
+  // Start server
+  server.start();
+
+  console.log("WebSocket server started on ws://localhost:8080");
+
+  // Handle server events
+  server.on("connection", (client) => {
+    console.log("Client connected:", client.id);
+  });
+
+  server.on("disconnect", (client) => {
+    console.log("Client disconnected:", client.id);
+  });
+}
+
+startServer();
+```
+
+### Example: Browser Client
+
+```typescript
+import { createBrowserAgent, WebSocketBridge } from "@deepractice-ai/agent-sdk/browser";
+
+async function connectToAgent() {
+  // Connect to WebSocket server
+  const ws = new WebSocket("ws://localhost:8080");
+
+  // Create WebSocket bridge
+  const bridge = new WebSocketBridge(ws);
+
+  // Create browser agent
+  const agent = createBrowserAgent(bridge);
+
+  // Wait for connection
+  await new Promise((resolve) => {
+    ws.onopen = resolve;
+  });
+
+  // Initialize agent
+  await agent.initialize();
+
+  // Create session and send message
+  const session = await agent.createSession();
+
+  // Listen to events
+  session.on("stream:chunk", ({ chunk }) => {
+    console.log("Received chunk:", chunk);
+  });
+
+  // Send message
+  await session.send("Hello from browser!");
+
+  console.log("Messages:", session.getMessages());
+}
+
+connectToAgent();
+```
+
+### Example: Full-Stack Real-Time Chat
+
+**Server (Node.js):**
+
+```typescript
+import { createAgent, createWebSocketServer } from "@deepractice-ai/agent-sdk/server";
+
+const agent = createAgent({
+  workspace: process.cwd(),
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
+
+await agent.initialize();
+
+const server = createWebSocketServer({
+  port: 8080,
+  agent,
+  // Optional: CORS configuration
+  cors: {
+    origin: "http://localhost:3000",
+  },
+});
+
+server.start();
+```
+
+**Client (Browser):**
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AI Chat</title>
+  </head>
+  <body>
+    <div id="chat"></div>
+    <input id="input" type="text" />
+    <button id="send">Send</button>
+
+    <script type="module">
+      import { createBrowserAgent, WebSocketBridge } from "@deepractice-ai/agent-sdk/browser";
+
+      const ws = new WebSocket("ws://localhost:8080");
+      const bridge = new WebSocketBridge(ws);
+      const agent = createBrowserAgent(bridge);
+
+      let session;
+
+      ws.onopen = async () => {
+        await agent.initialize();
+        session = await agent.createSession();
+
+        // Listen to AI responses
+        session.on("stream:chunk", ({ chunk }) => {
+          appendMessage("AI", chunk);
+        });
+      };
+
+      document.getElementById("send").onclick = async () => {
+        const input = document.getElementById("input");
+        const message = input.value;
+        input.value = "";
+
+        appendMessage("You", message);
+        await session.send(message);
+      };
+
+      function appendMessage(sender, text) {
+        const chat = document.getElementById("chat");
+        chat.innerHTML += `<p><strong>${sender}:</strong> ${text}</p>`;
+      }
+    </script>
+  </body>
+</html>
+```
+
+## WebSocket API
+
+### Server-Side (Node.js)
+
+#### `createWebSocketServer(config): AgentWebSocketServer`
+
+Create a WebSocket server for real-time agent communication.
+
+**Parameters:**
+
+- `config.port: number` - Server port
+- `config.agent: Agent` - Agent instance to expose
+- `config.cors?: CorsOptions` - Optional CORS configuration
+
+**Returns:** `AgentWebSocketServer` - WebSocket server instance
+
+**Methods:**
+
+- `server.start()` - Start the WebSocket server
+- `server.stop()` - Stop the WebSocket server
+- `server.on(event, callback)` - Listen to server events
+
+**Events:**
+
+- `connection` - New client connected
+- `disconnect` - Client disconnected
+- `error` - Server error
+
+### Browser-Side
+
+#### `WebSocketBridge(ws): WebSocketBridge`
+
+Create a bridge between browser WebSocket and Agent SDK.
+
+**Parameters:**
+
+- `ws: WebSocket` - Native browser WebSocket instance
+
+**Methods:**
+
+- `bridge.send(data)` - Send data through WebSocket
+- `bridge.on(event, callback)` - Listen to events
+- `bridge.close()` - Close connection
+
+#### `createBrowserAgent(bridge): Agent`
+
+Create an agent instance for browser environment.
+
+**Parameters:**
+
+- `bridge: WebSocketBridge` - WebSocket bridge instance
+
+**Returns:** `Agent` - Browser agent instance with same interface as Node.js agent
+
+#### `createBrowserSession(agent, sessionId): Session`
+
+Resume or create a session in browser.
+
+**Parameters:**
+
+- `agent: Agent` - Browser agent instance
+- `sessionId: string` - Session ID to resume
+
+**Returns:** `Session` - Session instance
 
 ## License
 

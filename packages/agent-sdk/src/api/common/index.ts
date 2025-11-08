@@ -47,8 +47,8 @@ export function createAgent(config: AgentConfig, deps?: AgentDependencies): Agen
 export { ok, err, Result, Ok, Err } from "neverthrow";
 export type { ResultAsync } from "neverthrow";
 
-// Re-export error types from facade (facade already exports from errors/)
-export type { AgentError, AgentErrorCode } from "~/errors/base";
+// Re-export error types (needed for user error handling)
+export type { AgentError, AgentErrorCode } from "~/types/error";
 
 // Export persister interface (for custom implementations)
 export type { AgentPersister, SessionData } from "~/types/persister";

@@ -7,3 +7,4 @@ export * from "./events";
 export * from "./persister";
 export * from "./adapter";
 export * from "./websocket";
+export * from "./error";
