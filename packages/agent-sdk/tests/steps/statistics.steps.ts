@@ -99,7 +99,7 @@ Then("the session statistics should show:", function (this: TestWorld, dataTable
   }
 
   const stats = session.getStatistics();
-  const rows = dataTable.rows();
+  const rows = dataTable.rows().slice(1); // Skip header row
 
   for (const [field, expectedValue] of rows) {
     const keys = field.split(".");
@@ -139,7 +139,7 @@ Then("the duration statistics should show:", function (this: TestWorld, dataTabl
   }
 
   const stats = session.getStatistics();
-  const rows = dataTable.rows();
+  const rows = dataTable.rows().slice(1); // Skip header row
 
   for (const [field, condition] of rows) {
     const value = (stats.duration as any)[field];
@@ -171,7 +171,7 @@ Then("the cost breakdown should include:", function (this: TestWorld, dataTable:
   }
 
   const stats = session.getStatistics();
-  const rows = dataTable.rows();
+  const rows = dataTable.rows().slice(1); // Skip header row
 
   for (const [costType, condition] of rows) {
     const value = (stats.cost.breakdown as any)[costType];
@@ -198,11 +198,12 @@ Then("the total cost should equal the sum of all breakdowns", function (this: Te
 });
 
 Then(
-  "I should receive at least {int} {string} event(s)",
-  function (this: TestWorld, count: number, eventName: string) {
+  /^I should receive at least (\d+) "([^"]*)" events?$/,
+  function (this: TestWorld, count: string, eventName: string) {
+    const numCount = parseInt(count, 10);
     expect(this.capturedEvents).toBeDefined();
     expect(this.capturedEvents[eventName]).toBeDefined();
-    expect(this.capturedEvents[eventName].length).toBeGreaterThanOrEqual(count);
+    expect(this.capturedEvents[eventName].length).toBeGreaterThanOrEqual(numCount);
   }
 );
 
@@ -231,10 +232,11 @@ Then(
 );
 
 Then(
-  "the observable should emit at least {int} value(s)",
-  function (this: TestWorld, count: number) {
+  /^the observable should emit at least (\d+) values?$/,
+  function (this: TestWorld, count: string) {
+    const numCount = parseInt(count, 10);
     expect(this.observableValues).toBeDefined();
-    expect(this.observableValues.length).toBeGreaterThanOrEqual(count);
+    expect(this.observableValues.length).toBeGreaterThanOrEqual(numCount);
   }
 );
 
@@ -274,7 +276,7 @@ Then("the API duration should accumulate across all turns", function (this: Test
 
 Then("the returned statistics should match:", function (this: TestWorld, dataTable: DataTable) {
   expect(this.currentStatistics).toBeDefined();
-  const rows = dataTable.rows();
+  const rows = dataTable.rows().slice(1); // Skip header row
 
   for (const [field, condition] of rows) {
     const keys = field.split(".");
