@@ -115,7 +115,7 @@ When("I create an agent with the custom adapter", function (this: TestWorld) {
   }
 });
 
-When("I create an agent with the custom persister", function (this: TestWorld) {
+When("I create an agent with the custom persister", async function (this: TestWorld) {
   const config: AgentConfig = {
     workspace: TEST_CONFIG.workspace,
     apiKey: TEST_CONFIG.apiKey,
@@ -130,6 +130,8 @@ When("I create an agent with the custom persister", function (this: TestWorld) {
   if (result.isOk()) {
     this.agent = result.value;
     this.agentResult = result;
+    // Initialize agent for persistence tests
+    await this.agent.initialize();
   } else {
     this.agentResult = result;
   }

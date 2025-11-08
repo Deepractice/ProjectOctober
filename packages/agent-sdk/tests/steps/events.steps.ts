@@ -123,6 +123,11 @@ When("I send a message in this session", async function (this: TestWorld) {
 });
 
 When("I send a message", async function (this: TestWorld) {
+  // If no current session exists, create one
+  if (!this.testConfig.currentSession && this.agent) {
+    this.testConfig.currentSession = await this.agent.createSession({});
+  }
+
   const session = this.testConfig.currentSession as Session;
   expect(session).toBeDefined();
 

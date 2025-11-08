@@ -34,6 +34,7 @@ export interface TestWorld {
     apiKey?: string;
     model?: string;
     baseUrl?: string;
+    dbUnavailable?: boolean;
     initError?: Error;
     currentSession?: any;
     customModel?: string;
