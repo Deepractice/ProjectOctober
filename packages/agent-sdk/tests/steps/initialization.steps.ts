@@ -4,10 +4,43 @@ import type { TestWorld } from "../support/world";
 import { TEST_CONFIG } from "../support/world";
 import { createAgent } from "~/api/common";
 import type { AgentConfig } from "~/types/config";
+import { createTestAdapter } from "../support/createTestAdapter";
 
 // ============================================================
 // Given Steps
 // ============================================================
+
+Given("I use the mock adapter", function (this: TestWorld) {
+  // Set flag to use mock adapter (already configured in TEST_CONFIG)
+  // This is just a marker step to make the feature file more readable
+});
+
+Given("I create an agent with model {string}", function (this: TestWorld, model: string) {
+  const config: AgentConfig = {
+    workspace: TEST_CONFIG.workspace,
+    apiKey: TEST_CONFIG.apiKey,
+    model,
+  };
+
+  this.agent = createAgent(config, { adapter: createTestAdapter() });
+  expect(this.agent).toBeDefined();
+});
+
+Given("I create a new session", async function (this: TestWorld) {
+  if (!this.agent) {
+    throw new Error("Agent must be created first");
+  }
+
+  // Initialize agent if not already initialized
+  const status = this.agent.getStatus();
+  if (!status.ready) {
+    await this.agent.initialize();
+  }
+
+  // Create session
+  this.session = await this.agent.createSession();
+  expect(this.session).toBeDefined();
+});
 
 Given("I have created an agent", function (this: TestWorld) {
   const config: AgentConfig = {
@@ -15,7 +48,7 @@ Given("I have created an agent", function (this: TestWorld) {
     apiKey: TEST_CONFIG.apiKey,
   };
 
-  this.agent = createAgent(config);
+  this.agent = createAgent(config, { adapter: createTestAdapter() });
   expect(this.agent).toBeDefined();
 });
 

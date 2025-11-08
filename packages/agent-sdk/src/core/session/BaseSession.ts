@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { Subject, BehaviorSubject } from "rxjs";
 import type { Observable } from "rxjs";
 import { randomUUID } from "crypto";
 import EventEmitter from "eventemitter3";
@@ -9,6 +9,8 @@ import type {
   SessionState,
   SessionMetadata,
   TokenUsage,
+  SessionStatistics,
+  PricingConfig,
   AnyMessage,
   UserMessage,
   ContentBlock,
@@ -19,6 +21,7 @@ import type {
 } from "~/types";
 import { createAgentStateMachine, type AgentMachineActor } from "../agent/AgentStateMachine";
 import { createSessionStateMachine, type SessionMachineActor } from "./SessionStateMachine";
+import { getPricingForModel } from "../pricing";
 
 /**
  * Session - Provider-agnostic, event-driven session implementation
@@ -44,6 +47,7 @@ import { createSessionStateMachine, type SessionMachineActor } from "./SessionSt
  * - Event emission
  * - Observable streams (backward compatibility)
  * - Token usage tracking
+ * - Statistics tracking (duration, cost, conversation)
  *
  * What Session does NOT do:
  * - Transform provider messages (handled by Adapter)
@@ -70,6 +74,14 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
       cacheCreation: 0,
     },
   };
+
+  // Statistics tracking
+  protected statisticsSubject: BehaviorSubject<SessionStatistics>;
+  protected statistics: SessionStatistics;
+  protected pricingConfig: PricingConfig;
+  protected sessionStartTime?: Date;
+  protected currentRequestStartTime?: Date;
+
   protected metadata: SessionMetadata;
   protected adapter: AgentAdapter;
   protected options: SessionOptions;
@@ -95,6 +107,20 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
     this.options = options;
     this.logger = logger;
     this.persister = persister;
+
+    // Initialize statistics
+    this.statistics = {
+      duration: { total: 0, api: 0, thinking: 0 },
+      cost: {
+        total: 0,
+        breakdown: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+      },
+      conversation: { turns: 0, messages: 0 },
+    };
+    this.statisticsSubject = new BehaviorSubject<SessionStatistics>(this.statistics);
+
+    // Get pricing config for the model
+    this.pricingConfig = getPricingForModel(options.model || "default");
 
     // Initialize with historical messages if provided
     this.messages = [...initialMessages];
@@ -238,6 +264,14 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
 
     this.logger.debug({ sessionId: this.id, contentType: typeof content }, "Send called");
 
+    // Statistics: Track request start time and increment turns
+    this.currentRequestStartTime = new Date();
+    if (!this.sessionStartTime) {
+      this.sessionStartTime = new Date();
+    }
+    this.statistics.conversation.turns++;
+    this.updateStatistics();
+
     // 1. Emit stream start
     this.emit("stream:start", { timestamp: new Date() });
 
@@ -261,6 +295,7 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
       // 7. Stream from adapter
       let chunkIndex = 0;
       let firstChunk = true;
+      let firstTokenReceived = false;
       let messageCount = 0;
 
       for await (const domainMsg of this.adapter.stream(content, this.options)) {
@@ -270,6 +305,12 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
           { sessionId: this.id, messageType: domainMsg.type, messageCount },
           "Received domain message from adapter"
         );
+
+        // Statistics: Track thinking time (time to first token)
+        if (!firstTokenReceived && domainMsg.type === "agent" && this.currentRequestStartTime) {
+          this.statistics.duration.thinking += Date.now() - this.currentRequestStartTime.getTime();
+          firstTokenReceived = true;
+        }
 
         // First chunk: agent starts speaking
         if (firstChunk && domainMsg.type === "agent") {
@@ -316,9 +357,14 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
         // Persist message (async)
         this.persistMessageAsync(domainMsg);
 
-        // Update token usage
+        // Statistics: Increment message count
+        this.statistics.conversation.messages++;
+
+        // Update token usage and cost
         if (domainMsg.usage) {
           this.updateTokenUsage(domainMsg.usage);
+          this.calculateCost();
+          this.updateStatistics();
         }
       }
 
@@ -326,6 +372,12 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
         { sessionId: this.id, messagesReceived: messageCount },
         "Adapter stream completed"
       );
+
+      // Statistics: Track API duration
+      if (this.currentRequestStartTime) {
+        this.statistics.duration.api += Date.now() - this.currentRequestStartTime.getTime();
+        this.updateStatistics();
+      }
 
       // 8. Stream complete, emit event
       this.emit("stream:end", { timestamp: new Date(), totalChunks: chunkIndex });
@@ -397,6 +449,10 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
     return this.messageSubject.asObservable();
   }
 
+  statistics$(): Observable<SessionStatistics> {
+    return this.statisticsSubject.asObservable();
+  }
+
   getMessages(limit?: number, offset = 0): AnyMessage[] {
     const end = limit ? offset + limit : undefined;
     return this.messages.slice(offset, end);
@@ -404,6 +460,14 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
 
   getTokenUsage(): TokenUsage {
     return { ...this.tokenUsage };
+  }
+
+  getStatistics(): SessionStatistics {
+    // Update total duration before returning
+    if (this.sessionStartTime) {
+      this.statistics.duration.total = Date.now() - this.sessionStartTime.getTime();
+    }
+    return { ...this.statistics };
   }
 
   getMetadata(): SessionMetadata {
@@ -617,6 +681,50 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
       this.tokenUsage.breakdown.cacheCreation;
 
     this.logger.debug({ sessionId: this.id, tokenUsage: this.tokenUsage }, "Token usage updated");
+  }
+
+  /**
+   * Calculate cost based on token usage and pricing config
+   */
+  private calculateCost(): void {
+    const prices = this.pricingConfig.prices;
+
+    this.statistics.cost.breakdown.input =
+      (this.tokenUsage.breakdown.input / 1_000_000) * prices.inputPerMillion;
+
+    this.statistics.cost.breakdown.output =
+      (this.tokenUsage.breakdown.output / 1_000_000) * prices.outputPerMillion;
+
+    this.statistics.cost.breakdown.cacheRead =
+      (this.tokenUsage.breakdown.cacheRead / 1_000_000) * prices.cacheReadPerMillion;
+
+    this.statistics.cost.breakdown.cacheCreation =
+      (this.tokenUsage.breakdown.cacheCreation / 1_000_000) * prices.cacheCreationPerMillion;
+
+    this.statistics.cost.total =
+      this.statistics.cost.breakdown.input +
+      this.statistics.cost.breakdown.output +
+      this.statistics.cost.breakdown.cacheRead +
+      this.statistics.cost.breakdown.cacheCreation;
+  }
+
+  /**
+   * Update statistics and emit events (EventEmitter + RxJS)
+   */
+  private updateStatistics(): void {
+    // Calculate latest values
+    const stats = this.getStatistics();
+
+    // Update RxJS Subject
+    this.statisticsSubject.next(stats);
+
+    // Emit EventEmitter event
+    this.emit("statistics:updated", {
+      statistics: stats,
+      timestamp: new Date(),
+    });
+
+    this.logger.debug({ sessionId: this.id, statistics: stats }, "Statistics updated");
   }
 
   private async loadPersistedMessages(): Promise<void> {

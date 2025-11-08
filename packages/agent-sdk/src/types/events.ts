@@ -1,4 +1,5 @@
 import type { AnyMessage, UserMessage, AgentMessage } from "./message";
+import type { SessionStatistics } from "./session";
 
 export interface PerformanceMetrics {
   avgResponseTime: number;
@@ -76,13 +77,21 @@ export interface PersistenceEvents {
 }
 
 /**
+ * Statistics events
+ */
+export interface StatisticsEvents {
+  "statistics:updated": { statistics: SessionStatistics; timestamp: Date };
+}
+
+/**
  * All session events combined (for EventEmitter)
  */
 export type SessionEvents = AgentStateEvents &
   MessageEvents &
   StreamEvents &
   SessionLifecycleEvents &
-  PersistenceEvents;
+  PersistenceEvents &
+  StatisticsEvents;
 
 /**
  * Agent-level events (aggregated from all sessions)

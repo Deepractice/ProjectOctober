@@ -1,8 +1,9 @@
 import { setWorldConstructor } from "@deepracticex/vitest-cucumber";
-import type { Agent } from "~/types/session";
+import type { Agent, Session, SessionStatistics } from "~/types/session";
 import type { AgentAdapter } from "~/types/adapter";
 import type { AgentPersister } from "~/types/persister";
 import type { AgentError } from "~/errors/base";
+import type { Subscription } from "rxjs";
 
 /**
  * Test Configuration Constants
@@ -61,6 +62,14 @@ export interface TestWorld {
 
   // Event tracking
   receivedEvents: Array<{ type: string; data: any }>;
+  capturedEvents?: Record<string, any[]>;
+
+  // Statistics tracking
+  currentStatistics?: SessionStatistics;
+  expectedTokenCounts?: Record<string, number>;
+  observableValues?: SessionStatistics[];
+  subscription?: Subscription;
+  session?: Session;
 
   // Helpers
   resetWorld(): void;

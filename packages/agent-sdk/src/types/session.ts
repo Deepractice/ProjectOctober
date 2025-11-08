@@ -33,6 +33,39 @@ export interface TokenUsage {
   };
 }
 
+// Session statistics
+export interface SessionStatistics {
+  duration: {
+    total: number; // Total duration in milliseconds
+    api: number; // API call duration in milliseconds
+    thinking: number; // Time to first token in milliseconds
+  };
+  cost: {
+    total: number; // Total cost in USD
+    breakdown: {
+      input: number; // Input token cost
+      output: number; // Output token cost
+      cacheRead: number; // Cache read cost
+      cacheCreation: number; // Cache creation cost
+    };
+  };
+  conversation: {
+    turns: number; // Number of user sends
+    messages: number; // Total message count
+  };
+}
+
+// Pricing configuration
+export interface PricingConfig {
+  model: string;
+  prices: {
+    inputPerMillion: number; // Price per million input tokens
+    outputPerMillion: number; // Price per million output tokens
+    cacheReadPerMillion: number; // Cache read price per million tokens
+    cacheCreationPerMillion: number; // Cache creation price per million tokens
+  };
+}
+
 /**
  * Session interface - SDK-specific with Observable methods
  * This is different from agent-types Session which is a data structure
@@ -52,10 +85,12 @@ export interface Session extends EventEmitter<SessionEvents> {
 
   // Observables
   messages$(): Observable<AnyMessage>;
+  statistics$(): Observable<SessionStatistics>;
 
   // Queries
   getMessages(limit?: number, offset?: number): AnyMessage[];
   getTokenUsage(): TokenUsage;
+  getStatistics(): SessionStatistics;
   getMetadata(): SessionMetadata;
   summary(): string;
 
