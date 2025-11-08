@@ -9,7 +9,6 @@ import type {
   Session,
   AgentAdapter,
   AgentPersister,
-  SessionFactory,
 } from "~/types";
 import { SessionManager } from "./session-manager";
 import type { Logger } from "@deepracticex/logger";
@@ -17,9 +16,9 @@ import type { Logger } from "@deepracticex/logger";
 /**
  * AgentCore - Core Agent implementation
  *
- * Refactored from ClaudeAgent to be provider-agnostic:
- * - Uses AgentAdapter interface instead of concrete Claude implementation
- * - Uses SessionFactory for creating sessions
+ * Provider-agnostic agent implementation:
+ * - Uses AgentAdapter interface (all provider logic in adapter)
+ * - Uses concrete Session class (no factory needed)
  * - Uses AgentPersister interface for persistence
  *
  * This class contains only business logic, no provider-specific code
@@ -33,7 +32,6 @@ export class AgentCore implements Agent {
     config: AgentConfig,
     adapter: AgentAdapter,
     persister: AgentPersister,
-    sessionFactory: SessionFactory,
     logger: Logger
   ) {
     this.logger = logger;
@@ -42,7 +40,7 @@ export class AgentCore implements Agent {
       "Creating AgentCore"
     );
 
-    this.sessionManager = new SessionManager(config, adapter, persister, sessionFactory, logger);
+    this.sessionManager = new SessionManager(config, adapter, persister, logger);
   }
 
   async initialize(): Promise<void> {

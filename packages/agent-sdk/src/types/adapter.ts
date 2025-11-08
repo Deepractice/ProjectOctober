@@ -1,5 +1,5 @@
 import type { SessionOptions } from "./config";
-import type { ContentBlock } from "@deepractice-ai/agent-types";
+import type { ContentBlock, AnyMessage } from "@deepractice-ai/agent-types";
 
 /**
  * Token usage from AI provider (raw format)
@@ -12,64 +12,49 @@ export interface TokenUsageRaw {
 }
 
 /**
- * Generic message from AI adapter
- * Adapters transform provider-specific messages to this generic format
+ * Additional metadata that adapter can attach to domain messages
  */
-export interface AdapterMessage {
+export interface DomainMessageMetadata {
   /**
-   * Message type
+   * Optional updates to session options
+   * Adapter can return options updates (e.g., resume token after extracting provider session ID)
    */
-  type: "user" | "assistant" | "system" | "result";
+  updatedOptions?: Partial<SessionOptions>;
 
   /**
-   * Session ID from provider (if available)
-   * Some providers (like Claude SDK) return session_id in the stream
-   */
-  sessionId?: string;
-
-  /**
-   * Message content (provider-specific format)
-   */
-  content?: any;
-
-  /**
-   * Token usage information
+   * Token usage information (if available in this message)
    */
   usage?: TokenUsageRaw;
-
-  /**
-   * Message UUID (if provided by provider)
-   */
-  uuid?: string;
-
-  /**
-   * Raw message from provider (for debugging and provider-specific handling)
-   */
-  raw?: unknown;
 }
+
+/**
+ * Domain message returned by adapter
+ * Combines our domain AnyMessage with optional metadata
+ */
+export type DomainMessage = AnyMessage & DomainMessageMetadata;
 
 /**
  * Agent Adapter interface - abstracts AI provider
  *
  * Adapters are responsible for:
  * - Calling the AI provider's API
- * - Streaming messages back
- * - Transforming provider-specific messages to AdapterMessage format
+ * - Transforming provider messages to our domain types (AnyMessage)
+ * - Managing provider-specific features (e.g., session resume, tool calling)
+ * - Extracting and storing provider session IDs
+ * - Returning session option updates when needed
  *
- * What adapters DON'T do:
- * - Session management (handled by Session layer)
- * - Message persistence (handled by Persister)
- * - Message transformation to our domain types (handled by Session layer)
+ * Design principle: Adapter handles ALL provider-specific logic.
+ * Session layer should be completely provider-agnostic.
  */
 export interface AgentAdapter {
   /**
-   * Stream messages from AI model
+   * Stream domain messages from AI model
    *
    * @param prompt - User prompt (string or multi-modal content)
    * @param options - Session options (may include resume session ID)
-   * @returns AsyncGenerator of adapter messages
+   * @returns AsyncGenerator of domain messages (already transformed to our types)
    */
-  stream(prompt: string | ContentBlock[], options: SessionOptions): AsyncGenerator<AdapterMessage>;
+  stream(prompt: string | ContentBlock[], options: SessionOptions): AsyncGenerator<DomainMessage>;
 
   /**
    * Get adapter name for logging and debugging

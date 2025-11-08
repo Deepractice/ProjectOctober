@@ -3,25 +3,23 @@ import { randomUUID } from "crypto";
 import type {
   AgentConfig,
   SessionEvent,
-  Session,
+  Session as ISession,
   PerformanceMetrics,
   SessionCreateOptions,
   AgentPersister,
   AgentAdapter,
-  SessionFactory,
 } from "~/types";
 import type { Logger } from "@deepracticex/logger";
+import { Session } from "./session";
 
 /**
  * SessionManager - manages all sessions lifecycle
  *
- * Refactored to use dependency injection:
- * - AgentAdapter (interface) instead of ClaudeAdapter (concrete class)
- * - SessionFactory (interface) for creating sessions
- * - No longer depends on Claude-specific implementation
+ * Uses concrete Session class (provider-agnostic).
+ * All provider-specific logic is in AgentAdapter.
  */
 export class SessionManager {
-  private sessions = new Map<string, Session>();
+  private sessions = new Map<string, ISession>();
   private sessionEventsSubject = new Subject<SessionEvent>();
   private metrics = {
     totalCreated: 0,
@@ -32,7 +30,6 @@ export class SessionManager {
     private readonly config: AgentConfig,
     private readonly adapter: AgentAdapter,
     private readonly persister: AgentPersister,
-    private readonly sessionFactory: SessionFactory,
     private readonly logger: Logger
   ) {
     this.logger.debug({ adapterName: adapter.getName() }, "SessionManager created");
@@ -44,11 +41,11 @@ export class SessionManager {
    * Flow:
    * 1. Generate UUID for session
    * 2. Save session metadata to database
-   * 3. Create session via SessionFactory
+   * 3. Create Session instance directly
    * 4. Add to in-memory map
    * 5. Return session (ready to receive messages via session.send())
    */
-  async createSession(options: SessionCreateOptions = {}): Promise<Session> {
+  async createSession(options: SessionCreateOptions = {}): Promise<ISession> {
     const startTime = Date.now();
 
     // Generate our own session ID (UUID)
@@ -69,8 +66,8 @@ export class SessionManager {
 
     this.logger.debug({ sessionId }, "Session metadata saved to database");
 
-    // Create session via factory
-    const session = this.sessionFactory.createSession(
+    // Create session directly (no factory needed - Session is provider-agnostic)
+    const session = new Session(
       sessionId,
       {
         projectPath: this.config.workspace,
@@ -79,6 +76,7 @@ export class SessionManager {
       },
       this.adapter,
       { model: options.model },
+      this.logger,
       this.persister
     );
 
@@ -99,7 +97,7 @@ export class SessionManager {
   /**
    * Get a session by ID
    */
-  getSession(id: string): Session | null {
+  getSession(id: string): ISession | null {
     const session = this.sessions.get(id);
 
     if (!session) {
@@ -116,7 +114,7 @@ export class SessionManager {
   /**
    * Get all sessions with pagination
    */
-  getSessions(limit: number, offset: number): Session[] {
+  getSessions(limit: number, offset: number): ISession[] {
     const all = Array.from(this.sessions.values());
 
     // Sort by start time (newest first)
@@ -218,8 +216,8 @@ export class SessionManager {
         // TODO: Load token usage from database (need to add to schema)
         const tokenUsage = undefined;
 
-        // Recreate session object
-        const session = this.sessionFactory.createSession(
+        // Recreate session object directly (no factory needed)
+        const session = new Session(
           sessionData.id,
           {
             projectPath: sessionData.cwd || this.config.workspace,
@@ -228,6 +226,7 @@ export class SessionManager {
           },
           this.adapter,
           {},
+          this.logger,
           this.persister,
           messages,
           tokenUsage

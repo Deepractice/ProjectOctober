@@ -5,7 +5,6 @@ import type { SessionEvent, AgentStatus } from "./events";
 import type { Session, SessionCreateOptions } from "./session";
 import type { AgentAdapter } from "./adapter";
 import type { AgentPersister } from "./persister";
-import type { SessionFactory } from "./session";
 
 /**
  * Agent interface - main entry point for the SDK
@@ -38,6 +37,9 @@ export interface AgentDependencies {
   /**
    * Custom AI adapter (default: ClaudeAdapter)
    * Use this to switch to different AI providers (e.g., OpenAI, Gemini)
+   *
+   * Note: Session is now provider-agnostic, no factory needed.
+   * All provider-specific logic is in the adapter.
    */
   adapter?: AgentAdapter;
 
@@ -46,12 +48,6 @@ export interface AgentDependencies {
    * Use this to switch storage backends (e.g., Redis, PostgreSQL)
    */
   persister?: AgentPersister;
-
-  /**
-   * Custom session factory (default: ClaudeSessionFactory)
-   * Use this when using a different adapter that requires different session implementation
-   */
-  sessionFactory?: SessionFactory;
 
   /**
    * Custom logger (default: SDK logger from config)

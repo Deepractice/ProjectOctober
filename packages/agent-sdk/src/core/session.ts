@@ -3,7 +3,7 @@ import type { Observable } from "rxjs";
 import { randomUUID } from "crypto";
 import type { Logger } from "@deepracticex/logger";
 import type {
-  Session,
+  Session as ISession,
   SessionState,
   SessionMetadata,
   TokenUsage,
@@ -12,24 +12,28 @@ import type {
   ContentBlock,
   SessionOptions,
   AgentAdapter,
-  AdapterMessage,
+  DomainMessage,
   AgentPersister,
 } from "~/types";
 
 /**
- * BaseSession - Abstract base class for Session implementations
+ * Session - Provider-agnostic session implementation
  *
- * Provides common functionality for all session types:
+ * This is a concrete class that works with ANY AI provider.
+ * All provider-specific logic is handled by the AgentAdapter.
+ *
+ * Responsibilities:
  * - Message management (in-memory + persistence)
  * - State management
  * - Observable streams
  * - Token usage tracking
  *
- * Subclasses (e.g., ClaudeSession) implement:
- * - transformMessage(): Convert adapter-specific messages to our domain types
- * - extractSessionId(): Extract provider session ID from stream
+ * What Session does NOT do:
+ * - Transform provider messages (handled by Adapter)
+ * - Extract provider session IDs (handled by Adapter)
+ * - Handle provider-specific features (handled by Adapter)
  */
-export abstract class BaseSession implements Session {
+export class Session implements ISession {
   public readonly id: string;
   public readonly createdAt: Date;
 
@@ -78,7 +82,7 @@ export abstract class BaseSession implements Session {
 
     this.logger.debug(
       { sessionId: id, hasInitialMessages: initialMessages.length > 0 },
-      "BaseSession constructed"
+      "Session constructed"
     );
 
     // Load persisted messages if available
@@ -111,32 +115,32 @@ export abstract class BaseSession implements Session {
     this._state = "active";
 
     try {
-      // 2. Stream from adapter
+      // 2. Stream from adapter (adapter returns already-transformed domain messages)
       let messageCount = 0;
-      for await (const adapterMsg of this.adapter.stream(content, this.options)) {
+      for await (const domainMsg of this.adapter.stream(content, this.options)) {
         messageCount++;
 
         this.logger.debug(
-          { sessionId: this.id, adapterMsgType: adapterMsg.type, messageCount },
-          "Received adapter message"
+          { sessionId: this.id, messageType: domainMsg.type, messageCount },
+          "Received domain message from adapter"
         );
 
-        // 3. Handle session ID extraction (for providers that return it)
-        const extractedSessionId = this.extractSessionId(adapterMsg);
-        if (extractedSessionId) {
-          await this.onSessionIdExtracted(extractedSessionId);
+        // 3. Handle options updates from adapter
+        if (domainMsg.updatedOptions) {
+          this.logger.debug(
+            { sessionId: this.id, updates: domainMsg.updatedOptions },
+            "Applying options updates from adapter"
+          );
+          this.options = { ...this.options, ...domainMsg.updatedOptions };
         }
 
-        // 4. Transform and add message
-        const transformed = this.transformMessage(adapterMsg);
-        if (transformed) {
-          this.addMessage(transformed);
-          this.persistMessage(transformed);
-        }
+        // 4. Add message (already in domain format)
+        this.addMessage(domainMsg);
+        this.persistMessage(domainMsg);
 
         // 5. Update token usage
-        if (adapterMsg.usage) {
-          this.updateTokenUsage(adapterMsg.usage);
+        if (domainMsg.usage) {
+          this.updateTokenUsage(domainMsg.usage);
         }
       }
 
@@ -355,38 +359,5 @@ export abstract class BaseSession implements Session {
     } catch (error) {
       this.logger.error({ error, sessionId: this.id }, "Failed to load persisted messages");
     }
-  }
-
-  // ========================================
-  // Abstract methods - subclasses must implement
-  // ========================================
-
-  /**
-   * Transform adapter message to our domain message type
-   * Returns null if the message should be skipped
-   *
-   * @param msg - Message from adapter
-   * @returns Transformed message or null
-   */
-  protected abstract transformMessage(msg: AdapterMessage): AnyMessage | null;
-
-  /**
-   * Extract session ID from adapter message (if provider includes it)
-   * Returns null if no session ID in this message
-   *
-   * @param msg - Message from adapter
-   * @returns Session ID or null
-   */
-  protected abstract extractSessionId(msg: AdapterMessage): string | null;
-
-  /**
-   * Called when session ID is extracted from adapter
-   * Subclasses can override to handle provider-specific logic
-   *
-   * @param sessionId - Extracted session ID
-   */
-  protected async onSessionIdExtracted(sessionId: string): Promise<void> {
-    this.logger.info({ ourId: this.id, providerSessionId: sessionId }, "Session ID extracted");
-    // Default: no-op, subclasses can override
   }
 }

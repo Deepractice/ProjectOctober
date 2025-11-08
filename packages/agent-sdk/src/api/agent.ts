@@ -1,7 +1,6 @@
 import type { Agent, AgentConfig, AgentDependencies } from "~/types";
 import { AgentCore } from "~/core/agent";
 import { ClaudeAdapter } from "~/adapters/claude/ClaudeAdapter";
-import { ClaudeSessionFactory } from "~/adapters/claude/factory";
 import { SQLiteAgentPersister } from "~/persistence/sqlite/sqlite-persister";
 import { createSDKLogger } from "~/utils/logger";
 
@@ -30,8 +29,7 @@ import { createSDKLogger } from "~/utils/logger";
  * const agent = createAgent(
  *   { workspace: '/path/to/project' },
  *   {
- *     adapter: new OpenAIAdapter(...),
- *     sessionFactory: new OpenAISessionFactory(...)
+ *     adapter: new OpenAIAdapter(...)
  *   }
  * );
  *
@@ -59,9 +57,7 @@ export function createAgent(config: AgentConfig, deps?: AgentDependencies): Agen
   const persister =
     deps?.persister ?? config.persister ?? new SQLiteAgentPersister(config.workspace, logger);
 
-  // Create or use provided session factory (default: Claude)
-  const sessionFactory = deps?.sessionFactory ?? new ClaudeSessionFactory(logger);
-
   // Create AgentCore with all dependencies
-  return new AgentCore(config, adapter, persister, sessionFactory, logger);
+  // Note: No SessionFactory needed - Session is now provider-agnostic
+  return new AgentCore(config, adapter, persister, logger);
 }

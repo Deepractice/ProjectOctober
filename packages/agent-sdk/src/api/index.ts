@@ -20,5 +20,4 @@ export type {
   UserMessage,
   AgentMessage,
   AgentAdapter,
-  SessionFactory,
 } from "~/types";
