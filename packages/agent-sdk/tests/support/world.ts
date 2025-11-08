@@ -31,6 +31,9 @@ export interface TestWorld {
     model?: string;
     baseUrl?: string;
     initError?: Error;
+    currentSession?: any;
+    customModel?: string;
+    quickChatMessage?: string;
   };
 
   // Custom implementations

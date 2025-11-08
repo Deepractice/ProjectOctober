@@ -37,13 +37,30 @@ Given("the agent is already initialized", async function (this: TestWorld) {
 Given("I am listening to agent events", function (this: TestWorld) {
   expect(this.agent).toBeDefined();
 
-  // Listen to all events and store them
+  // Listen to all agent-level events and store them
   this.agent!.on("agent:initialized", (data) => {
     this.receivedEvents.push({ type: "agent:initialized", data });
   });
 
   this.agent!.on("agent:destroyed", (data) => {
     this.receivedEvents.push({ type: "agent:destroyed", data });
+  });
+
+  // Listen to session events
+  this.agent!.on("session:created", (data) => {
+    this.receivedEvents.push({ type: "session:created", data });
+  });
+
+  this.agent!.on("session:active", (data) => {
+    this.receivedEvents.push({ type: "session:active", data });
+  });
+
+  this.agent!.on("session:idle", (data) => {
+    this.receivedEvents.push({ type: "session:idle", data });
+  });
+
+  this.agent!.on("session:completed", (data) => {
+    this.receivedEvents.push({ type: "session:completed", data });
   });
 });
 

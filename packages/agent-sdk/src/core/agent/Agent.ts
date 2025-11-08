@@ -90,10 +90,26 @@ export class AgentCore extends EventEmitter<AgentLevelEvents> implements Agent {
 
     const session = await this.sessionManager.createSession(options);
 
-    // Bridge: re-emit all session events at agent level
-    (session as any).onAny((eventName: string, ...args: any[]) => {
-      this.emit(eventName as any, ...args);
-    });
+    // Bridge: re-emit session events at agent level
+    // Note: We can't use onAny() as it doesn't exist in eventemitter3
+    // Instead, we manually listen to specific events we care about
+    session.on("session:active", (...args) => this.emit("session:active", ...args));
+    session.on("session:idle", (...args) => this.emit("session:idle", ...args));
+    session.on("session:completed", (...args) => this.emit("session:completed", ...args));
+    session.on("session:error", (...args) => this.emit("session:error", ...args));
+    session.on("session:deleted", (...args) => this.emit("session:deleted", ...args));
+    session.on("message:user", (...args) => this.emit("message:user", ...args));
+    session.on("message:agent", (...args) => this.emit("message:agent", ...args));
+    session.on("agent:thinking", (...args) => this.emit("agent:thinking", ...args));
+    session.on("agent:speaking", (...args) => this.emit("agent:speaking", ...args));
+    session.on("agent:completed", (...args) => this.emit("agent:completed", ...args));
+    session.on("stream:start", (...args) => this.emit("stream:start", ...args));
+    session.on("stream:chunk", (...args) => this.emit("stream:chunk", ...args));
+    session.on("stream:end", (...args) => this.emit("stream:end", ...args));
+
+    // Emit session:created event at agent level
+    // (Session already emitted it, but we missed it since we set up listeners after creation)
+    this.emit("session:created", { sessionId: session.id, timestamp: new Date() });
 
     this.logger.info({ sessionId: session.id, model: options?.model }, "Session created");
 
