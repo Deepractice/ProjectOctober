@@ -15,15 +15,7 @@ Given("I have created an agent", function (this: TestWorld) {
     apiKey: TEST_CONFIG.apiKey,
   };
 
-  const result = createAgent(config);
-
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.agentResult = result;
-  } else {
-    this.agentResult = result;
-  }
-
+  this.agent = createAgent(config);
   expect(this.agent).toBeDefined();
 });
 

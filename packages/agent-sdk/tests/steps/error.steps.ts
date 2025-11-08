@@ -16,17 +16,14 @@ import {
 // Note: "I create an agent without apiKey" is defined in agent.steps.ts
 
 When("I create an agent with valid config", function (this: TestWorld) {
-  const result = createAgent({
-    workspace: TEST_CONFIG.workspace,
-    apiKey: TEST_CONFIG.apiKey,
-  });
-
-  this.agentResult = result.isOk()
-    ? { ok: true, value: result.value }
-    : { ok: false, error: result.error };
-
-  if (result.isOk()) {
-    this.agent = result.value;
+  try {
+    this.agent = createAgent({
+      workspace: TEST_CONFIG.workspace,
+      apiKey: TEST_CONFIG.apiKey,
+    });
+    this.agentResult = { ok: true, value: this.agent };
+  } catch (error: any) {
+    this.agentResult = { ok: false, error };
   }
 });
 
@@ -70,7 +67,7 @@ Given("I have an initialized agent with API key", function (this: TestWorld) {
   // Use MockAdapter for testing
   const mockAdapter = new MockAdapter();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -80,18 +77,15 @@ Given("I have an initialized agent with API key", function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
-  }
+  expect(this.agent).toBeDefined();
+  this.customAdapter = mockAdapter;
 });
 
 Given("I have an agent with invalid API key", function (this: TestWorld) {
   // Use MockAdapter that throws auth error
   const mockAdapter = createMockAdapterWithAuthError();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -101,23 +95,20 @@ Given("I have an agent with invalid API key", function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
+  expect(this.agent).toBeDefined();
+  this.customAdapter = mockAdapter;
 
-    // Listen to agent:error events
-    this.agent.on("agent:error", (data) => {
-      this.receivedEvents.push({ type: "agent:error", data });
-    });
-  }
+  // Listen to agent:error events
+  this.agent.on("agent:error", (data) => {
+    this.receivedEvents.push({ type: "agent:error", data });
+  });
 });
 
 Given("the network is unavailable", function (this: TestWorld) {
   // Use MockAdapter that throws network error
   const mockAdapter = createMockAdapterWithNetworkError();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -127,18 +118,15 @@ Given("the network is unavailable", function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
-  }
+  expect(this.agent).toBeDefined();
+  this.customAdapter = mockAdapter;
 });
 
 Given("the API response is delayed", function (this: TestWorld) {
   // Use MockAdapter with timeout error
   const mockAdapter = createMockAdapterWithTimeoutError();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -148,18 +136,15 @@ Given("the API response is delayed", function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
-  }
+  expect(this.agent).toBeDefined();
+  this.customAdapter = mockAdapter;
 });
 
 Given("I have a session with an error", async function (this: TestWorld) {
   // Create agent with MockAdapter that throws auth error
   const mockAdapter = createMockAdapterWithAuthError();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -169,18 +154,15 @@ Given("I have a session with an error", async function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
+  expect(this.agent).toBeDefined();
+  this.customAdapter = mockAdapter;
 
-    // Try to send a message to trigger an error
-    try {
-      const session = await this.agent.createSession({});
-      await session.send("Test message");
-    } catch (error) {
-      this.lastError = error as Error;
-    }
+  // Try to send a message to trigger an error
+  try {
+    const session = await this.agent.createSession({});
+    await session.send("Test message");
+  } catch (error) {
+    this.lastError = error as Error;
   }
 });
 
@@ -214,7 +196,7 @@ When("I send another message to the agent", async function (this: TestWorld) {
   // Create new agent with working MockAdapter for recovery
   const mockAdapter = new MockAdapter();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -224,14 +206,11 @@ When("I send another message to the agent", async function (this: TestWorld) {
     }
   );
 
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.customAdapter = mockAdapter;
-    // Initialize agent first
-    await this.agent.initialize();
-    const session = await this.agent.createSession({});
-    await session.send("Recovery message");
-  }
+  this.customAdapter = mockAdapter;
+  // Initialize agent first
+  await this.agent.initialize();
+  const session = await this.agent.createSession({});
+  await session.send("Recovery message");
 });
 
 Then("I should receive an error", function (this: TestWorld) {

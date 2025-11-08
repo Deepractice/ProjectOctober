@@ -1,4 +1,4 @@
-import type { AgentAdapter } from "~/types/adapter";
+import type { AgentAdapter } from "../../src/types/adapter";
 import { MockAdapter } from "./MockAdapter";
 import { TEST_CONFIG } from "./world";
 

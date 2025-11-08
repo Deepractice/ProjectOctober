@@ -48,7 +48,7 @@ Then("the message should be saved to database", function (this: TestWorld) {
 Given("I have 3 persisted sessions", async function (this: TestWorld) {
   // Create agent and 3 sessions
   const mockAdapter = new MockAdapter();
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -58,23 +58,20 @@ Given("I have 3 persisted sessions", async function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    await this.agent.initialize();
+  expect(this.agent).toBeDefined();
+  await this.agent.initialize();
 
-    // Create 3 sessions
-    for (let i = 0; i < 3; i++) {
-      const session = await this.agent.createSession({});
-      await session.send(`Test message ${i + 1}`);
-    }
+  // Create 3 sessions
+  for (let i = 0; i < 3; i++) {
+    const session = await this.agent.createSession({});
+    await session.send(`Test message ${i + 1}`);
   }
 });
 
 When("I initialize a new agent", async function (this: TestWorld) {
   // Create a new agent instance (should load persisted sessions)
   const mockAdapter = new MockAdapter();
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -84,11 +81,8 @@ When("I initialize a new agent", async function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    await this.agent.initialize();
-  }
+  expect(this.agent).toBeDefined();
+  await this.agent.initialize();
 });
 
 Then("all 3 sessions should be loaded", function (this: TestWorld) {
@@ -167,7 +161,7 @@ Given("the database is unavailable", async function (this: TestWorld) {
     },
   };
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -178,19 +172,16 @@ Given("the database is unavailable", async function (this: TestWorld) {
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    await this.agent.initialize();
+  expect(this.agent).toBeDefined();
+  await this.agent.initialize();
 
-    // Create a session for the test
-    this.testConfig.currentSession = await this.agent.createSession({});
+  // Create a session for the test
+  this.testConfig.currentSession = await this.agent.createSession({});
 
-    // Listen to persistence events on the session (not agent)
-    this.testConfig.currentSession.on("persist:message:error" as any, (data) => {
-      this.receivedEvents.push({ type: "persist:message:error", data });
-    });
-  }
+  // Listen to persistence events on the session (not agent)
+  this.testConfig.currentSession.on("persist:message:error" as any, (data) => {
+    this.receivedEvents.push({ type: "persist:message:error", data });
+  });
 
   this.testConfig.dbUnavailable = true;
 });
@@ -243,7 +234,7 @@ Then("the message should be saved using custom persister", function (this: TestW
 When("I create an agent without persister (via dependencies)", async function (this: TestWorld) {
   const mockAdapter = new MockAdapter();
 
-  const result = createAgent(
+  this.agent = createAgent(
     {
       workspace: TEST_CONFIG.workspace,
       apiKey: TEST_CONFIG.apiKey,
@@ -254,11 +245,8 @@ When("I create an agent without persister (via dependencies)", async function (t
     }
   );
 
-  expect(result.isOk()).toBe(true);
-  if (result.isOk()) {
-    this.agent = result.value;
-    await this.agent.initialize();
-  }
+  expect(this.agent).toBeDefined();
+  await this.agent.initialize();
 });
 
 Then("I should receive events:", function (this: TestWorld, dataTable: DataTable) {

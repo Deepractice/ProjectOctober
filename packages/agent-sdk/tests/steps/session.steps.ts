@@ -18,7 +18,7 @@ Given("I have an initialized agent", async function (this: TestWorld) {
     // Create adapter based on environment configuration (USE_MOCK_ADAPTER)
     const adapter = createTestAdapter();
 
-    const result = createAgent(
+    this.agent = createAgent(
       {
         workspace: TEST_CONFIG.workspace,
         apiKey: TEST_CONFIG.apiKey,
@@ -28,12 +28,7 @@ Given("I have an initialized agent", async function (this: TestWorld) {
       }
     );
 
-    if (result.isOk()) {
-      this.agent = result.value;
-      this.customAdapter = adapter;
-    } else {
-      throw new Error(`Failed to create agent: ${result.error.message}`);
-    }
+    this.customAdapter = adapter;
   }
 
   // Initialize the agent

@@ -81,13 +81,12 @@ When("I create an agent with config:", function (this: TestWorld, dataTable: Dat
   }
 
   this.testConfig = config;
-  const result = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
 
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.agentResult = { ok: true, value: result.value };
-  } else {
-    this.agentResult = { ok: false, error: result.error };
+  try {
+    this.agent = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
+    this.agentResult = { ok: true, value: this.agent };
+  } catch (error: any) {
+    this.agentResult = { ok: false, error };
   }
 });
 
@@ -100,13 +99,12 @@ When("I create an agent without apiKey", function (this: TestWorld) {
   this.testConfig = config;
   // Note: This will fail at config validation, so adapter won't be used
   // But we include it for consistency
-  const result = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
 
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.agentResult = { ok: true, value: result.value };
-  } else {
-    this.agentResult = { ok: false, error: result.error };
+  try {
+    this.agent = createAgent(config as AgentConfig, { adapter: createTestAdapter() });
+    this.agentResult = { ok: true, value: this.agent };
+  } catch (error: any) {
+    this.agentResult = { ok: false, error };
   }
 });
 
@@ -120,13 +118,11 @@ When("I create an agent with the custom adapter", function (this: TestWorld) {
     adapter: this.customAdapter!,
   };
 
-  const result = createAgent(config, dependencies);
-
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.agentResult = { ok: true, value: result.value };
-  } else {
-    this.agentResult = { ok: false, error: result.error };
+  try {
+    this.agent = createAgent(config, dependencies);
+    this.agentResult = { ok: true, value: this.agent };
+  } catch (error: any) {
+    this.agentResult = { ok: false, error };
   }
 });
 
@@ -141,15 +137,13 @@ When("I create an agent with the custom persister", async function (this: TestWo
     persister: this.customPersister!,
   };
 
-  const result = createAgent(config, dependencies);
-
-  if (result.isOk()) {
-    this.agent = result.value;
-    this.agentResult = { ok: true, value: result.value };
+  try {
+    this.agent = createAgent(config, dependencies);
+    this.agentResult = { ok: true, value: this.agent };
     // Initialize agent for persistence tests
     await this.agent.initialize();
-  } else {
-    this.agentResult = { ok: false, error: result.error };
+  } catch (error: any) {
+    this.agentResult = { ok: false, error };
   }
 });
 

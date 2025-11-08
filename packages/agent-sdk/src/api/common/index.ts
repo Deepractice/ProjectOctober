@@ -6,15 +6,14 @@
 
 import { createAgentSafe as createAgentInternal } from "~/facade/agent";
 import type { Agent, AgentConfig, AgentDependencies } from "~/types";
-import type { Result } from "neverthrow";
-import type { AgentError } from "~/errors/base";
 
 /**
  * Create a new Agent instance
  *
  * @param config - Agent configuration
- * @param options - Creation options
- * @returns Agent instance (throws on error) or Result<Agent, AgentError> (if safe: true)
+ * @param deps - Optional dependency overrides
+ * @returns Agent instance
+ * @throws {AgentError} - Throws if agent creation fails
  *
  * @example
  * ```typescript
@@ -27,16 +26,6 @@ import type { AgentError } from "~/errors/base";
  * });
  * await agent.initialize();
  *
- * // Safe mode (returns Result type)
- * const result = createAgent(
- *   { workspace: '/path/to/project', apiKey: 'key' },
- *   { safe: true }
- * );
- * if (result.isOk()) {
- *   const agent = result.value;
- *   await agent.initialize();
- * }
- *
  * // With custom dependencies
  * const agent = createAgent(
  *   { workspace: '/path/to/project', apiKey: 'key' },
@@ -44,18 +33,10 @@ import type { AgentError } from "~/errors/base";
  * );
  * ```
  */
-export function createAgent(
-  config: AgentConfig,
-  options?: AgentDependencies & { safe?: boolean }
-): Agent | Result<Agent, AgentError> {
-  const result = createAgentInternal(config, options);
+export function createAgent(config: AgentConfig, deps?: AgentDependencies): Agent {
+  const result = createAgentInternal(config, deps);
 
-  // If safe mode, return Result
-  if (options?.safe) {
-    return result;
-  }
-
-  // Otherwise, throw on error
+  // Throw on error
   if (result.isErr()) {
     throw result.error;
   }
