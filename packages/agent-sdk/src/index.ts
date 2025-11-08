@@ -1,6 +1,6 @@
 // Public API
 export { createAgent } from "./api/agent";
-export { createAgentPersister, SQLiteAgentPersister } from "./api";
+export { SQLiteAgentPersister } from "./api";
 
 // Config API (from agent-config)
 export { getConfig, getConfigValue } from "./core/config/api/getConfig";

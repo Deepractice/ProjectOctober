@@ -7,29 +7,42 @@ import type {
   SessionEvent,
   AgentStatus,
   Session,
+  AgentAdapter,
+  AgentPersister,
+  SessionFactory,
 } from "~/types";
 import { SessionManager } from "./session-manager";
-import { createSDKLogger } from "./utils/logger";
-import { SQLiteAgentPersister } from "./persistence/sqlite-persister";
 import type { Logger } from "@deepracticex/logger";
 
 /**
- * ClaudeAgent - Agent implementation for Claude SDK
+ * AgentCore - Core Agent implementation
+ *
+ * Refactored from ClaudeAgent to be provider-agnostic:
+ * - Uses AgentAdapter interface instead of concrete Claude implementation
+ * - Uses SessionFactory for creating sessions
+ * - Uses AgentPersister interface for persistence
+ *
+ * This class contains only business logic, no provider-specific code
  */
-export class ClaudeAgent implements Agent {
+export class AgentCore implements Agent {
   private sessionManager: SessionManager;
   private initialized = false;
   private logger: Logger;
 
-  constructor(config: AgentConfig) {
-    this.logger = createSDKLogger(config.logger);
-    this.logger.debug({ workspace: config.workspace, model: config.model }, "Creating ClaudeAgent");
+  constructor(
+    config: AgentConfig,
+    adapter: AgentAdapter,
+    persister: AgentPersister,
+    sessionFactory: SessionFactory,
+    logger: Logger
+  ) {
+    this.logger = logger;
+    this.logger.debug(
+      { workspace: config.workspace, model: config.model, adapterName: adapter.getName() },
+      "Creating AgentCore"
+    );
 
-    // Create persister if not provided (default: SQLite)
-    const persister = config.persister || new SQLiteAgentPersister(config.workspace, this.logger);
-
-    // Pass persister to SessionManager
-    this.sessionManager = new SessionManager(config, this.logger, persister);
+    this.sessionManager = new SessionManager(config, adapter, persister, sessionFactory, logger);
   }
 
   async initialize(): Promise<void> {
@@ -38,30 +51,30 @@ export class ClaudeAgent implements Agent {
       throw new Error("Agent already initialized");
     }
 
-    this.logger.info("Initializing ClaudeAgent");
+    this.logger.info("Initializing AgentCore");
 
     try {
       // Load historical sessions
       await this.sessionManager.loadHistoricalSessions();
 
       this.initialized = true;
-      this.logger.info("ClaudeAgent initialized successfully");
+      this.logger.info("AgentCore initialized successfully");
     } catch (err) {
-      this.logger.error({ err }, "Failed to initialize ClaudeAgent");
+      this.logger.error({ err }, "Failed to initialize AgentCore");
       throw err;
     }
   }
 
   destroy(): void {
-    this.logger.info("Destroying ClaudeAgent");
+    this.logger.info("Destroying AgentCore");
     this.sessionManager.destroy();
     this.initialized = false;
-    this.logger.debug("ClaudeAgent destroyed");
+    this.logger.debug("AgentCore destroyed");
   }
 
   async createSession(options: SessionCreateOptions): Promise<Session> {
     this.ensureInitialized();
-    this.logger.debug({ model: options?.model }, "Creating new session with initial message");
+    this.logger.debug({ model: options?.model }, "Creating new session");
     const session = await this.sessionManager.createSession(options);
     this.logger.info({ sessionId: session.id, model: options?.model }, "Session created");
     return session;

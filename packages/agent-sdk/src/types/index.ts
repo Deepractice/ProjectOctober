@@ -30,3 +30,4 @@ export * from "./session";
 export * from "./agent";
 export * from "./events";
 export * from "./persister";
+export * from "./adapter";
