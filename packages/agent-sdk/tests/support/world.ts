@@ -41,6 +41,12 @@ export interface TestWorld {
     sendError?: Error;
     deletedSessionId?: string;
     eventListenersSetup?: boolean;
+    subscribedToAgent?: boolean;
+    subscribedToSession?: boolean;
+    specificEventType?: string;
+    eventListener?: any;
+    observableSubscription?: any;
+    sentMessageCount?: number;
   };
 
   // Custom implementations
