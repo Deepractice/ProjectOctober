@@ -108,7 +108,6 @@ export abstract class BaseSession implements Session {
     this.addMessage(userMessage);
     this.persistMessage(userMessage);
 
-    const prevState = this._state;
     this._state = "active";
 
     try {
