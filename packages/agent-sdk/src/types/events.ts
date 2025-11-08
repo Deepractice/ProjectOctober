@@ -1,9 +1,4 @@
-import type {
-  AnyMessage,
-  UserMessage,
-  AgentMessage,
-  ToolMessage,
-} from "@deepractice-ai/agent-types";
+import type { AnyMessage, UserMessage, AgentMessage } from "./message";
 
 export interface PerformanceMetrics {
   avgResponseTime: number;
@@ -45,7 +40,6 @@ export interface AgentStateEvents {
 export interface MessageEvents {
   "message:user": { message: UserMessage };
   "message:agent": { message: AgentMessage };
-  "message:tool": { message: ToolMessage };
 }
 
 /**

@@ -21,12 +21,14 @@ Server (WebSocketBridge)
 ## Key Concepts
 
 ### BrowserAgent
+
 - **Single WebSocket connection** to server
 - **Multiplexes multiple sessions** over one connection
 - Manages automatic reconnection
 - Routes messages based on `sessionId`
 
 ### VirtualSession
+
 - Lightweight session wrapper
 - Same API as Node.js `Session`
 - No own WebSocket (routes through BrowserAgent)
@@ -249,6 +251,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
 All standard Session events are supported:
 
 ### Agent State Events
+
 - `agent:idle`
 - `agent:thinking`
 - `agent:speaking`
@@ -258,16 +261,19 @@ All standard Session events are supported:
 - `agent:completed`
 
 ### Message Events
+
 - `message:user`
 - `message:agent`
 - `message:tool`
 
 ### Stream Events
+
 - `stream:start`
 - `stream:chunk`
 - `stream:end`
 
 ### Session Lifecycle Events
+
 - `session:created`
 - `session:active`
 - `session:idle`
@@ -276,6 +282,7 @@ All standard Session events are supported:
 - `session:deleted`
 
 ### Persistence Events
+
 - `persist:message:start`
 - `persist:message:success`
 - `persist:message:error`
@@ -301,16 +308,19 @@ const agent = createBrowserAgent("ws://localhost:5200/ws", {
 ## Benefits Over Per-Session WebSocket
 
 ### Resource Efficiency
+
 - ✅ 1 WebSocket vs N WebSockets
 - ✅ Lower memory usage
 - ✅ No browser connection limit issues
 
 ### Performance
+
 - ✅ Faster session switching (no new connection)
 - ✅ Shared connection state
 - ✅ Less network overhead
 
 ### User Experience
+
 - ✅ Instant session access
 - ✅ Better for multi-session UIs
 - ✅ Smoother reconnection
@@ -351,12 +361,14 @@ const session2 = agent.getSession("session-2");
 ## Troubleshooting
 
 ### "Agent not initialized"
+
 ```typescript
 // Make sure to call initialize()
 await agent.initialize();
 ```
 
 ### Events not firing
+
 ```typescript
 // Check if session exists in agent
 console.log(agent.hasSession(sessionId));
@@ -366,6 +378,7 @@ console.log(agent.hasSession(sessionId));
 ```
 
 ### WebSocket disconnects
+
 ```typescript
 // Use reconnect config
 const agent = createBrowserAgent(wsUrl, {

@@ -301,8 +301,6 @@ export class Session extends EventEmitter<SessionEvents> implements ISession {
               chunk: domainMsg.content,
             });
           }
-        } else if (domainMsg.type === "tool") {
-          this.emit("message:tool", { message: domainMsg as any });
         }
 
         // Handle tool calls

@@ -5,6 +5,13 @@
 
 export { createAgent } from "./agent";
 
+// Export Result type from neverthrow
+export { ok, err, Result, Ok, Err } from "neverthrow";
+export type { ResultAsync } from "neverthrow";
+
+// Export error types
+export { AgentError, AgentErrorCode, AgentErrors } from "~/errors/base";
+
 // Export persister interface (for custom implementations)
 export type { AgentPersister, SessionData } from "~/types/persister";
 

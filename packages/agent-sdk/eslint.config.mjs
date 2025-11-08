@@ -21,7 +21,7 @@ export default [
       },
     },
     plugins: {
-      "@typescript-eslint": await import("@typescript-eslint/eslint-plugin").then(m => m.default),
+      "@typescript-eslint": await import("@typescript-eslint/eslint-plugin").then((m) => m.default),
       "sdk-arch": (await import("./lint/index.mjs")).default,
     },
     rules: {

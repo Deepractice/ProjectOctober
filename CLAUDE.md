@@ -274,12 +274,14 @@ See `env/.env.example` for full list.
 ### Naming
 
 **General Principles**:
+
 - One file, one type (OOP style)
 - Interface-first naming: `ConfigLoader` not `EnvConfigLoader`
 - No Hungarian notation
 - Use descriptive names for clarity
 
 **File Naming Convention**:
+
 - **PascalCase** - Single type files (classes, interfaces)
   - Example: `Agent.ts`, `BaseSession.ts`, `WebSocketBridge.ts`
   - Use when file exports ONE main type/class
@@ -289,6 +291,7 @@ See `env/.env.example` for full list.
   - Use for facade layer entry files (e.g., `facade/agent.ts`)
 
 **Type Naming Convention**:
+
 - **Classes**: PascalCase with clear intent
   - Example: `AgentCore`, `SQLiteAgentPersister`, `WebSocketBridge`
 - **Interfaces**: PascalCase without `I` prefix

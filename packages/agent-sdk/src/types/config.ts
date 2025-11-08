@@ -1,11 +1,10 @@
-import type { AgentPersister } from "./persister";
-
 export interface AgentConfig {
   workspace: string;
-  model?: string;
+  apiKey: string; // Anthropic API key (required)
+  baseUrl?: string; // Optional: custom API endpoint
+  model?: string; // Default model
   mcpServers?: Record<string, McpServerConfig>;
   logger?: LoggerConfig;
-  persister?: AgentPersister; // Optional: inject custom persister
 }
 
 export interface LoggerConfig {
@@ -23,10 +22,10 @@ export interface McpServerConfig {
   env?: Record<string, string>;
 }
 
-// SDK-specific session options (extends shared SessionOptions)
-import type { SessionOptions as BaseSessionOptions } from "@deepractice-ai/agent-types";
-
-export interface SessionOptions extends BaseSessionOptions {
+export interface SessionOptions {
   model?: string;
   systemPrompt?: string;
+  resume?: string; // Provider session ID for resuming
+  temperature?: number;
+  maxTokens?: number;
 }

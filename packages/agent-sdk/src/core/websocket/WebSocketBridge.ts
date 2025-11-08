@@ -65,7 +65,6 @@ export class WebSocketBridge {
       // Message events
       "message:user",
       "message:agent",
-      "message:tool",
       // Stream events
       "stream:start",
       "stream:chunk",

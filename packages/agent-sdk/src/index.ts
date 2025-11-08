@@ -16,8 +16,6 @@ export type {
   AnyMessage,
   UserMessage,
   AgentMessage,
-  ToolMessage,
-  SystemMessage,
   ErrorMessage,
   PerformanceMetrics,
   ContentBlock,

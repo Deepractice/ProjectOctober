@@ -20,7 +20,8 @@ export default {
       recommended: true,
     },
     messages: {
-      shouldBePascalCase: "File '{{filename}}' exports a single class '{{className}}' and should use PascalCase ({{expected}}.ts)",
+      shouldBePascalCase:
+        "File '{{filename}}' exports a single class '{{className}}' and should use PascalCase ({{expected}}.ts)",
       shouldBeCamelCase: "File '{{filename}}' exports multiple items and should use camelCase",
     },
     schema: [],
@@ -30,13 +31,16 @@ export default {
     const filename = context.getFilename();
 
     // Skip non-src files and test files
-    if (!filename.includes('/src/') || filename.includes('.test.')) {
+    if (!filename.includes("/src/") || filename.includes(".test.")) {
       return {};
     }
 
     // Skip special files
-    const basename = filename.split('/').pop().replace(/\.(ts|tsx|js|jsx)$/, '');
-    if (['index', 'types'].includes(basename)) {
+    const basename = filename
+      .split("/")
+      .pop()
+      .replace(/\.(ts|tsx|js|jsx)$/, "");
+    if (["index", "types"].includes(basename)) {
       return {};
     }
 
@@ -48,7 +52,7 @@ export default {
         totalExports++;
 
         // Check if it's a class declaration
-        if (node.declaration?.type === 'ClassDeclaration') {
+        if (node.declaration?.type === "ClassDeclaration") {
           exportedClasses.push(node.declaration.id.name);
         }
       },
@@ -57,7 +61,7 @@ export default {
         totalExports++;
       },
 
-      'Program:exit'() {
+      "Program:exit"() {
         // If exactly one class is exported
         if (exportedClasses.length === 1 && totalExports === 1) {
           const className = exportedClasses[0];

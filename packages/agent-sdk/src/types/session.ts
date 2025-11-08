@@ -1,13 +1,37 @@
 import type { Observable } from "rxjs";
 import type { EventEmitter } from "eventemitter3";
-import type {
-  AnyMessage,
-  ContentBlock,
-  SessionState,
-  SessionMetadata,
-  TokenUsage,
-} from "@deepractice-ai/agent-types";
+import type { AnyMessage, ContentBlock } from "./message";
 import type { SessionEvents } from "./events";
+
+// Session state
+export type SessionState =
+  | "created"
+  | "active"
+  | "idle"
+  | "completed"
+  | "error"
+  | "aborted"
+  | "deleted";
+
+// Session metadata
+export interface SessionMetadata {
+  projectPath: string;
+  startTime: Date;
+  endTime?: Date;
+  [key: string]: unknown;
+}
+
+// Token usage
+export interface TokenUsage {
+  used: number;
+  total: number;
+  breakdown: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheCreation: number;
+  };
+}
 
 /**
  * Session interface - SDK-specific with Observable methods

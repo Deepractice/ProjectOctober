@@ -1,6 +1,8 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import type { Agent, AgentConfig, AgentDependencies } from "~/types";
+import { ok, err, Result } from "neverthrow";
+import { AgentError, AgentErrors } from "~/errors/base";
 import { AgentCore } from "~/core/agent/Agent";
 import { SessionFactory } from "~/core/session/SessionFactory";
 import { SessionManager } from "~/core/agent/SessionManager";
@@ -13,67 +15,76 @@ import { createSDKLogger } from "~/utils/logger";
  *
  * @param config - Agent configuration
  * @param deps - Optional dependency overrides (for testing or custom implementations)
- * @returns Agent instance
+ * @returns Result<Agent, AgentError> - Ok with Agent or Err with typed error
  *
  * @example
  * ```typescript
- * // Default usage (Claude + SQLite)
- * const agent = createAgent({
- *   workspace: '/path/to/project',
- *   model: 'claude-sonnet-4'
- * });
+ * import { createAgent, isOk, unwrap } from '@deepractice-ai/agent-sdk';
  *
- * // Custom persister (from config)
- * const agent = createAgent({
- *   workspace: '/path/to/project',
- *   persister: new CustomPersister(...)
- * });
+ * // Using Result (recommended)
+ * const result = createAgent({ workspace: '/path/to/project' });
+ * if (isOk(result)) {
+ *   const agent = result.value;
+ *   await agent.initialize();
+ * } else {
+ *   console.error('Failed to create agent:', result.error);
+ * }
+ *
+ * // Or unwrap (throws on error)
+ * const agent = unwrap(createAgent({ workspace: '/path/to/project' }));
  *
  * // Custom adapter (via deps)
- * const agent = createAgent(
+ * const result = createAgent(
  *   { workspace: '/path/to/project' },
- *   {
- *     adapter: new OpenAIAdapter(...)
- *   }
+ *   { adapter: new OpenAIAdapter(...) }
  * );
- *
- * // Testing with mocks
- * const agent = createAgent(
- *   { workspace: '/test' },
- *   {
- *     adapter: mockAdapter,
- *     persister: mockPersister,
- *   }
- * );
- *
- * await agent.initialize();
  * ```
  */
-export function createAgent(config: AgentConfig, deps?: AgentDependencies): Agent {
-  // Clear existing registrations
-  container.clearInstances();
+export function createAgent(
+  config: AgentConfig,
+  deps?: AgentDependencies
+): Result<Agent, AgentError> {
+  try {
+    // Validate required config
+    if (!config.apiKey) {
+      return err(AgentErrors.configInvalid("apiKey is required"));
+    }
 
-  // Register config
-  container.register("AgentConfig", { useValue: config });
+    // Clear existing registrations
+    container.clearInstances();
 
-  // Register logger
-  const logger = deps?.logger ?? createSDKLogger(config.logger);
-  container.register("Logger", { useValue: logger });
+    // Register config
+    container.register("AgentConfig", { useValue: config });
 
-  // Register adapter (default: Claude)
-  const adapter = deps?.adapter ?? new ClaudeAdapter(config, logger);
-  container.register("AgentAdapter", { useValue: adapter });
+    // Register logger
+    const logger = deps?.logger ?? createSDKLogger(config.logger);
+    container.register("Logger", { useValue: logger });
 
-  // Register persister (default: SQLite)
-  const persister =
-    deps?.persister ?? config.persister ?? new SQLiteAgentPersister(config.workspace, logger);
-  container.register("AgentPersister", { useValue: persister });
+    // Register adapter (default: Claude)
+    const adapter = deps?.adapter ?? new ClaudeAdapter(config, logger);
+    container.register("AgentAdapter", { useValue: adapter });
 
-  // Register factories and managers (auto-resolved by TSyringe)
-  container.register(SessionFactory, { useClass: SessionFactory });
-  container.register(SessionManager, { useClass: SessionManager });
-  container.register(AgentCore, { useClass: AgentCore });
+    // Register persister (default: SQLite)
+    const persister = deps?.persister ?? new SQLiteAgentPersister(config.workspace, logger);
+    container.register("AgentPersister", { useValue: persister });
 
-  // Resolve and return Agent
-  return container.resolve(AgentCore);
+    // Register factories and managers (auto-resolved by TSyringe)
+    container.register(SessionFactory, { useClass: SessionFactory });
+    container.register(SessionManager, { useClass: SessionManager });
+    container.register(AgentCore, { useClass: AgentCore });
+
+    // Resolve and return Agent
+    const agent = container.resolve(AgentCore);
+    return ok(agent);
+  } catch (error) {
+    // Convert to AgentError
+    if (error instanceof AgentError) {
+      return err(error);
+    }
+    return err(
+      AgentErrors.unknown(error instanceof Error ? error.message : String(error), {
+        originalError: error,
+      })
+    );
+  }
 }

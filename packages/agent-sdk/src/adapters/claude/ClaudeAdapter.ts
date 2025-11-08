@@ -36,7 +36,7 @@ export class ClaudeAdapter implements AgentAdapter {
   ) {
     this.logger = logger;
     this.logger.debug(
-      { workspace: config.workspace, model: config.model },
+      { workspace: config.workspace, model: config.model, hasApiKey: !!config.apiKey },
       "ClaudeAdapter created"
     );
   }
@@ -255,7 +255,11 @@ export class ClaudeAdapter implements AgentAdapter {
       mcpServers: this.config.mcpServers,
       settingSources: ["user", "project", "local"],
       permissionMode: "bypassPermissions",
-      env: process.env,
+      env: {
+        ...process.env,
+        ANTHROPIC_API_KEY: this.config.apiKey,
+        ...(this.config.baseUrl && { ANTHROPIC_BASE_URL: this.config.baseUrl }),
+      },
       executable: process.execPath,
       stderr: (data: string) => {
         this.logger.debug({ stderr: data }, "Claude SDK stderr");

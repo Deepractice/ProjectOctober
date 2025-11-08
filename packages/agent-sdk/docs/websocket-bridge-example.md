@@ -11,18 +11,22 @@ The WebSocket Bridge automatically converts Session EventEmitter events to WebSo
 ```javascript
 // Old approach: manually subscribe and forward each event
 session.messages$().subscribe((msg) => {
-  ws.send(JSON.stringify({
-    type: "agent-response",
-    sessionId: session.id,
-    data: msg,
-  }));
+  ws.send(
+    JSON.stringify({
+      type: "agent-response",
+      sessionId: session.id,
+      data: msg,
+    })
+  );
 });
 
 session.on("agent:speaking", ({ chunk }) => {
-  ws.send(JSON.stringify({
-    type: "chunk",
-    data: chunk,
-  }));
+  ws.send(
+    JSON.stringify({
+      type: "chunk",
+      data: chunk,
+    })
+  );
 });
 
 // ... repeat for every event type
@@ -91,11 +95,13 @@ ws.onmessage = (event) => {
 };
 
 // Send message
-ws.send(JSON.stringify({
-  type: "session:send",
-  sessionId: "session-id",
-  content: "Hello!",
-}));
+ws.send(
+  JSON.stringify({
+    type: "session:send",
+    sessionId: "session-id",
+    content: "Hello!",
+  })
+);
 ```
 
 ## Complete Server Example
@@ -152,10 +158,7 @@ async function main() {
   const { sessionId } = await response.json();
 
   // Create browser session
-  const session = createBrowserSession(
-    sessionId,
-    `ws://localhost:5200/ws?sessionId=${sessionId}`
-  );
+  const session = createBrowserSession(sessionId, `ws://localhost:5200/ws?sessionId=${sessionId}`);
 
   // Listen to events
   session.on("agent:thinking", () => {

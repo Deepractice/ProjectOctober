@@ -12,6 +12,7 @@ import type {
 } from "~/types";
 import { SessionManager } from "./SessionManager";
 import type { Logger } from "@deepracticex/logger";
+import { AgentErrors } from "~/errors/base";
 
 /**
  * AgentCore - Core Agent implementation with event aggregation
@@ -44,7 +45,7 @@ export class AgentCore extends EventEmitter<AgentLevelEvents> implements Agent {
   async initialize(): Promise<void> {
     if (this.initialized) {
       this.logger.warn("Agent already initialized");
-      throw new Error("Agent already initialized");
+      throw AgentErrors.alreadyInitialized();
     }
 
     this.logger.info("Initializing AgentCore");
@@ -135,7 +136,7 @@ export class AgentCore extends EventEmitter<AgentLevelEvents> implements Agent {
 
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new Error("Agent not initialized. Call initialize() first.");
+      throw AgentErrors.notInitialized();
     }
   }
 }

@@ -11,7 +11,7 @@ import { dirname, join } from "path";
 import { existsSync } from "fs";
 import type { Logger } from "@deepracticex/logger";
 import type { AgentPersister, SessionData } from "~/types/persister";
-import type { AnyMessage, ContentBlock } from "@deepractice-ai/agent-types";
+import type { AnyMessage, ContentBlock } from "~/types/message";
 import * as schema from "./schema";
 import { sessions, messages } from "./schema";
 
@@ -253,15 +253,7 @@ export class SQLiteAgentPersister implements AgentPersister {
       let toolId: string | null = null;
       let toolResult: string | null = null;
 
-      if (message.type === "tool") {
-        isToolUse = true;
-        // Tool message has tool_use_id and result
-        const toolMsg = message as any;
-        toolId = toolMsg.tool_use_id || null;
-        if (toolMsg.result) {
-          toolResult = JSON.stringify(toolMsg.result);
-        }
-      } else if ("content" in message && Array.isArray(message.content)) {
+      if ("content" in message && Array.isArray(message.content)) {
         // Check if content contains tool use blocks
         // Note: ToolUse is not part of ContentBlock[], but may appear in runtime
         const toolUseBlock = (message.content as any[]).find(
@@ -367,7 +359,7 @@ export class SQLiteAgentPersister implements AgentPersister {
           id: row.id,
           type: row.type as AnyMessage["type"],
           content,
-          timestamp: row.timestamp,
+          timestamp: new Date(row.timestamp),
         } as AnyMessage;
       });
 

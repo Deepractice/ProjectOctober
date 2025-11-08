@@ -2,7 +2,7 @@
  * Persistence interfaces for Agent SDK
  */
 
-import type { AnyMessage } from "@deepractice-ai/agent-types";
+import type { AnyMessage } from "./message";
 
 /**
  * Session data for persistence

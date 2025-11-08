@@ -1,15 +1,5 @@
 import type { SessionOptions } from "./config";
-import type { ContentBlock, AnyMessage } from "@deepractice-ai/agent-types";
-
-/**
- * Token usage from AI provider (raw format)
- */
-export interface TokenUsageRaw {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_read_input_tokens?: number;
-  cache_creation_input_tokens?: number;
-}
+import type { ContentBlock, AnyMessage, TokenUsageRaw } from "./message";
 
 /**
  * Additional metadata that adapter can attach to domain messages

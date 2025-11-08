@@ -11,12 +11,13 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description: "Enforce that api/ only exports from facade/",
+      description: "Enforce that api/ only exports from facade/, types/, and errors/",
       category: "Architecture",
       recommended: true,
     },
     messages: {
-      apiShouldExportFromFacade: "api/ should only export from facade/ or types/, not {{source}}",
+      apiShouldExportFromFacade:
+        "api/ should only export from facade/, types/, or errors/, not {{source}}",
     },
     schema: [],
   },
@@ -35,11 +36,13 @@ export default {
         if (node.source) {
           const importPath = node.source.value;
 
-          // Allow exports from facade/ and types/
+          // Allow exports from facade/, types/, and errors/
           if (
             importPath.startsWith("~/facade/") ||
             importPath.startsWith("~/types/") ||
-            importPath.startsWith("~/types")
+            importPath.startsWith("~/types") ||
+            importPath.startsWith("~/errors/") ||
+            importPath.startsWith("~/errors")
           ) {
             return;
           }

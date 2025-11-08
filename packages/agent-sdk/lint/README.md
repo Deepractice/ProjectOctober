@@ -13,12 +13,13 @@ Enforces strict dependency flow between architectural layers.
 **Allowed Dependencies:**
 
 ```
-api/         → facade/, types/
-facade/      → core/, adapters/, persistence/, types/, utils/
-core/        → types/, utils/ (NO api/, NO facade/)
+api/         → facade/, types/, errors/
+facade/      → core/, adapters/, persistence/, types/, errors/, utils/
+core/        → types/, errors/, utils/ (NO api/, NO facade/)
+errors/      → (pure error definitions, minimal imports)
 types/       → (pure types, no imports)
-adapters/    → types/, utils/
-persistence/ → types/, utils/
+adapters/    → types/, errors/, utils/
+persistence/ → types/, errors/, utils/
 utils/       → types/
 ```
 
@@ -76,11 +77,11 @@ export { AgentCore };
 
 **Severity**: Error
 
-Ensures `api/` layer only exposes facade and types.
+Ensures `api/` layer only exposes facade, types, and errors.
 
 **Rules:**
 
-- `api/` files can only export from `facade/` or `types/`
+- `api/` files can only export from `facade/`, `types/`, or `errors/`
 - `api/` must NOT expose `core/` internals directly
 
 **Examples:**
@@ -93,6 +94,10 @@ export { createAgent } from "~/facade/agent";
 // ✅ GOOD: Exporting types
 // src/api/index.ts
 export type { Agent, Session } from "~/types";
+
+// ✅ GOOD: Exporting errors
+// src/api/index.ts
+export { AgentError, AgentErrorCode } from "~/errors/base";
 
 // ❌ BAD: Exporting from core/
 // src/api/agent.ts
