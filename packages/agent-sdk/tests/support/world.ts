@@ -47,6 +47,7 @@ export interface TestWorld {
     eventListener?: any;
     observableSubscription?: any;
     sentMessageCount?: number;
+    stateTransitions?: string[];
   };
 
   // Custom implementations
