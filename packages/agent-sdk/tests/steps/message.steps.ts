@@ -12,6 +12,21 @@ Given("I have created a session", async function (this: TestWorld) {
   expect(this.agent).toBeDefined();
   this.testConfig.currentSession = await this.agent!.createSession({});
   expect(this.testConfig.currentSession).toBeDefined();
+
+  // Automatically set up event listeners for lifecycle events
+  // This is needed for scenarios that check for events without explicitly
+  // setting up "I am listening to agent events"
+  if (!this.testConfig.eventListenersSetup) {
+    this.agent!.on("session:completed", (data) => {
+      this.receivedEvents.push({ type: "session:completed", data });
+    });
+
+    this.agent!.on("session:deleted", (data) => {
+      this.receivedEvents.push({ type: "session:deleted", data });
+    });
+
+    this.testConfig.eventListenersSetup = true;
+  }
 });
 
 Given("I am listening to session events", function (this: TestWorld) {

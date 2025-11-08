@@ -37,6 +37,10 @@ export interface TestWorld {
     lastMessage?: string;
     imageBlock?: any;
     sentContentBlocks?: any[];
+    activePromise?: Promise<void>;
+    sendError?: Error;
+    deletedSessionId?: string;
+    eventListenersSetup?: boolean;
   };
 
   // Custom implementations

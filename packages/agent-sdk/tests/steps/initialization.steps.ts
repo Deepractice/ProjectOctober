@@ -62,6 +62,10 @@ Given("I am listening to agent events", function (this: TestWorld) {
   this.agent!.on("session:completed", (data) => {
     this.receivedEvents.push({ type: "session:completed", data });
   });
+
+  this.agent!.on("session:deleted", (data) => {
+    this.receivedEvents.push({ type: "session:deleted", data });
+  });
 });
 
 // ============================================================
