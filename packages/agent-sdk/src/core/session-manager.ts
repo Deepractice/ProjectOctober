@@ -17,6 +17,7 @@ import type {
 } from "~/types";
 import { ClaudeSession } from "./claude-session";
 import { ClaudeAdapter } from "./claude-adapter";
+import { SessionInitializer } from "./session-initializer";
 import type { Logger } from "@deepracticex/logger";
 
 /**
@@ -82,6 +83,9 @@ export class SessionManager {
       "Creating session with initial message"
     );
 
+    // Create SessionInitializer for this session
+    const initializer = new SessionInitializer(this.adapter, this.persister, this.logger);
+
     const session = new ClaudeSession(
       placeholderId,
       {
@@ -95,7 +99,8 @@ export class SessionManager {
       this.logger,
       [], // initialMessages
       undefined, // initialTokenUsage
-      this.persister.messages // MessagePersister
+      this.persister.messages, // MessagePersister
+      initializer // SessionInitializer
     );
 
     // Temporarily add to map with placeholder ID
@@ -120,14 +125,7 @@ export class SessionManager {
     // Update session's internal ID to real SDK session_id
     (session as any).id = realSessionId;
 
-    // Save session to database (must be done before saving messages)
-    await this.persister.saveSession({
-      id: realSessionId,
-      summary: session.summary(),
-      createdAt: session.createdAt,
-      lastActivity: new Date(),
-      cwd: this.config.workspace,
-    });
+    // Note: Session and first message are already saved by SessionInitializer
 
     this.logger.info(
       { placeholderId, realSessionId, messageCount: session.getMessages().length },

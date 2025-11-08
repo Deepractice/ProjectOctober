@@ -14,6 +14,7 @@ import type {
 } from "~/types";
 import type { ClaudeAdapter } from "./claude-adapter";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import { SessionInitializer } from "./session-initializer";
 
 /**
  * ClaudeSession - Session implementation for Claude SDK
@@ -41,6 +42,7 @@ export class ClaudeSession implements Session {
   private realSessionId: string | null = null; // Claude SDK session ID
   private logger: Logger;
   private messagePersister?: MessagePersister;
+  private initializer?: SessionInitializer;
 
   constructor(
     id: string,
@@ -51,7 +53,8 @@ export class ClaudeSession implements Session {
     logger: Logger,
     initialMessages: AnyMessage[] = [],
     initialTokenUsage?: TokenUsage,
-    messagePersister?: MessagePersister
+    messagePersister?: MessagePersister,
+    initializer?: SessionInitializer
   ) {
     this.id = id;
     this.createdAt = new Date();
@@ -60,6 +63,7 @@ export class ClaudeSession implements Session {
     this.options = options;
     this.logger = logger;
     this.messagePersister = messagePersister;
+    this.initializer = initializer;
 
     // Initialize with historical messages if provided
     this.messages = [...initialMessages];
@@ -117,17 +121,18 @@ export class ClaudeSession implements Session {
 
   /**
    * Persist a message to storage
-   * This runs asynchronously in background
+   * Only persists when realSessionId is available
    */
   private persistMessage(message: AnyMessage): void {
-    if (!this.messagePersister) {
+    if (!this.messagePersister || !this.realSessionId) {
+      // Don't persist until we have real session ID from Claude SDK
       return;
     }
 
     // Fire and forget - don't block the main flow
-    this.messagePersister.saveMessage(this.id, message).catch((error) => {
+    this.messagePersister.saveMessage(this.realSessionId, message).catch((error) => {
       this.logger.error(
-        { error, sessionId: this.id, messageId: message.id },
+        { error, sessionId: this.realSessionId, messageId: message.id },
         "Failed to persist message"
       );
     });
@@ -230,9 +235,31 @@ export class ClaudeSession implements Session {
         if (!this.realSessionId && sdkMessage.session_id) {
           this.realSessionId = sdkMessage.session_id;
           this.logger.info(
-            { sessionId: this.id, realSessionId: this.realSessionId },
+            {
+              sessionId: this.id,
+              realSessionId: this.realSessionId,
+              hasInitializer: !!this.initializer,
+            },
             "Captured real session ID from SDK"
           );
+
+          // Use SessionInitializer to save session and first user message
+          if (this.initializer) {
+            this.logger.info({ realSessionId: this.realSessionId }, "Using SessionInitializer");
+            await this.initializer.initializeWithRealId(this.realSessionId, userMessage, {
+              projectPath: this.metadata.projectPath,
+              model: (this.metadata.model as string) || "unknown",
+              createdAt: this.createdAt,
+            });
+            this.logger.info({ realSessionId: this.realSessionId }, "SessionInitializer completed");
+          } else {
+            this.logger.warn(
+              { realSessionId: this.realSessionId },
+              "No initializer, using fallback"
+            );
+            // Fallback: just persist the message (for historical sessions)
+            this.persistMessage(userMessage);
+          }
         }
 
         this.processSDKMessage(sdkMessage);
