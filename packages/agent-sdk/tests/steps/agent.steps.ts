@@ -69,10 +69,9 @@ When(
     }
 
     this.testConfig = config;
-
     const result = createAgent(config as AgentConfig);
 
-    if (result.ok) {
+    if (result.isOk()) {
       this.agent = result.value;
       this.agentResult = result;
     } else {
@@ -90,7 +89,7 @@ When("I create an agent without apiKey", function (this: TestWorld) {
   this.testConfig = config;
   const result = createAgent(config as AgentConfig);
 
-  if (result.ok) {
+  if (result.isOk()) {
     this.agent = result.value;
     this.agentResult = result;
   } else {
@@ -112,7 +111,7 @@ When(
 
     const result = createAgent(config, dependencies);
 
-    if (result.ok) {
+    if (result.isOk()) {
       this.agent = result.value;
       this.agentResult = result;
     } else {
@@ -135,7 +134,7 @@ When(
 
     const result = createAgent(config, dependencies);
 
-    if (result.ok) {
+    if (result.isOk()) {
       this.agent = result.value;
       this.agentResult = result;
     } else {
@@ -150,8 +149,8 @@ When(
 
 Then("the agent should be created successfully", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.ok).toBe(true);
-  if (this.agentResult!.ok) {
+  expect(this.agentResult!.isOk()).toBe(true);
+  if (this.agentResult!.isOk()) {
     expect(this.agentResult.value).toBeDefined();
     expect(this.agent).toBeDefined();
   }
@@ -185,8 +184,8 @@ Then(
 
 Then("the agent creation should fail", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.ok).toBe(false);
-  if (!this.agentResult!.ok) {
+  expect(this.agentResult!.isErr()).toBe(true);
+  if (this.agentResult!.isErr()) {
     expect(this.agentResult.error).toBeDefined();
   }
 });
@@ -195,8 +194,8 @@ Then(
   "the error code should be {string}",
   function (this: TestWorld, expectedCode: string) {
     expect(this.agentResult).toBeDefined();
-    expect(this.agentResult!.ok).toBe(false);
-    if (!this.agentResult!.ok) {
+    expect(this.agentResult!.isErr()).toBe(true);
+    if (this.agentResult!.isErr()) {
       expect(this.agentResult.error.code).toBe(expectedCode);
     }
   }
@@ -206,8 +205,8 @@ Then(
   "the error message should contain {string}",
   function (this: TestWorld, expectedText: string) {
     expect(this.agentResult).toBeDefined();
-    expect(this.agentResult!.ok).toBe(false);
-    if (!this.agentResult!.ok) {
+    expect(this.agentResult!.isErr()).toBe(true);
+    if (this.agentResult!.isErr()) {
       expect(this.agentResult.error.message).toContain(expectedText);
     }
   }
