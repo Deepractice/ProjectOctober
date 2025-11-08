@@ -8,12 +8,20 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/api/common/index.d.ts",
+      "import": "./dist/api/common/index.js"
+    },
+    "./common": {
+      "types": "./dist/api/common/index.d.ts",
+      "import": "./dist/api/common/index.js"
+    },
+    "./server": {
+      "types": "./dist/api/server/index.d.ts",
+      "import": "./dist/api/server/index.js"
     },
     "./browser": {
-      "types": "./dist/browser.d.ts",
-      "import": "./dist/browser.js"
+      "types": "./dist/api/browser/index.d.ts",
+      "import": "./dist/api/browser/index.js"
     }
   },
   "files": [

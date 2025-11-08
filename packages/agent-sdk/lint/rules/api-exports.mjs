@@ -11,13 +11,13 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description: "Enforce that api/ only exports from facade/, types/, and errors/",
+      description: "Enforce that api/ only exports from facade/, types/, errors/ (peer layers)",
       category: "Architecture",
       recommended: true,
     },
     messages: {
       apiShouldExportFromFacade:
-        "api/ should only export from facade/, types/, or errors/, not {{source}}",
+        "api/ should only export from facade/, types/, or errors/ (peer layers), not {{source}}",
     },
     schema: [],
   },

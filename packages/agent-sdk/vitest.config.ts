@@ -7,6 +7,7 @@ export default defineConfig({
     vitestCucumber({
       features: ["features/**/*.feature"],
       steps: "tests/steps",
+      support: "tests/support",
     }),
   ],
   resolve: {
@@ -18,9 +19,19 @@ export default defineConfig({
     include: ["**/*.feature", "**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/dist/**"],
     pool: "threads",
+    poolOptions: {
+      threads: {
+        singleThread: true, // Run tests sequentially to avoid race conditions
+      },
+    },
     env: {
       PATH: process.env.PATH,
       NODE_ENV: "test",
+    },
+    server: {
+      deps: {
+        inline: ["ws"], // Inline ws to avoid module resolution issues
+      },
     },
     coverage: {
       provider: "v8",
