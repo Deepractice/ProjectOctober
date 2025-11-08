@@ -24,6 +24,7 @@ export default defineConfig({
         singleThread: true, // Run tests sequentially to avoid race conditions
       },
     },
+    setupFiles: ["./tests/setup.ts"],
     env: {
       PATH: process.env.PATH,
       NODE_ENV: "test",

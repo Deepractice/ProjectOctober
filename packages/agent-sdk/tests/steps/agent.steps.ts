@@ -1,6 +1,7 @@
 import { Given, When, Then, DataTable } from "@deepracticex/vitest-cucumber";
 import { expect } from "vitest";
 import type { TestWorld } from "../support/world";
+import { TEST_CONFIG } from "../support/world";
 import { createAgent } from "~/api/common";
 import type { AgentConfig, AgentDependencies } from "~/types/config";
 import type { AgentAdapter } from "~/types/adapter";
@@ -58,27 +59,24 @@ Given("I have a custom persister implementation", function (this: TestWorld) {
 // When Steps
 // ============================================================
 
-When(
-  "I create an agent with config:",
-  function (this: TestWorld, dataTable: DataTable) {
-    const rows = dataTable.rows();
-    const config: Partial<AgentConfig> = {};
+When("I create an agent with config:", function (this: TestWorld, dataTable: DataTable) {
+  const rows = dataTable.rows();
+  const config: Partial<AgentConfig> = {};
 
-    for (const [field, value] of rows) {
-      (config as any)[field] = value;
-    }
-
-    this.testConfig = config;
-    const result = createAgent(config as AgentConfig);
-
-    if (result.isOk()) {
-      this.agent = result.value;
-      this.agentResult = result;
-    } else {
-      this.agentResult = result;
-    }
+  for (const [field, value] of rows) {
+    (config as any)[field] = value;
   }
-);
+
+  this.testConfig = config;
+  const result = createAgent(config as AgentConfig);
+
+  if (result.isOk()) {
+    this.agent = result.value;
+    this.agentResult = result;
+  } else {
+    this.agentResult = result;
+  }
+});
 
 When("I create an agent without apiKey", function (this: TestWorld) {
   const config: Partial<AgentConfig> = {
@@ -97,51 +95,45 @@ When("I create an agent without apiKey", function (this: TestWorld) {
   }
 });
 
-When(
-  "I create an agent with the custom adapter",
-  function (this: TestWorld) {
-    const config: AgentConfig = {
-      workspace: "/tmp/test",
-      apiKey: "sk-ant-test-key",
-    };
+When("I create an agent with the custom adapter", function (this: TestWorld) {
+  const config: AgentConfig = {
+    workspace: TEST_CONFIG.workspace,
+    apiKey: TEST_CONFIG.apiKey,
+  };
 
-    const dependencies: AgentDependencies = {
-      adapter: this.customAdapter!,
-    };
+  const dependencies: AgentDependencies = {
+    adapter: this.customAdapter!,
+  };
 
-    const result = createAgent(config, dependencies);
+  const result = createAgent(config, dependencies);
 
-    if (result.isOk()) {
-      this.agent = result.value;
-      this.agentResult = result;
-    } else {
-      this.agentResult = result;
-    }
+  if (result.isOk()) {
+    this.agent = result.value;
+    this.agentResult = result;
+  } else {
+    this.agentResult = result;
   }
-);
+});
 
-When(
-  "I create an agent with the custom persister",
-  function (this: TestWorld) {
-    const config: AgentConfig = {
-      workspace: "/tmp/test",
-      apiKey: "sk-ant-test-key",
-    };
+When("I create an agent with the custom persister", function (this: TestWorld) {
+  const config: AgentConfig = {
+    workspace: TEST_CONFIG.workspace,
+    apiKey: TEST_CONFIG.apiKey,
+  };
 
-    const dependencies: AgentDependencies = {
-      persister: this.customPersister!,
-    };
+  const dependencies: AgentDependencies = {
+    persister: this.customPersister!,
+  };
 
-    const result = createAgent(config, dependencies);
+  const result = createAgent(config, dependencies);
 
-    if (result.isOk()) {
-      this.agent = result.value;
-      this.agentResult = result;
-    } else {
-      this.agentResult = result;
-    }
+  if (result.isOk()) {
+    this.agent = result.value;
+    this.agentResult = result;
+  } else {
+    this.agentResult = result;
   }
-);
+});
 
 // ============================================================
 // Then Steps
@@ -163,24 +155,21 @@ Then("the agent should not be initialized yet", function (this: TestWorld) {
   // For now, we just verify the agent exists
 });
 
-Then(
-  "the agent config should match the provided values",
-  function (this: TestWorld) {
-    expect(this.agent).toBeDefined();
-    expect(this.testConfig).toBeDefined();
+Then("the agent config should match the provided values", function (this: TestWorld) {
+  expect(this.agent).toBeDefined();
+  expect(this.testConfig).toBeDefined();
 
-    // We would need to expose config getter on Agent to verify this
-    // For now, we verify the agent was created with the config
-    if (this.testConfig.model) {
-      // Agent should have been created with custom model
-      expect(this.agent).toBeDefined();
-    }
-    if (this.testConfig.baseUrl) {
-      // Agent should have been created with custom baseUrl
-      expect(this.agent).toBeDefined();
-    }
+  // We would need to expose config getter on Agent to verify this
+  // For now, we verify the agent was created with the config
+  if (this.testConfig.model) {
+    // Agent should have been created with custom model
+    expect(this.agent).toBeDefined();
   }
-);
+  if (this.testConfig.baseUrl) {
+    // Agent should have been created with custom baseUrl
+    expect(this.agent).toBeDefined();
+  }
+});
 
 Then("the agent creation should fail", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
@@ -190,27 +179,21 @@ Then("the agent creation should fail", function (this: TestWorld) {
   }
 });
 
-Then(
-  "the error code should be {string}",
-  function (this: TestWorld, expectedCode: string) {
-    expect(this.agentResult).toBeDefined();
-    expect(this.agentResult!.isErr()).toBe(true);
-    if (this.agentResult!.isErr()) {
-      expect(this.agentResult.error.code).toBe(expectedCode);
-    }
+Then("the error code should be {string}", function (this: TestWorld, expectedCode: string) {
+  expect(this.agentResult).toBeDefined();
+  expect(this.agentResult!.isErr()).toBe(true);
+  if (this.agentResult!.isErr()) {
+    expect(this.agentResult.error.code).toBe(expectedCode);
   }
-);
+});
 
-Then(
-  "the error message should contain {string}",
-  function (this: TestWorld, expectedText: string) {
-    expect(this.agentResult).toBeDefined();
-    expect(this.agentResult!.isErr()).toBe(true);
-    if (this.agentResult!.isErr()) {
-      expect(this.agentResult.error.message).toContain(expectedText);
-    }
+Then("the error message should contain {string}", function (this: TestWorld, expectedText: string) {
+  expect(this.agentResult).toBeDefined();
+  expect(this.agentResult!.isErr()).toBe(true);
+  if (this.agentResult!.isErr()) {
+    expect(this.agentResult.error.message).toContain(expectedText);
   }
-);
+});
 
 Then("the agent should use the custom adapter", function (this: TestWorld) {
   expect(this.agent).toBeDefined();

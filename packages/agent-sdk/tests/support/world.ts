@@ -5,6 +5,17 @@ import type { AgentPersister } from "~/types/persister";
 import type { AgentError } from "~/errors/base";
 
 /**
+ * Test Configuration Constants
+ * Loaded from tests/.env and tests/.env.secret
+ */
+export const TEST_CONFIG = {
+  workspace: process.env.TEST_WORKSPACE || "/tmp/agent-sdk-test",
+  apiKey: process.env.AGENT_API_KEY || "sk-ant-test-key-for-bdd-tests",
+  baseUrl: process.env.AGENT_BASE_URL || "https://api.anthropic.com",
+  dbPath: process.env.TEST_DB_PATH || "/tmp/agent-sdk-test/test.db",
+} as const;
+
+/**
  * Test World Context
  * Shared context across all BDD scenarios
  */
@@ -25,8 +36,12 @@ export interface TestWorld {
   customAdapter?: AgentAdapter;
   customPersister?: AgentPersister;
 
+  // Event tracking
+  receivedEvents: Array<{ type: string; data: any }>;
+
   // Helpers
   resetWorld(): void;
+  waitForEvent(eventType: string, timeout?: number): Promise<any>;
 }
 
 setWorldConstructor(function (): TestWorld {
@@ -39,12 +54,30 @@ setWorldConstructor(function (): TestWorld {
     customAdapter: undefined,
     customPersister: undefined,
 
+    receivedEvents: [],
+
     resetWorld() {
       this.agent = undefined;
       this.agentResult = undefined;
       this.testConfig = {};
       this.customAdapter = undefined;
       this.customPersister = undefined;
+      this.receivedEvents = [];
+    },
+
+    async waitForEvent(eventType: string, timeout: number = 5000): Promise<any> {
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < timeout) {
+        const event = this.receivedEvents.find((e) => e.type === eventType);
+        if (event) {
+          return event.data;
+        }
+        // Wait a bit before checking again
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      throw new Error(`Timeout waiting for event: ${eventType}`);
     },
   };
 });
