@@ -39,60 +39,61 @@ export class SessionManager {
   }
 
   /**
-   * Create a new session with initial message
+   * Create a new session
    *
-   * New flow (no placeholder ID):
+   * Flow:
    * 1. Generate UUID for session
-   * 2. Create session via SessionFactory
-   * 3. Send initial message (session will handle Claude session_id extraction)
-   * 4. Return session
+   * 2. Save session metadata to database
+   * 3. Create session via SessionFactory
+   * 4. Add to in-memory map
+   * 5. Return session (ready to receive messages via session.send())
    */
-  async createSession(options: SessionCreateOptions): Promise<Session> {
+  async createSession(options: SessionCreateOptions = {}): Promise<Session> {
     const startTime = Date.now();
 
     // Generate our own session ID (UUID)
     const sessionId = randomUUID();
 
-    this.logger.debug({ sessionId, model: options?.model }, "Creating new session");
+    this.logger.debug({ sessionId, model: options.model }, "Creating new session");
+
+    const sessionData = {
+      id: sessionId,
+      summary: options.summary || "New Session",
+      createdAt: new Date(),
+      lastActivity: new Date(),
+      cwd: this.config.workspace,
+    };
+
+    // Save session to database first
+    await this.persister.saveSession(sessionData);
+
+    this.logger.debug({ sessionId }, "Session metadata saved to database");
 
     // Create session via factory
     const session = this.sessionFactory.createSession(
       sessionId,
       {
         projectPath: this.config.workspace,
-        model: options?.model || this.config.model || "claude-sonnet-4",
+        model: options.model || this.config.model || "claude-sonnet-4",
         startTime: new Date(),
       },
       this.adapter,
-      { model: options?.model },
-      this.persister.messages
+      { model: options.model },
+      this.persister
     );
 
-    // Add to map immediately
+    // Add to in-memory map
     this.sessions.set(sessionId, session);
 
-    try {
-      // Send initial message
-      await session.send(options.initialMessage);
+    this.logger.info({ sessionId }, "Session created successfully");
 
-      this.logger.info(
-        { sessionId, messageCount: session.getMessages().length },
-        "Session created successfully"
-      );
+    this.sessionEventsSubject.next({ type: "created", sessionId });
 
-      this.sessionEventsSubject.next({ type: "created", sessionId });
+    this.metrics.totalCreated++;
+    const responseTime = Date.now() - startTime;
+    this.metrics.totalResponseTime += responseTime;
 
-      this.metrics.totalCreated++;
-      const responseTime = Date.now() - startTime;
-      this.metrics.totalResponseTime += responseTime;
-
-      return session;
-    } catch (error) {
-      // If initial message fails, remove from map
-      this.sessions.delete(sessionId);
-      this.logger.error({ err: error, sessionId }, "Failed to create session");
-      throw error;
-    }
+    return session;
   }
 
   /**
@@ -198,13 +199,56 @@ export class SessionManager {
   }
 
   /**
-   * Load historical sessions
-   * TODO: Implement persistence-backed session loading
-   * For now, this is a no-op (sessions are created fresh)
+   * Load historical sessions from database
+   * Restores all sessions with their messages into memory
    */
   async loadHistoricalSessions(): Promise<void> {
-    this.logger.debug("Loading historical sessions (not implemented yet)");
-    // TODO: Query persister for session list
-    // TODO: Use sessionFactory to recreate sessions
+    this.logger.info("Loading historical sessions from database");
+
+    try {
+      // Get all sessions from database
+      const sessionDataList = await this.persister.getAllSessions();
+
+      this.logger.debug({ count: sessionDataList.length }, "Found sessions in database");
+
+      for (const sessionData of sessionDataList) {
+        // Load messages for this session
+        const messages = await this.persister.getMessages(sessionData.id);
+
+        // TODO: Load token usage from database (need to add to schema)
+        const tokenUsage = undefined;
+
+        // Recreate session object
+        const session = this.sessionFactory.createSession(
+          sessionData.id,
+          {
+            projectPath: sessionData.cwd || this.config.workspace,
+            model: this.config.model || "claude-sonnet-4",
+            startTime: sessionData.createdAt,
+          },
+          this.adapter,
+          {},
+          this.persister,
+          messages,
+          tokenUsage
+        );
+
+        // Add to in-memory map
+        this.sessions.set(sessionData.id, session);
+
+        this.logger.debug(
+          { sessionId: sessionData.id, messageCount: messages.length },
+          "Session restored"
+        );
+      }
+
+      this.logger.info(
+        { totalSessions: this.sessions.size },
+        "Historical sessions loaded successfully"
+      );
+    } catch (error) {
+      this.logger.error({ error }, "Failed to load historical sessions");
+      throw error;
+    }
   }
 }

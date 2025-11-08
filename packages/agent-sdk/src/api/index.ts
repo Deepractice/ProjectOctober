@@ -7,7 +7,7 @@ export { createAgent } from "./agent";
 
 // Export persister utilities
 export { SQLiteAgentPersister } from "~/persistence/sqlite";
-export type { AgentPersister, MessagePersister, SessionData } from "~/types/persister";
+export type { AgentPersister, SessionData } from "~/types/persister";
 
 // Re-export key types
 export type {

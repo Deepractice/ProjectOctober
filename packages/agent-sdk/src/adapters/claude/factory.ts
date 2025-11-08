@@ -5,7 +5,9 @@ import type {
   SessionMetadata,
   AgentAdapter,
   SessionOptions,
-  MessagePersister,
+  AgentPersister,
+  AnyMessage,
+  TokenUsage,
 } from "~/types";
 import { ClaudeSession } from "./ClaudeSession";
 
@@ -22,8 +24,19 @@ export class ClaudeSessionFactory implements SessionFactory {
     metadata: SessionMetadata,
     adapter: AgentAdapter,
     options: SessionOptions,
-    persister?: MessagePersister
+    persister?: AgentPersister,
+    initialMessages?: AnyMessage[],
+    initialTokenUsage?: TokenUsage
   ): Session {
-    return new ClaudeSession(id, metadata, adapter, options, this.logger, [], undefined, persister);
+    return new ClaudeSession(
+      id,
+      metadata,
+      adapter,
+      options,
+      this.logger,
+      persister,
+      initialMessages,
+      initialTokenUsage
+    );
   }
 }

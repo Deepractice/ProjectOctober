@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-Alwayse response user in Chinese。
+Alwayse response user in Chinese with chat and without work。
 
 ## Project Overview
 

@@ -2,10 +2,11 @@ import type { Logger } from "@deepracticex/logger";
 import type {
   SessionMetadata,
   SessionOptions,
+  TokenUsage,
   AgentAdapter,
   AdapterMessage,
   AnyMessage,
-  MessagePersister,
+  AgentPersister,
 } from "~/types";
 import { BaseSession } from "~/core/base-session";
 
@@ -26,20 +27,11 @@ export class ClaudeSession extends BaseSession {
     adapter: AgentAdapter,
     options: SessionOptions,
     logger: Logger,
+    persister?: AgentPersister,
     initialMessages: AnyMessage[] = [],
-    initialTokenUsage?: any,
-    messagePersister?: MessagePersister
+    initialTokenUsage?: TokenUsage
   ) {
-    super(
-      id,
-      metadata,
-      adapter,
-      options,
-      logger,
-      initialMessages,
-      initialTokenUsage,
-      messagePersister
-    );
+    super(id, metadata, adapter, options, logger, persister, initialMessages, initialTokenUsage);
   }
 
   /**

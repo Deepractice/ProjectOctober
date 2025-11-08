@@ -7,7 +7,7 @@ import type {
   TokenUsage,
 } from "@deepractice-ai/agent-types";
 import type { AgentAdapter } from "./adapter";
-import type { MessagePersister } from "./persister";
+import type { AgentPersister } from "./persister";
 import type { SessionOptions } from "./config";
 
 /**
@@ -44,7 +44,7 @@ export interface Session {
  */
 export interface SessionCreateOptions {
   model?: string;
-  initialMessage: string; // Required: lazy session creation
+  summary?: string;
 }
 
 /**
@@ -63,7 +63,9 @@ export interface SessionFactory {
    * @param metadata - Session metadata
    * @param adapter - AI adapter for this session
    * @param options - Session options
-   * @param persister - Optional message persister
+   * @param persister - Optional agent persister (unified for sessions and messages)
+   * @param initialMessages - Optional initial messages (for loading from database)
+   * @param initialTokenUsage - Optional token usage (for loading from database)
    * @returns Session instance
    */
   createSession(
@@ -71,6 +73,8 @@ export interface SessionFactory {
     metadata: SessionMetadata,
     adapter: AgentAdapter,
     options: SessionOptions,
-    persister?: MessagePersister
+    persister?: AgentPersister,
+    initialMessages?: AnyMessage[],
+    initialTokenUsage?: TokenUsage
   ): Session;
 }

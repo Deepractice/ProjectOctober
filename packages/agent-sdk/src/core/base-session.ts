@@ -13,7 +13,7 @@ import type {
   SessionOptions,
   AgentAdapter,
   AdapterMessage,
-  MessagePersister,
+  AgentPersister,
 } from "~/types";
 
 /**
@@ -50,7 +50,7 @@ export abstract class BaseSession implements Session {
   protected adapter: AgentAdapter;
   protected options: SessionOptions;
   protected logger: Logger;
-  protected messagePersister?: MessagePersister;
+  protected persister?: AgentPersister;
 
   constructor(
     id: string,
@@ -58,9 +58,9 @@ export abstract class BaseSession implements Session {
     adapter: AgentAdapter,
     options: SessionOptions,
     logger: Logger,
+    persister?: AgentPersister,
     initialMessages: AnyMessage[] = [],
-    initialTokenUsage?: TokenUsage,
-    messagePersister?: MessagePersister
+    initialTokenUsage?: TokenUsage
   ) {
     this.id = id;
     this.createdAt = new Date();
@@ -68,7 +68,7 @@ export abstract class BaseSession implements Session {
     this.adapter = adapter;
     this.options = options;
     this.logger = logger;
-    this.messagePersister = messagePersister;
+    this.persister = persister;
 
     // Initialize with historical messages if provided
     this.messages = [...initialMessages];
@@ -147,6 +147,9 @@ export abstract class BaseSession implements Session {
 
       // After streaming completes, session becomes idle
       this._state = "idle";
+
+      // Save session metadata (update lastActivity and summary)
+      await this.saveSessionMetadata();
     } catch (error) {
       this._state = "error";
       this.logger.error({ err: error, sessionId: this.id }, "Failed to send message");
@@ -271,17 +274,42 @@ export abstract class BaseSession implements Session {
   }
 
   protected persistMessage(message: AnyMessage): void {
-    if (!this.messagePersister) {
+    if (!this.persister) {
       return;
     }
 
     // Fire and forget - don't block
-    this.messagePersister.saveMessage(this.id, message).catch((error) => {
+    this.persister.saveMessage(this.id, message).catch((error) => {
       this.logger.error(
         { error, sessionId: this.id, messageId: message.id },
         "Failed to persist message"
       );
     });
+  }
+
+  /**
+   * Save session metadata to database
+   * Called after messages are sent to update lastActivity and summary
+   */
+  private async saveSessionMetadata(): Promise<void> {
+    if (!this.persister) {
+      return;
+    }
+
+    try {
+      await this.persister.saveSession({
+        id: this.id,
+        summary: this.summary(),
+        createdAt: this.createdAt,
+        lastActivity: new Date(),
+        cwd: this.metadata.projectPath,
+      });
+
+      this.logger.debug({ sessionId: this.id }, "Session metadata saved");
+    } catch (error) {
+      this.logger.error({ error, sessionId: this.id }, "Failed to save session metadata");
+      // Don't throw - this is not critical
+    }
   }
 
   protected updateTokenUsage(usage: {
@@ -305,12 +333,12 @@ export abstract class BaseSession implements Session {
   }
 
   private async loadPersistedMessages(): Promise<void> {
-    if (!this.messagePersister) {
+    if (!this.persister) {
       return;
     }
 
     try {
-      const persistedMessages = await this.messagePersister.getMessages(this.id);
+      const persistedMessages = await this.persister.getMessages(this.id);
 
       if (persistedMessages && persistedMessages.length > 0) {
         this.logger.info(

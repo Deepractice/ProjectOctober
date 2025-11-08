@@ -91,7 +91,9 @@ export class AgentCore implements Agent {
   async chat(message: string, options?: SessionOptions): Promise<Session> {
     this.logger.debug({ messageLength: message.length }, "Starting quick chat");
     try {
-      const session = await this.createSession({ initialMessage: message, ...options });
+      // Create session and send message
+      const session = await this.createSession({ model: options?.model });
+      await session.send(message);
       return session;
     } catch (err) {
       this.logger.error({ err, messageLength: message.length }, "Quick chat failed");

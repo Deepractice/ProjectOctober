@@ -5,9 +5,52 @@
 import type { AnyMessage } from "@deepractice-ai/agent-types";
 
 /**
- * Message persistence interface
+ * Session data for persistence
  */
-export interface MessagePersister {
+export interface SessionData {
+  id: string;
+  summary?: string;
+  createdAt: Date;
+  lastActivity: Date;
+  cwd?: string;
+}
+
+/**
+ * Agent persistence interface
+ *
+ * Unified interface for all Agent data persistence operations.
+ * Manages both sessions and messages in a single database.
+ */
+export interface AgentPersister {
+  // ========================================
+  // Session Operations
+  // ========================================
+
+  /**
+   * Save session metadata
+   * Creates or updates session in database
+   */
+  saveSession(session: SessionData): Promise<void>;
+
+  /**
+   * Get session by ID
+   */
+  getSession(id: string): Promise<SessionData | null>;
+
+  /**
+   * Get all sessions (sorted by last activity)
+   */
+  getAllSessions(): Promise<SessionData[]>;
+
+  /**
+   * Delete session and all its messages
+   */
+  deleteSession(id: string): Promise<void>;
+
+  // ========================================
+  // Message Operations
+  // ========================================
+
   /**
    * Save a single message
    */
@@ -35,36 +78,13 @@ export interface MessagePersister {
    * Get total message count for a session
    */
   getMessageCount(sessionId: string): Promise<number>;
-}
 
-/**
- * Session data for persistence
- */
-export interface SessionData {
-  id: string;
-  summary?: string;
-  createdAt: Date;
-  lastActivity: Date;
-  cwd?: string;
-}
-
-/**
- * Agent persistence interface
- * Aggregates all persistence operations
- */
-export interface AgentPersister {
-  /**
-   * Message persistence
-   */
-  messages: MessagePersister;
+  // ========================================
+  // Lifecycle
+  // ========================================
 
   /**
-   * Save session metadata
-   * Must be called before saving any messages for this session
+   * Close database connection
    */
-  saveSession(session: SessionData): Promise<void>;
-
-  // Future extensions:
-  // settings: SettingsPersister;
-  // cache: CachePersister;
+  close(): void;
 }

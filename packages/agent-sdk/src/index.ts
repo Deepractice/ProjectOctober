@@ -25,5 +25,4 @@ export type {
   TextBlock,
   ImageBlock,
   AgentPersister,
-  MessagePersister,
 } from "./types";
