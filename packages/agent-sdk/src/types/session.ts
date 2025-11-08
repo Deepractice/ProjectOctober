@@ -1,4 +1,5 @@
 import type { Observable } from "rxjs";
+import type { EventEmitter } from "eventemitter3";
 import type {
   AnyMessage,
   ContentBlock,
@@ -6,12 +7,15 @@ import type {
   SessionMetadata,
   TokenUsage,
 } from "@deepractice-ai/agent-types";
+import type { SessionEvents } from "./events";
 
 /**
  * Session interface - SDK-specific with Observable methods
  * This is different from agent-types Session which is a data structure
+ *
+ * Session extends EventEmitter for event-driven API
  */
-export interface Session {
+export interface Session extends EventEmitter<SessionEvents> {
   readonly id: string;
   readonly createdAt: Date;
   readonly state: SessionState;
@@ -40,6 +44,7 @@ export interface Session {
  * Options for creating a new session
  */
 export interface SessionCreateOptions {
+  id?: string; // Optional session ID (useful for browser)
   model?: string;
   summary?: string;
 }

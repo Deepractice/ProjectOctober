@@ -1,23 +1,23 @@
 import { Observable, Subject } from "rxjs";
 import { randomUUID } from "crypto";
+import { injectable, inject } from "tsyringe";
 import type {
   AgentConfig,
   SessionEvent,
   Session as ISession,
   PerformanceMetrics,
   SessionCreateOptions,
-  AgentPersister,
-  AgentAdapter,
 } from "~/types";
 import type { Logger } from "@deepracticex/logger";
-import { Session } from "./session";
+import { SessionFactory } from "../session/SessionFactory";
 
 /**
  * SessionManager - manages all sessions lifecycle
  *
- * Uses concrete Session class (provider-agnostic).
+ * Uses SessionFactory for creating sessions with DI.
  * All provider-specific logic is in AgentAdapter.
  */
+@injectable()
 export class SessionManager {
   private sessions = new Map<string, ISession>();
   private sessionEventsSubject = new Subject<SessionEvent>();
@@ -27,12 +27,12 @@ export class SessionManager {
   };
 
   constructor(
-    private readonly config: AgentConfig,
-    private readonly adapter: AgentAdapter,
-    private readonly persister: AgentPersister,
-    private readonly logger: Logger
+    @inject("AgentConfig") private readonly config: AgentConfig,
+    @inject(SessionFactory) private readonly sessionFactory: SessionFactory,
+    @inject("AgentPersister") private readonly persister: any,
+    @inject("Logger") private readonly logger: Logger
   ) {
-    this.logger.debug({ adapterName: adapter.getName() }, "SessionManager created");
+    this.logger.debug("SessionManager created");
   }
 
   /**
@@ -66,18 +66,15 @@ export class SessionManager {
 
     this.logger.debug({ sessionId }, "Session metadata saved to database");
 
-    // Create session directly (no factory needed - Session is provider-agnostic)
-    const session = new Session(
+    // Create session using factory (DI)
+    const session = this.sessionFactory.create(
       sessionId,
       {
         projectPath: this.config.workspace,
         model: options.model || this.config.model || "claude-sonnet-4",
         startTime: new Date(),
       },
-      this.adapter,
-      { model: options.model },
-      this.logger,
-      this.persister
+      { model: options.model }
     );
 
     // Add to in-memory map
@@ -216,18 +213,15 @@ export class SessionManager {
         // TODO: Load token usage from database (need to add to schema)
         const tokenUsage = undefined;
 
-        // Recreate session object directly (no factory needed)
-        const session = new Session(
+        // Recreate session using factory
+        const session = this.sessionFactory.create(
           sessionData.id,
           {
             projectPath: sessionData.cwd || this.config.workspace,
             model: this.config.model || "claude-sonnet-4",
             startTime: sessionData.createdAt,
           },
-          this.adapter,
           {},
-          this.logger,
-          this.persister,
           messages,
           tokenUsage
         );

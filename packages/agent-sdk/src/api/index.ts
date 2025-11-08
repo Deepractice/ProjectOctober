@@ -5,9 +5,12 @@
 
 export { createAgent } from "./agent";
 
-// Export persister utilities
-export { SQLiteAgentPersister } from "~/persistence/sqlite";
+// Export persister interface (for custom implementations)
 export type { AgentPersister, SessionData } from "~/types/persister";
+
+// Export WebSocket server (for server-side)
+export { createWebSocketServer, WebSocketBridge } from "./websocket";
+export type { WebSocketLike } from "./websocket";
 
 // Re-export key types
 export type {
@@ -20,4 +23,19 @@ export type {
   UserMessage,
   AgentMessage,
   AgentAdapter,
+  WebSocketServerConfig,
+  AgentWebSocketServer,
 } from "~/types";
+
+// Export event types (for event-driven API)
+export type {
+  SessionEvents,
+  AgentLevelEvents,
+  SessionEventName,
+  AgentEventName,
+  AgentStateEvents,
+  MessageEvents,
+  StreamEvents,
+  SessionLifecycleEvents,
+  PersistenceEvents,
+} from "~/types/events";

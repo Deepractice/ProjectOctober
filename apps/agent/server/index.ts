@@ -10,11 +10,12 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 import { config as dotenvConfig } from "dotenv";
+import { createWebSocketServer } from "@deepractice-ai/agent-sdk";
 import { getAppConfig, type AppConfig } from "./core/config.js";
 import type { ServerOptions, ConnectedClients } from "./types.js";
 
 import { createApp } from "./app.js";
-import { handleChatConnection } from "./websocket/chat.js";
+import { getAgent } from "./agent.js";
 import { handleShellConnection } from "./websocket/shell.js";
 import { setupSessionsWatcher } from "./websocket/sessions-broadcast.js";
 import { logger } from "./utils/logger.js";
@@ -97,33 +98,17 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
   // Create HTTP server
   const server = http.createServer();
 
-  // Create WebSocket server
-  const wss = new WebSocketServer({ server });
-
-  // Create Express app
-  const app = createApp(wss);
+  // Create Express app (no longer needs wss)
+  const app = createApp();
 
   // Attach Express app to HTTP server
   server.on("request", app);
 
-  // WebSocket connection handler that routes based on URL path
-  wss.on("connection", (ws, request) => {
-    const url = request.url || "/";
-    console.log("🔗 Client connected to:", url);
-
-    // Parse URL to get pathname without query parameters
-    const urlObj = new URL(url, "http://localhost");
-    const pathname = urlObj.pathname;
-
-    if (pathname === "/shell") {
-      handleShellConnection(ws);
-    } else if (pathname === "/ws" || pathname === "/") {
-      // Accept both /ws and / (root path from dev proxy)
-      handleChatConnection(ws, connectedClients);
-    } else {
-      console.log("❌ Unknown WebSocket path:", pathname);
-      ws.close();
-    }
+  // Create separate WebSocket server for shell (non-agent)
+  const shellWss = new WebSocketServer({ server, path: "/shell" });
+  shellWss.on("connection", (ws) => {
+    console.log("🔗 Shell WebSocket connected");
+    handleShellConnection(ws);
   });
 
   // Start server logic
@@ -176,6 +161,17 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
 
     server.listen(PORT, host, async () => {
       console.log(`✅ Agent UI server running on http://${host}:${PORT}`);
+
+      // Initialize Agent
+      const agent = await getAgent();
+
+      // Create SDK WebSocket server for agent (at /ws path)
+      createWebSocketServer(agent, {
+        server,
+        path: "/ws",
+      });
+
+      console.log("✅ Agent WebSocket server ready at /ws");
 
       // Start watching session events
       await setupSessionsWatcher(connectedClients);

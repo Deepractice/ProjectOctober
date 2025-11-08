@@ -1,46 +1,44 @@
 import { Observable } from "rxjs";
+import EventEmitter from "eventemitter3";
+import { injectable, inject } from "tsyringe";
 import type {
   Agent,
-  AgentConfig,
   SessionOptions,
   SessionCreateOptions,
   SessionEvent,
   AgentStatus,
   Session,
-  AgentAdapter,
-  AgentPersister,
+  AgentLevelEvents,
 } from "~/types";
-import { SessionManager } from "./session-manager";
+import { SessionManager } from "./SessionManager";
 import type { Logger } from "@deepracticex/logger";
 
 /**
- * AgentCore - Core Agent implementation
+ * AgentCore - Core Agent implementation with event aggregation
  *
- * Provider-agnostic agent implementation:
- * - Uses AgentAdapter interface (all provider logic in adapter)
- * - Uses concrete Session class (no factory needed)
- * - Uses AgentPersister interface for persistence
+ * Architecture:
+ * - Extends EventEmitter to aggregate events from all sessions
+ * - Provider-agnostic (uses AgentAdapter interface)
+ * - Uses DI for all dependencies
+ * - Event-driven for real-time monitoring and visualization
+ *
+ * Events:
+ * - Aggregates all session events (agent state, messages, persistence, etc.)
+ * - Emits agent-level events (initialized, destroyed)
+ * - Users can subscribe to all events across all sessions
  *
  * This class contains only business logic, no provider-specific code
  */
-export class AgentCore implements Agent {
-  private sessionManager: SessionManager;
+@injectable()
+export class AgentCore extends EventEmitter<AgentLevelEvents> implements Agent {
   private initialized = false;
-  private logger: Logger;
 
   constructor(
-    config: AgentConfig,
-    adapter: AgentAdapter,
-    persister: AgentPersister,
-    logger: Logger
+    @inject(SessionManager) private sessionManager: SessionManager,
+    @inject("Logger") private logger: Logger
   ) {
-    this.logger = logger;
-    this.logger.debug(
-      { workspace: config.workspace, model: config.model, adapterName: adapter.getName() },
-      "Creating AgentCore"
-    );
-
-    this.sessionManager = new SessionManager(config, adapter, persister, logger);
+    super(); // Initialize EventEmitter
+    this.logger.debug("Creating AgentCore");
   }
 
   async initialize(): Promise<void> {
@@ -56,7 +54,17 @@ export class AgentCore implements Agent {
       await this.sessionManager.loadHistoricalSessions();
 
       this.initialized = true;
-      this.logger.info("AgentCore initialized successfully");
+
+      // Get session count
+      const sessions = this.sessionManager.getSessions(10000, 0);
+
+      // Emit initialized event
+      this.emit("agent:initialized", {
+        sessionCount: sessions.length,
+        timestamp: new Date(),
+      });
+
+      this.logger.info({ sessionCount: sessions.length }, "AgentCore initialized successfully");
     } catch (err) {
       this.logger.error({ err }, "Failed to initialize AgentCore");
       throw err;
@@ -65,16 +73,29 @@ export class AgentCore implements Agent {
 
   destroy(): void {
     this.logger.info("Destroying AgentCore");
+
     this.sessionManager.destroy();
     this.initialized = false;
+
+    // Emit destroyed event
+    this.emit("agent:destroyed", { timestamp: new Date() });
+
     this.logger.debug("AgentCore destroyed");
   }
 
   async createSession(options: SessionCreateOptions): Promise<Session> {
     this.ensureInitialized();
     this.logger.debug({ model: options?.model }, "Creating new session");
+
     const session = await this.sessionManager.createSession(options);
+
+    // Bridge: re-emit all session events at agent level
+    (session as any).onAny((eventName: string, ...args: any[]) => {
+      this.emit(eventName as any, ...args);
+    });
+
     this.logger.info({ sessionId: session.id, model: options?.model }, "Session created");
+
     return session;
   }
 

@@ -20,14 +20,10 @@ const __dirname = path.dirname(__filename);
 
 /**
  * Create Express application instance
- * @param {import('ws').WebSocketServer} wss - WebSocket server instance
  * @returns {import('express').Application}
  */
-export function createApp(wss) {
+export function createApp() {
   const app = express();
-
-  // Make WebSocket server available to routes
-  app.locals.wss = wss;
 
   // CORS - Allow frontend origin
   app.use(

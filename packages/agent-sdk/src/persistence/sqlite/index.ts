@@ -2,5 +2,5 @@
  * SQLite Persistence - Default persistence implementation
  */
 
-export { SQLiteAgentPersister } from "./sqlite-persister";
+export { SQLiteAgentPersister } from "./SQLiteAgentPersister";
 export * from "./schema";

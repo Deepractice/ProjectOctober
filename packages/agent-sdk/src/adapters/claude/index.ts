@@ -3,5 +3,3 @@
  */
 
 export { ClaudeAdapter } from "./ClaudeAdapter";
-export { ClaudeSession } from "./ClaudeSession";
-export { ClaudeSessionFactory } from "./factory";

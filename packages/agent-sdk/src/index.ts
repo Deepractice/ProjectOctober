@@ -1,6 +1,5 @@
 // Public API
 export { createAgent } from "./api/agent";
-export { SQLiteAgentPersister } from "./api";
 
 // Types
 export type {

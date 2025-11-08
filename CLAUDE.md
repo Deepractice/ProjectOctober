@@ -273,10 +273,32 @@ See `env/.env.example` for full list.
 
 ### Naming
 
+**General Principles**:
 - One file, one type (OOP style)
 - Interface-first naming: `ConfigLoader` not `EnvConfigLoader`
 - No Hungarian notation
 - Use descriptive names for clarity
+
+**File Naming Convention**:
+- **PascalCase** - Single type files (classes, interfaces)
+  - Example: `Agent.ts`, `BaseSession.ts`, `WebSocketBridge.ts`
+  - Use when file exports ONE main type/class
+- **camelCase** - Multiple types or pure function files
+  - Example: `agent.ts`, `websocket.ts`, `helpers.ts`
+  - Use when file exports multiple utilities, functions, or types
+  - Use for facade layer entry files (e.g., `facade/agent.ts`)
+
+**Type Naming Convention**:
+- **Classes**: PascalCase with clear intent
+  - Example: `AgentCore`, `SQLiteAgentPersister`, `WebSocketBridge`
+- **Interfaces**: PascalCase without `I` prefix
+  - Example: `Agent`, `Session`, `AgentConfig` (not `IAgent`)
+- **Types**: PascalCase
+  - Example: `SessionState`, `MessageType`, `ContentBlock`
+- **Functions**: camelCase with verb prefix
+  - Example: `createAgent()`, `getSession()`, `parseConfig()`
+- **Constants**: UPPER_SNAKE_CASE
+  - Example: `DEFAULT_PORT`, `MAX_RETRIES`
 
 ### Import Aliases
 
@@ -289,6 +311,77 @@ Example:
 import { getConfig } from "~/api/getConfig"; // Internal
 import { createLogger } from "@deepracticex/logger"; // External
 ```
+
+### Package Library Layered Architecture
+
+All packages (like `@deepractice-ai/agent-sdk`) **MUST** follow this directory structure:
+
+```text
+packages/[package-name]/
+├── src/
+│   ├── api/           # Skin layer - Public API (only forwards)
+│   │   ├── *.ts           # API entry files (select methods from facade/)
+│   │   └── index.ts       # Unified export
+│   ├── facade/        # Facade layer - Assembly and orchestration
+│   │   ├── *.ts           # Assemble core/, adapters/, persistence/, etc.
+│   │   └── index.ts       # Internal export
+│   ├── types/         # Public type definitions
+│   │   ├── *.ts           # Type definition files
+│   │   └── index.ts       # Unified type export
+│   ├── core/          # Core implementation (not exposed)
+│   │   ├── *.ts           # Core business logic
+│   │   └── index.ts       # Internal export
+│   ├── adapters/      # Adapters (optional, external dependencies)
+│   ├── persistence/   # Persistence (optional)
+│   └── index.ts       # Package entry (only exports api/index.ts)
+```
+
+**Layer Responsibilities**:
+
+- **`api/`**: Skin layer, public API (thin layer)
+  - **Responsibility**: Select methods to expose from `facade/`, only forwards
+  - **Rule**: Can only import from `facade/` and `types/`, cannot access `core/` directly
+  - Example: `export { createAgent } from "~/facade/agent"`
+  - This layer stays stable, changes must consider backward compatibility
+
+- **`facade/`**: Facade layer, assembly and orchestration
+  - **Responsibility**: Assemble dependencies, orchestrate calls, wrap core
+  - **Rule**: Can access `core/`, `adapters/`, `persistence/`, `types/`
+  - Example: Assemble `AgentCore + ClaudeAdapter + SQLitePersister`
+  - Isolates `core/` implementation details, provides friendly high-level interface
+
+- **`types/`**: Public type definitions
+  - **Responsibility**: All publicly exposed interfaces and types
+  - Example: `Agent`, `Session`, `AgentConfig` interfaces
+  - Types that user TypeScript code needs to import
+
+- **`core/`**: Core implementation details (not exposed)
+  - **Responsibility**: Pure business logic, no concrete implementation dependencies
+  - Example: `AgentCore`, `BaseSession`, core algorithms
+  - Can be freely refactored without affecting user code
+  - Not exported in `src/index.ts`
+
+- **`adapters/`**: Adapter layer (optional)
+  - **Responsibility**: Adapt external dependencies (e.g., different AI providers)
+  - Example: `ClaudeAdapter`, `OpenAIAdapter`
+
+- **`persistence/`**: Persistence layer (optional)
+  - **Responsibility**: Data storage implementations
+  - Example: `SQLiteAgentPersister`, `RedisPersister`
+
+**Architecture Principles**:
+
+1. **Dependency Direction**: `api/` → `facade/` → `core/` → infrastructure
+2. **Encapsulation**: `api/` cannot access `core/` directly, must go through `facade/`
+3. **Stability**: `api/` and `types/` stay stable, `facade/` and `core/` can be freely refactored
+4. **Testability**: E2E test `api/`, integration test `facade/`, unit test `core/`
+
+**Benefits**:
+
+1. Clear API boundaries and separation of concerns
+2. `core/` is wrapped by `facade/`, implementation details completely isolated
+3. Easy to extend (add facade without affecting core)
+4. Easy to test and refactor
 
 ## Development Workflow
 
