@@ -15,18 +15,19 @@ import {
 // ============================================
 
 When("I create an agent without apiKey", function (this: TestWorld) {
-  const config: Partial<{ apiKey: string }> = {
+  const config = {
+    workspace: TEST_CONFIG.workspace,
     // apiKey intentionally omitted
   };
 
-  // @ts-expect-error - intentionally passing invalid config
-  const result = createAgent(config);
+  const result = createAgent(config as any);
+
+  this.agentResult = result.isOk()
+    ? { ok: true, value: result.value }
+    : { ok: false, error: result.error };
 
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
-  } else {
-    this.agentResult = result;
   }
 });
 
@@ -36,27 +37,28 @@ When("I create an agent with valid config", function (this: TestWorld) {
     apiKey: TEST_CONFIG.apiKey,
   });
 
+  this.agentResult = result.isOk()
+    ? { ok: true, value: result.value }
+    : { ok: false, error: result.error };
+
   if (result.isOk()) {
     this.agent = result.value;
-    this.agentResult = result;
-  } else {
-    this.agentResult = result;
   }
 });
 
 Then("the result should be an error", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isErr()).toBe(true);
+  expect(this.agentResult!.ok).toBe(false);
 });
 
 Then("the result should be ok", function (this: TestWorld) {
   expect(this.agentResult).toBeDefined();
-  expect(this.agentResult!.isOk()).toBe(true);
+  expect(this.agentResult!.ok).toBe(true);
 });
 
 Then("the error should be an instance of AgentError", function (this: TestWorld) {
-  expect(this.agentResult?.isErr()).toBe(true);
-  if (this.agentResult?.isErr()) {
+  expect(this.agentResult?.ok).toBe(false);
+  if (this.agentResult && !this.agentResult.ok) {
     const error = this.agentResult.error;
     expect(error).toHaveProperty("code");
     expect(error).toHaveProperty("message");
@@ -64,8 +66,8 @@ Then("the error should be an instance of AgentError", function (this: TestWorld)
 });
 
 Then("the agent should be defined", function (this: TestWorld) {
-  expect(this.agentResult?.isOk()).toBe(true);
-  if (this.agentResult?.isOk()) {
+  expect(this.agentResult?.ok).toBe(true);
+  if (this.agentResult?.ok) {
     const agent = this.agentResult.value;
     expect(agent).toBeDefined();
     this.agent = agent;

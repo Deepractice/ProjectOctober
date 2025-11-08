@@ -13,6 +13,7 @@ export const TEST_CONFIG = {
   apiKey: process.env.AGENT_API_KEY || "sk-ant-test-key-for-bdd-tests",
   baseUrl: process.env.AGENT_BASE_URL || "https://api.anthropic.com",
   dbPath: process.env.TEST_DB_PATH || "/tmp/agent-sdk-test/test.db",
+  useMockAdapter: process.env.USE_MOCK_ADAPTER === "true",
 } as const;
 
 /**
@@ -23,6 +24,9 @@ export interface TestWorld {
   // Agent instance
   agent?: Agent;
   agentResult?: { ok: true; value: Agent } | { ok: false; error: AgentError };
+
+  // Error tracking
+  lastError?: Error;
 
   // Test config
   testConfig: {
@@ -77,6 +81,7 @@ setWorldConstructor(function (): TestWorld {
     resetWorld() {
       this.agent = undefined;
       this.agentResult = undefined;
+      this.lastError = undefined;
       this.testConfig = {};
       this.customAdapter = undefined;
       this.customPersister = undefined;
