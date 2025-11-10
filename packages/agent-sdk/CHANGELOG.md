@@ -1,5 +1,14 @@
 # @deepractice-ai/agent-sdk
 
+## 0.7.0
+
+### Patch Changes
+
+- dabb970: Fix session abort to allow resuming conversation after stopping
+  - Change abort() to set session state to 'idle' instead of 'aborted'
+  - Remove messageSubject.complete() call in abort() to keep message stream open
+  - Session can now continue receiving messages after user clicks Stop button
+
 ## 0.6.4
 
 ### Patch Changes
