@@ -1,5 +1,21 @@
 # @deepractice-ai/agent
 
+## 0.7.0
+
+### Minor Changes
+
+- c7d426e: Add URL query parameter support for auto-starting sessions with initial prompt
+
+  Users can now start a new session automatically by providing a prompt in the URL query parameter:
+  - `http://localhost:5173/?prompt=your-message` will create a new session and send the message
+  - The prompt parameter is automatically cleared from the URL after processing
+  - Fixed React Strict Mode double execution issue using useRef
+
+### Patch Changes
+
+- Updated dependencies [dabb970]
+  - @deepractice-ai/agent-sdk@0.7.0
+
 ## 0.6.4
 
 ### Patch Changes
