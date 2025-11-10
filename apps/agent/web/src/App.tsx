@@ -1,8 +1,7 @@
 /**
  * App.tsx - Main Application Component
  *
- * EventBus-driven architecture with Zustand stores
- * Migrated from agent-ui with simplified structure
+ * SDK-driven architecture with Zustand stores
  */
 
 import { useEffect, useState, useRef } from "react";
@@ -17,25 +16,30 @@ import {
 import Sidebar from "~/components/Sidebar";
 import HeaderNav, { type TabType } from "~/components/HeaderNav";
 import ChatInterface from "~/components/ChatInterface";
-import { connectWebSocket, disconnectWebSocket } from "~/api/agent";
+import { useAgentStore } from "~/stores/agentStore";
 import { useSessionStore } from "~/stores/sessionStore";
 import { useMessageStore } from "~/stores/messageStore";
-
-// Import stores to ensure they're initialized and subscribed to EventBus
-import "~/stores/sessionStore";
-import "~/stores/messageStore";
-import "~/stores/uiStore";
 
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Agent store
+  const initializeAgent = useAgentStore((state) => state.initialize);
+  const destroyAgent = useAgentStore((state) => state.destroy);
+  const isConnected = useAgentStore((state) => state.isConnected);
+
+  // Session store
   const sessions = useSessionStore((state) => state.sessions);
   const selectedSession = useSessionStore((state) => state.selectedSession);
-  const navigationTarget = useSessionStore((state) => state.navigationTarget);
   const selectSession = useSessionStore((state) => state.selectSession);
   const refreshSessions = useSessionStore((state) => state.refreshSessions);
+  const createNewSession = useSessionStore((state) => state.createNewSession);
+
+  // Message store
   const sendMessage = useMessageStore((state) => state.sendMessage);
+
   const [activeTab, setActiveTab] = useState<TabType>("chat");
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,33 +62,23 @@ function AppContent() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Initialize WebSocket and load sessions (only once on mount)
+  // Initialize agent and load sessions (only once on mount)
   useEffect(() => {
-    console.log("[App] Initializing: connecting WebSocket and loading sessions");
+    console.log("[App] Initializing agent and loading sessions");
 
-    connectWebSocket().catch((error) => {
-      console.error("[App] Failed to connect WebSocket:", error);
+    // Initialize agent (establishes WebSocket connection)
+    initializeAgent().catch((error) => {
+      console.error("[App] Failed to initialize agent:", error);
     });
 
-    // Use Store action to load sessions
+    // Load sessions from server
     refreshSessions().catch((error) => {
       console.error("[App] Failed to load sessions:", error);
     });
 
-    // Listen for pending session navigation
-    const handlePendingNav = (event: Event) => {
-      const customEvent = event as CustomEvent<{ sessionId: string }>;
-      const { sessionId } = customEvent.detail;
-      console.log("[App] Navigating to pending session:", sessionId);
-      navigate(`/session/${sessionId}`, { replace: true });
-    };
-
-    window.addEventListener("navigate-to-pending", handlePendingNav);
-
     return () => {
-      console.log("[App] Cleaning up: disconnecting WebSocket");
-      disconnectWebSocket();
-      window.removeEventListener("navigate-to-pending", handlePendingNav);
+      console.log("[App] Cleaning up: destroying agent");
+      destroyAgent();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run once on mount
@@ -97,9 +91,10 @@ function AppContent() {
       promptParam,
       timestamp: Date.now(),
       alreadyProcessed: promptProcessedRef.current,
+      isConnected,
     });
 
-    if (promptParam && !promptProcessedRef.current) {
+    if (promptParam && !promptProcessedRef.current && isConnected) {
       console.log("[App] 🚀 Auto-start with prompt parameter:", promptParam);
 
       // Mark as processed to prevent double execution
@@ -108,33 +103,36 @@ function AppContent() {
       // Clear URL parameter immediately to prevent re-triggering on refresh
       setSearchParams({}, { replace: true });
 
-      // Auto-send message (will create new session automatically)
-      console.log("[App] 📤 Calling sendMessage with:", { promptParam });
-      sendMessage(undefined, promptParam, []);
-      console.log("[App] ✅ sendMessage called");
+      // Create new session then send message
+      (async () => {
+        try {
+          console.log("[App] 📤 Creating new session for prompt...");
+          const newSessionId = await createNewSession();
+          console.log("[App] ✅ Session created:", newSessionId);
+
+          // Navigate to new session
+          navigate(`/session/${newSessionId}`, { replace: true });
+
+          // Send the prompt message
+          console.log("[App] 📤 Sending prompt message...");
+          await sendMessage(newSessionId, promptParam, []);
+          console.log("[App] ✅ Message sent");
+        } catch (error) {
+          console.error("[App] ❌ Failed to auto-start with prompt:", error);
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run once on mount
+  }, [isConnected]); // Depend on isConnected to wait for agent initialization
 
   // Handle URL-based session loading
-  // When URL changes, call Store action to select session OR clear it
   useEffect(() => {
-    // Protection: Redirect pending URLs (from refresh/direct access)
-    if (sessionId?.startsWith("pending-")) {
-      console.warn(
-        "[App] Detected pending session URL on mount/refresh, redirecting to home:",
-        sessionId
-      );
-      navigate("/", { replace: true });
-      return;
-    }
-
     if (sessionId && sessions.length > 0) {
       // URL has sessionId - select it
       if (!selectedSession || selectedSession.id !== sessionId) {
         const session = sessions.find((s) => s.id === sessionId);
         if (session) {
-          console.log("[App] URL changed, calling selectSession action:", sessionId);
+          console.log("[App] URL changed, selecting session:", sessionId);
           selectSession(sessionId);
         }
       }
@@ -143,37 +141,14 @@ function AppContent() {
       console.log("[App] URL is root, clearing selectedSession");
       useSessionStore.setState({ selectedSession: null });
     }
-  }, [sessionId, sessions, selectedSession, selectSession, navigate]);
+  }, [sessionId, sessions, selectedSession, selectSession]);
 
-  // Listen to Store navigation state changes
-  // When Store emits navigationTarget, perform navigation
+  // Close mobile sidebar when session changes
   useEffect(() => {
-    if (navigationTarget) {
-      console.log("[App] Navigation target changed, navigating to:", navigationTarget);
-
-      // Determine if this is a pending-to-real session replacement
-      const isPendingReplacement =
-        sessionId?.startsWith("pending-") && !navigationTarget.startsWith("pending-");
-
-      // Navigate to root (/) for new sessions or /session/:id for existing
-      if (navigationTarget === "/") {
-        navigate("/", { replace: true });
-      } else if (navigationTarget !== sessionId) {
-        // Use replace: true for pending session transitions (smooth URL change without history)
-        navigate(`/session/${navigationTarget}`, {
-          replace: isPendingReplacement || navigationTarget.startsWith("pending-"),
-        });
-      }
-
-      // Close mobile sidebar when session is selected
-      if (isMobile) {
-        setSidebarOpen(false);
-      }
-
-      // Clear navigation target to prevent re-triggering
-      useSessionStore.setState({ navigationTarget: null });
+    if (isMobile && selectedSession) {
+      setSidebarOpen(false);
     }
-  }, [navigationTarget, sessionId, navigate, isMobile]);
+  }, [selectedSession, isMobile]);
 
   // Temporary project info (until we have proper project management)
   const selectedProject = selectedSession

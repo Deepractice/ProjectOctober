@@ -2,7 +2,7 @@
  * Agent SDK singleton instance
  * Manages Claude agent lifecycle and sessions
  */
-import { createAgent } from "@deepractice-ai/agent-sdk";
+import { createAgent } from "@deepractice-ai/agent-sdk/server";
 import { logger } from "./utils/logger.js";
 import { config } from "./index.js";
 
@@ -13,17 +13,24 @@ let agentInstance = null;
  */
 export async function getAgent() {
   if (!agentInstance) {
-    const projectPath = config().projectPath;
+    const appConfig = config();
 
-    if (!projectPath) {
+    if (!appConfig.projectPath) {
       throw new Error("PROJECT_PATH not configured");
     }
 
+    if (!appConfig.anthropicApiKey) {
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
+
     logger.info("🤖 Creating Agent instance");
-    logger.info(`   Workspace: ${projectPath}`);
+    logger.info(`   Workspace: ${appConfig.projectPath}`);
+    logger.info(`   Base URL: ${appConfig.anthropicBaseUrl}`);
 
     agentInstance = createAgent({
-      workspace: projectPath,
+      workspace: appConfig.projectPath,
+      apiKey: appConfig.anthropicApiKey,
+      baseUrl: appConfig.anthropicBaseUrl,
       model: "claude-sonnet-4",
     });
 

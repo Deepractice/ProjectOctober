@@ -12,32 +12,30 @@ import { getAgent } from "../agent.js";
 const router = express.Router();
 
 /**
- * Create new session with initial message (lazy session creation)
- *
- * BREAKING CHANGE: message is now REQUIRED in request body
- * Sessions are only created when user sends first message
+ * Create new session (message is OPTIONAL)
+ * Supports two modes:
+ * 1. Empty session: { summary?: string } - Creates empty session for later messaging
+ * 2. Session with message: { message: string } - Creates session and sends first message
  */
 router.post("/create", async (req, res) => {
   try {
-    const { message } = req.body;
-
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "message is required" });
-    }
+    const { message, summary } = req.body;
 
     console.log("🟢 [API] POST /sessions/create", {
-      messageLength: message.length,
-      messagePreview: message.substring(0, 50) + "...",
+      hasMessage: !!message,
+      summary: summary || "New conversation",
     });
 
     const agent = await getAgent();
 
-    // Create session with initial message - will return real SDK session_id
+    // Create session (with or without initial message)
     const session = await agent.createSession({
-      initialMessage: message,
+      summary: summary || "New conversation",
+      model: "claude-sonnet-4",
+      ...(message && { initialMessage: message }),
     });
 
-    console.log("🟢 [API] Session created with real SDK session_id:", {
+    console.log("🟢 [API] Session created:", {
       sessionId: session.id,
       messageCount: session.getMessages().length,
     });
@@ -46,13 +44,13 @@ router.post("/create", async (req, res) => {
       sessionId: session.id,
       id: session.id,
       summary: session.summary(),
-      messages: session.getMessages(), // Return all messages including the first one
+      messages: session.getMessages(),
       messageCount: session.getMessages().length,
       lastActivity: new Date(),
       cwd: session.getMetadata().projectPath,
     });
   } catch (error) {
-    console.error("🟢 [API] Error creating session with message:", error);
+    console.error("🟢 [API] Error creating session:", error);
     res.status(500).json({ error: error.message });
   }
 });

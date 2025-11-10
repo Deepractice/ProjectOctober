@@ -52,6 +52,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "^5.5.0",
+    "better-sqlite3": "^12.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "commander": "^13.0.0",
@@ -74,7 +75,7 @@
     "remark-gfm": "^4.0.1",
     "rxjs": "^7.8.1",
     "tailwind-merge": "^3.3.1",
-    "ws": "^8.14.2",
+    "ws": "^8.18.3",
     "zustand": "^5.0.8"
   },
   "optionalDependencies": {

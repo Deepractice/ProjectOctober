@@ -1,9 +1,10 @@
 /**
  * ChatInterface - Main chat interface component
- * Integrates MessagesArea and InputArea with EventBus
+ * Uses SDK-based stores and subscribes to session events
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import MessagesArea from "~/components/MessagesArea";
 import InputArea from "~/components/InputArea";
@@ -14,42 +15,54 @@ import { useDiffCalculation } from "~/hooks/useDiffCalculation";
 import type { ChatMessage } from "~/types";
 
 export function ChatInterface() {
+  const navigate = useNavigate();
   const selectedSession = useSessionStore((state) => state.selectedSession);
-  const isSessionProcessing = useSessionStore((state) => state.isSessionProcessing);
-  const abortSessionById = useSessionStore((state) => state.abortSessionById);
+  const createNewSession = useSessionStore((state) => state.createNewSession);
   const sendMessage = useMessageStore((state) => state.sendMessage);
-  const pendingSessionId = useMessageStore((state) => state.pendingSessionId);
-  const { autoExpandTools, showRawParameters, showThinking, agentStatus, provider } = useUIStore();
+  const subscribeToSession = useMessageStore((state) => state.subscribeToSession);
+  const unsubscribeFromSession = useMessageStore((state) => state.unsubscribeFromSession);
+  const { autoExpandTools, showRawParameters, showThinking, provider } = useUIStore();
 
   // Initialize diff calculation hook
   const createDiff = useDiffCalculation();
 
-  // Determine effective session ID (pending or real)
-  const effectiveSessionId = pendingSessionId || selectedSession?.id;
+  const effectiveSessionId = selectedSession?.id;
 
   // Get messages using a stable approach
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Subscribe to message store changes for current session (including pending)
+  // Subscribe to SDK session events and message store changes
   useEffect(() => {
     if (!effectiveSessionId) {
       setChatMessages([]);
+      setIsProcessing(false);
       return;
     }
+
+    // Subscribe to SDK session events (agent:speaking, etc.)
+    subscribeToSession(effectiveSessionId);
 
     const updateMessages = () => {
       const messages = useMessageStore.getState().getMessages(effectiveSessionId);
       setChatMessages(messages);
+
+      // Check if last message is streaming
+      const lastMsg = messages[messages.length - 1];
+      setIsProcessing(lastMsg?.type === "agent" && lastMsg.isStreaming === true);
     };
 
     // Initial load
     updateMessages();
 
-    // Subscribe to changes
+    // Subscribe to message store changes
     const unsubscribe = useMessageStore.subscribe(updateMessages);
 
-    return unsubscribe;
-  }, [effectiveSessionId]);
+    return () => {
+      unsubscribe();
+      unsubscribeFromSession(effectiveSessionId);
+    };
+  }, [effectiveSessionId, subscribeToSession, unsubscribeFromSession]);
 
   // Refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -64,12 +77,7 @@ export function ChatInterface() {
   const [uploadingImages, _setUploadingImages] = useState<Map<string, number>>(new Map());
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
 
-  // Check if current session is loading (or pending session is being created)
-  const isLoading = effectiveSessionId
-    ? selectedSession
-      ? isSessionProcessing(selectedSession.id)
-      : true // pending sessions are always "loading"
-    : false;
+  const isLoading = isProcessing;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -119,8 +127,16 @@ export function ChatInterface() {
     setAttachedImages([]);
 
     try {
-      // Pass undefined sessionId if no session selected (lazy creation)
-      sendMessage(selectedSession?.id, messageContent, imagesToSend);
+      // If no session, create one first
+      if (!selectedSession) {
+        const sessionId = await createNewSession();
+        navigate(`/session/${sessionId}`);
+        // Send message to new session
+        await sendMessage(sessionId, messageContent, imagesToSend);
+      } else {
+        // Send to existing session
+        await sendMessage(selectedSession.id, messageContent, imagesToSend);
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -210,7 +226,7 @@ export function ChatInterface() {
               }
             : null)
         }
-        claudeStatus={agentStatus?.text || null}
+        claudeStatus={isProcessing ? "Processing..." : null}
         provider={provider || "claude"}
         showThinking={showThinking}
         tokenBudget={null}
@@ -227,7 +243,10 @@ export function ChatInterface() {
         commandQuery=""
         frequentCommands={[]}
         sendByCtrlEnter={false}
-        handleAbortSession={() => selectedSession && abortSessionById(selectedSession.id)}
+        handleAbortSession={() => {
+          // TODO: Implement abort via SDK if needed
+          console.log("Abort session");
+        }}
         handleModeSwitch={() => {}}
         scrollToBottom={() => {}}
         setInput={setInput}

@@ -107,6 +107,9 @@ importers:
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
+      better-sqlite3:
+        specifier: ^12.4.1
+        version: 12.4.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -174,7 +177,7 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       ws:
-        specifier: ^8.14.2
+        specifier: ^8.18.3
         version: 8.18.3
       zustand:
         specifier: ^5.0.8
@@ -256,9 +259,6 @@ importers:
       '@deepracticex/logger':
         specifier: ^1.1.1
         version: 1.1.1
-      better-sqlite3:
-        specifier: ^12.4.1
-        version: 12.4.1
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.4.1)
@@ -302,6 +302,9 @@ importers:
       '@vitest/ui':
         specifier: ^3.0.0
         version: 3.2.4(vitest@3.2.4)
+      better-sqlite3:
+        specifier: ^12.4.1
+        version: 12.4.1
       dotenv:
         specifier: ^16.6.1
         version: 16.6.1
@@ -317,6 +320,9 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(tsx@4.20.6)
+      ws:
+        specifier: ^8.18.1
+        version: 8.18.3
 
 packages:
 

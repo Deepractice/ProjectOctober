@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSessionStore } from "~/stores/sessionStore";
 import { SidebarHeader } from "./SidebarHeader";
 import { SessionSearchBar } from "./SessionSearchBar";
@@ -11,6 +12,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isMobile = false, isPWA = false }: SidebarProps) {
+  const navigate = useNavigate();
   const [searchFilter, setSearchFilter] = useState("");
 
   // Get session state from store
@@ -21,27 +23,34 @@ export function Sidebar({ isMobile = false, isPWA = false }: SidebarProps) {
   // Get session actions from store
   const createNewSession = useSessionStore((state) => state.createNewSession);
   const selectSession = useSessionStore((state) => state.selectSession);
-  const deleteSessionById = useSessionStore((state) => state.deleteSessionById);
+  const deleteSession = useSessionStore((state) => state.deleteSession);
   const refreshSessions = useSessionStore((state) => state.refreshSessions);
 
   // Session action handlers
   const handleNewSession = async () => {
     try {
-      await createNewSession();
+      const sessionId = await createNewSession();
+      // Navigate to new session
+      navigate(`/session/${sessionId}`);
     } catch (error) {
       console.error("Failed to create session:", error);
     }
   };
 
-  const handleSessionSelect = (session: Session) => {
-    console.log("[Sidebar] User clicked session:", session.id, session.summary);
-    selectSession(session.id);
-    console.log("[Sidebar] Called selectSession for:", session.id);
+  const handleSessionSelect = async (session: Session) => {
+    try {
+      console.log("[Sidebar] Selecting session:", session.id);
+      await selectSession(session.id);
+      // Navigate to session
+      navigate(`/session/${session.id}`);
+    } catch (error) {
+      console.error("Failed to select session:", error);
+    }
   };
 
   const handleSessionDelete = async (sessionId: string) => {
     try {
-      await deleteSessionById(sessionId);
+      await deleteSession(sessionId);
     } catch (error) {
       console.error("Failed to delete session:", error);
       throw error;

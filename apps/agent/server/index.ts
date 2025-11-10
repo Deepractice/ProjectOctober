@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 import { config as dotenvConfig } from "dotenv";
-import { createWebSocketServer } from "@deepractice-ai/agent-sdk";
+import { createWebSocketServer } from "@deepractice-ai/agent-sdk/server";
 import { getAppConfig, type AppConfig } from "./core/config.js";
 import type { ServerOptions, ConnectedClients } from "./types.js";
 
@@ -81,16 +81,16 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
   logger.info("Configuration loaded and validated");
   logger.info(
     {
-      anthropicApiKey: configInstance.anthropic.apiKey
-        ? `${configInstance.anthropic.apiKey.substring(0, 6)}***`
+      anthropicApiKey: configInstance.anthropicApiKey
+        ? `${configInstance.anthropicApiKey.substring(0, 6)}***`
         : undefined,
-      anthropicBaseUrl: configInstance.anthropic.baseUrl,
-      port: configInstance.server.port,
+      anthropicBaseUrl: configInstance.anthropicBaseUrl,
+      port: configInstance.port,
     },
     "Final configuration values"
   );
 
-  const PORT = configInstance.server.port;
+  const PORT = configInstance.port;
 
   // Track connected WebSocket clients for session updates
   const connectedClients: ConnectedClients = new Set();
@@ -114,7 +114,7 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
   // Start server logic
   try {
     // Validate PROJECT_PATH before starting
-    const projectPath = configInstance.project.path;
+    const projectPath = configInstance.projectPath;
     if (!projectPath) {
       console.error("❌ PROJECT_PATH is not configured");
       console.error("   Please set PROJECT_PATH to a valid directory path");

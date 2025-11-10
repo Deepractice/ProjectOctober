@@ -1,139 +1,188 @@
 /**
- * Message Store - Business Logic Layer
- * Subscribes to EventBus for message-related events
+ * Message Store
+ * Manages messages and subscribes to SDK session events
  */
 
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { eventBus } from "~/core/eventBus";
-import { isMessageEvent } from "~/core/events";
+import { useAgentStore } from "./agentStore";
 import type { ChatMessage } from "~/types";
 
-// Generate stable unique IDs for messages
-function generateMessageId(type: string): string {
-  // Use crypto.randomUUID if available, otherwise fallback
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback: timestamp + random
-  return `${type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
-
-export interface MessageState {
-  // State
+interface MessageState {
   sessionMessages: Map<string, ChatMessage[]>;
-  loadingSessions: Set<string>;
-  pendingSessionId: string | null; // Temporary session ID before backend creates real one
+  activeSubscriptions: Map<string, () => void>;
 
-  // Internal state actions (used by EventBus subscribers)
-  addUserMessage: (sessionId: string, content: string, images?: any[]) => Promise<void>;
-  addAgentMessage: (sessionId: string, content: string) => void;
-  addStreamingChunk: (sessionId: string, chunk: string) => void;
-  completeStreaming: (sessionId: string) => void;
-  addToolUse: (sessionId: string, toolName: string, toolInput: string, toolId: string) => void;
-  updateToolResult: (sessionId: string, toolId: string, result: any) => void;
-  addErrorMessage: (sessionId: string, error: string) => void;
-  clearSessionMessages: (sessionId: string) => void;
+  // Actions
+  sendMessage: (sessionId: string, content: string, images?: File[]) => Promise<void>;
+  subscribeToSession: (sessionId: string) => void;
+  unsubscribeFromSession: (sessionId: string) => void;
   getMessages: (sessionId: string) => ChatMessage[];
   setMessages: (sessionId: string, messages: ChatMessage[]) => void;
-  isLoadingMessages: (sessionId: string) => boolean;
-  setLoadingMessages: (sessionId: string, loading: boolean) => void;
+  clearMessages: (sessionId: string) => void;
 
-  // Business action methods (for components to call)
-  sendMessage: (sessionId: string | undefined, content: string, images?: any[]) => Promise<void>;
+  // Internal
+  addUserMessage: (sessionId: string, content: string, images?: any[]) => void;
+  addAgentChunk: (sessionId: string, chunk: string) => void;
+  completeStreaming: (sessionId: string) => void;
+  addToolMessage: (sessionId: string, toolName: string, toolInput: string, toolId: string) => void;
+  addError: (sessionId: string, error: string) => void;
 }
 
 export const useMessageStore = create<MessageState>()(
   devtools(
     (set, get) => ({
-      // Initial state
       sessionMessages: new Map(),
-      loadingSessions: new Set(),
-      pendingSessionId: null,
+      activeSubscriptions: new Map(),
 
-      // Actions
-      addUserMessage: async (sessionId, content, images) => {
-        const messageId = generateMessageId("user");
-        const contentPreview =
-          typeof content === "string"
-            ? content.substring(0, 50)
-            : JSON.stringify(content).substring(0, 50);
-        console.log("[MessageStore] 🟢 Adding user message:", {
-          sessionId,
-          messageId,
-          contentPreview: contentPreview + "...",
-          hasImages: !!images?.length,
-        });
+      // Send message via SDK
+      sendMessage: async (sessionId, content, images) => {
+        try {
+          console.log("[MessageStore] Sending message to session:", sessionId);
 
-        // Convert File objects to data URLs for immediate rendering
-        let processedImages: Array<{ data: string; name: string }> = [];
-        if (images && images.length > 0) {
-          // Check if images are File objects (need conversion)
-          if (images[0] instanceof File) {
-            processedImages = await Promise.all(
-              images.map(async (file: File) => {
-                const dataUrl = await new Promise<string>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result as string);
-                  reader.readAsDataURL(file);
-                });
-                return { data: dataUrl, name: file.name };
-              })
-            );
+          // 1. Optimistically add user message
+          get().addUserMessage(sessionId, content, images);
+
+          // 2. Get session from agentStore
+          const session = useAgentStore.getState().getSession(sessionId);
+
+          // 3. Send via SDK (supports multi-modal)
+          if (images && images.length > 0) {
+            const contentBlocks: any[] = [{ type: "text", text: content }];
+
+            for (const file of images) {
+              const base64 = await fileToBase64(file);
+              contentBlocks.push({
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: file.type,
+                  data: base64,
+                },
+              });
+            }
+
+            await session.send(contentBlocks);
           } else {
-            // Already processed (e.g., from backend)
-            processedImages = images;
+            await session.send(content);
           }
+
+          console.log("[MessageStore] Message sent successfully");
+        } catch (error) {
+          console.error("[MessageStore] Failed to send message:", error);
+          get().addError(sessionId, (error as Error).message);
+          throw error;
+        }
+      },
+
+      // Subscribe to session events
+      subscribeToSession: (sessionId) => {
+        const { activeSubscriptions } = get();
+
+        if (activeSubscriptions.has(sessionId)) {
+          console.log("[MessageStore] Already subscribed to:", sessionId);
+          return;
         }
 
+        console.log("[MessageStore] Subscribing to session:", sessionId);
+
+        const session = useAgentStore.getState().getSession(sessionId);
+
+        // Event handlers
+        const handleSpeaking = ({ chunk }: any) => {
+          if (chunk) {
+            get().addAgentChunk(sessionId, chunk);
+          }
+        };
+
+        const handleStreamEnd = () => {
+          get().completeStreaming(sessionId);
+        };
+
+        const handleToolCalling = ({ toolName, input, toolId }: any) => {
+          get().addToolMessage(sessionId, toolName, JSON.stringify(input, null, 2), toolId || "");
+        };
+
+        const handleError = ({ error }: any) => {
+          console.error("[MessageStore] Session error:", error);
+          get().addError(sessionId, error.message);
+        };
+
+        // Attach listeners
+        session.on("agent:speaking", handleSpeaking);
+        session.on("stream:end", handleStreamEnd);
+        session.on("agent:tool_calling", handleToolCalling);
+        session.on("agent:error", handleError);
+
+        // Store cleanup function
+        const cleanup = () => {
+          session.off("agent:speaking", handleSpeaking);
+          session.off("stream:end", handleStreamEnd);
+          session.off("agent:tool_calling", handleToolCalling);
+          session.off("agent:error", handleError);
+        };
+
+        activeSubscriptions.set(sessionId, cleanup);
+        console.log("[MessageStore] Subscribed to session:", sessionId);
+      },
+
+      // Unsubscribe from session
+      unsubscribeFromSession: (sessionId) => {
+        const { activeSubscriptions } = get();
+        const cleanup = activeSubscriptions.get(sessionId);
+
+        if (cleanup) {
+          cleanup();
+          activeSubscriptions.delete(sessionId);
+          console.log("[MessageStore] Unsubscribed from session:", sessionId);
+        }
+      },
+
+      getMessages: (sessionId) => {
+        return get().sessionMessages.get(sessionId) || [];
+      },
+
+      setMessages: (sessionId, messages) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
-          const messages = newMap.get(sessionId) || [];
-          const newMessage: ChatMessage = {
-            type: "user" as const,
-            content,
-            images: processedImages,
-            timestamp: new Date(),
-            id: messageId,
-          };
-          newMap.set(sessionId, [...messages, newMessage]);
-
-          console.log("[MessageStore] 📊 After adding user message:", {
-            sessionId,
-            totalMessages: newMap.get(sessionId)?.length,
-            messageTypes: newMap.get(sessionId)?.map((m) => m.type),
-          });
-
+          newMap.set(sessionId, messages);
           return { sessionMessages: newMap };
         });
       },
 
-      addAgentMessage: (sessionId, content) => {
+      clearMessages: (sessionId) => {
+        set((state) => {
+          const newMap = new Map(state.sessionMessages);
+          newMap.delete(sessionId);
+          return { sessionMessages: newMap };
+        });
+      },
+
+      // Internal state mutations
+      addUserMessage: (sessionId, content, images) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
           newMap.set(sessionId, [
             ...messages,
             {
-              type: "agent",
+              type: "user",
               content,
+              images,
               timestamp: new Date(),
-              id: generateMessageId("agent"),
-              isStreaming: false,
+              id: crypto.randomUUID(),
             },
           ]);
           return { sessionMessages: newMap };
         });
-        console.log("[MessageStore] Agent message added:", sessionId);
       },
 
-      addStreamingChunk: (sessionId, chunk) => {
+      addAgentChunk: (sessionId, chunk) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
           const lastMsg = messages[messages.length - 1];
 
-          if (lastMsg && lastMsg.type === "agent" && lastMsg.isStreaming) {
+          if (lastMsg?.type === "agent" && lastMsg.isStreaming) {
             // Append to existing streaming message
             const updated = [...messages];
             updated[updated.length - 1] = {
@@ -149,7 +198,7 @@ export const useMessageStore = create<MessageState>()(
                 type: "agent",
                 content: chunk,
                 timestamp: new Date(),
-                id: generateMessageId("stream"),
+                id: crypto.randomUUID(),
                 isStreaming: true,
               },
             ]);
@@ -165,21 +214,17 @@ export const useMessageStore = create<MessageState>()(
           if (!messages) return {};
 
           const lastMsg = messages[messages.length - 1];
-          if (lastMsg && lastMsg.type === "agent" && lastMsg.isStreaming) {
+          if (lastMsg?.type === "agent" && lastMsg.isStreaming) {
             const updated = [...messages];
-            updated[updated.length - 1] = {
-              ...lastMsg,
-              isStreaming: false,
-            };
+            updated[updated.length - 1] = { ...lastMsg, isStreaming: false };
             newMap.set(sessionId, updated);
             return { sessionMessages: newMap };
           }
           return {};
         });
-        console.log("[MessageStore] Streaming completed:", sessionId);
       },
 
-      addToolUse: (sessionId, toolName, toolInput, toolId) => {
+      addToolMessage: (sessionId, toolName, toolInput, toolId) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
@@ -189,7 +234,7 @@ export const useMessageStore = create<MessageState>()(
               type: "agent",
               content: "",
               timestamp: new Date(),
-              id: generateMessageId("tool"),
+              id: crypto.randomUUID(),
               isToolUse: true,
               toolName,
               toolInput,
@@ -199,25 +244,9 @@ export const useMessageStore = create<MessageState>()(
           ]);
           return { sessionMessages: newMap };
         });
-        console.log("[MessageStore] Tool use added:", sessionId, toolName);
       },
 
-      updateToolResult: (sessionId, toolId, result) => {
-        set((state) => {
-          const newMap = new Map(state.sessionMessages);
-          const messages = newMap.get(sessionId);
-          if (!messages) return {};
-
-          const updated = messages.map((msg) =>
-            msg.type === "agent" && msg.toolId === toolId ? { ...msg, toolResult: result } : msg
-          );
-          newMap.set(sessionId, updated);
-          return { sessionMessages: newMap };
-        });
-        console.log("[MessageStore] Tool result updated:", sessionId, toolId);
-      },
-
-      addErrorMessage: (sessionId, error) => {
+      addError: (sessionId, error) => {
         set((state) => {
           const newMap = new Map(state.sessionMessages);
           const messages = newMap.get(sessionId) || [];
@@ -227,123 +256,10 @@ export const useMessageStore = create<MessageState>()(
               type: "error",
               content: `Error: ${error}`,
               timestamp: new Date(),
-              id: generateMessageId("error"),
+              id: crypto.randomUUID(),
             },
           ]);
           return { sessionMessages: newMap };
-        });
-        console.log("[MessageStore] Error message added:", sessionId);
-      },
-
-      clearSessionMessages: (sessionId) => {
-        set((state) => {
-          const newMap = new Map(state.sessionMessages);
-          newMap.delete(sessionId);
-          return { sessionMessages: newMap };
-        });
-        console.log("[MessageStore] Messages cleared:", sessionId);
-      },
-
-      getMessages: (sessionId) => {
-        return get().sessionMessages.get(sessionId) || [];
-      },
-
-      setMessages: (sessionId, messages) => {
-        console.log("[MessageStore] 📥 setMessages called:", {
-          sessionId,
-          messageCount: messages.length,
-          messageTypes: messages.map((m) => m.type),
-          messageIds: messages.map((m) => m.id),
-        });
-
-        set((state) => {
-          const newMap = new Map(state.sessionMessages);
-          const oldMessages = newMap.get(sessionId);
-
-          console.log("[MessageStore] 📊 Replacing messages:", {
-            sessionId,
-            oldCount: oldMessages?.length || 0,
-            newCount: messages.length,
-            oldTypes: oldMessages?.map((m) => m.type) || [],
-            newTypes: messages.map((m) => m.type),
-          });
-
-          newMap.set(sessionId, messages);
-
-          console.log("[MessageStore] 📊 After setMessages:", {
-            totalSessions: newMap.size,
-            thisSessionMessages: newMap.get(sessionId)?.length,
-          });
-
-          return { sessionMessages: newMap };
-        });
-      },
-
-      isLoadingMessages: (sessionId) => {
-        return get().loadingSessions.has(sessionId);
-      },
-
-      setLoadingMessages: (sessionId, loading) => {
-        set((state) => {
-          const newSet = new Set(state.loadingSessions);
-          if (loading) {
-            newSet.add(sessionId);
-          } else {
-            newSet.delete(sessionId);
-          }
-          return { loadingSessions: newSet };
-        });
-        console.log("[MessageStore] Loading state:", sessionId, loading);
-      },
-
-      // Business action methods (components call these)
-      sendMessage: async (sessionId: string | undefined, content: string, images?: any[]) => {
-        const { pendingSessionId } = get();
-
-        // Case 1: Brand new session (no sessionId, no pending)
-        if (!sessionId && !pendingSessionId) {
-          // Generate temporary session ID
-          const tempId = `pending-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-          console.log("[MessageStore] Creating new session with tempId:", tempId);
-
-          // Store pending session ID
-          set({ pendingSessionId: tempId });
-
-          // Optimistically add user message to UI
-          const store = get();
-          await store.addUserMessage(tempId, content, images);
-
-          // Navigate to pending session URL immediately
-          // We'll add a special navigation event for pending sessions
-          const navEvent = new CustomEvent("navigate-to-pending", {
-            detail: { sessionId: tempId },
-          });
-          window.dispatchEvent(navEvent);
-
-          // Emit session.create event with tempId
-          eventBus.emit({
-            type: "session.create",
-            message: content,
-            tempId,
-          });
-          return;
-        }
-
-        // Case 2: Pending session sending additional message (shouldn't happen in current flow, but handle it)
-        if (pendingSessionId && sessionId === pendingSessionId) {
-          console.log("[MessageStore] Sending message to pending session:", pendingSessionId);
-          // Just add to UI, wait for real session to be created
-          const store = get();
-          await store.addUserMessage(pendingSessionId, content, images);
-          return;
-        }
-
-        // Case 3: Existing real session - normal flow
-        eventBus.emit({
-          type: "message.send",
-          sessionId: sessionId || pendingSessionId!,
-          content,
-          images,
         });
       },
     }),
@@ -351,118 +267,15 @@ export const useMessageStore = create<MessageState>()(
   )
 );
 
-// Subscribe to EventBus (auto-setup on module load)
-import { isSessionEvent } from "~/core/events";
-
-// Listen to session.created to load initial messages and handle tempId replacement
-eventBus.on(isSessionEvent).subscribe(async (event) => {
-  if (event.type === "session.created") {
-    const store = useMessageStore.getState();
-    const { oldTempId } = event;
-
-    console.log("[MessageStore] Session created:", event.sessionId, "oldTempId:", oldTempId);
-
-    // If this was a pending session, transfer messages from tempId to realId
-    if (oldTempId) {
-      const tempMessages = store.sessionMessages.get(oldTempId);
-      if (tempMessages) {
-        console.log("[MessageStore] Transferring messages from", oldTempId, "to", event.sessionId);
-        // Set messages from backend (should include user message + assistant response)
-        store.setMessages(event.sessionId, event.messages);
-        // Clean up temp session messages
-        store.clearSessionMessages(oldTempId);
-      }
-      // Clear pending session ID
-      useMessageStore.setState({ pendingSessionId: null });
-    } else {
-      // Normal session creation (not from pending)
-      store.setMessages(event.sessionId, event.messages);
-    }
-  }
-});
-
-eventBus.on(isMessageEvent).subscribe(async (event) => {
-  const store = useMessageStore.getState();
-
-  switch (event.type) {
-    case "message.send":
-      // Business orchestration: handle user sending a message
-      try {
-        console.log("[MessageStore] Received message.send event for session:", event.sessionId);
-        const contentLog =
-          typeof event.content === "string"
-            ? event.content.substring(0, 100)
-            : JSON.stringify(event.content).substring(0, 100);
-        console.log("[MessageStore] Message content:", contentLog + "...");
-
-        // 1. Add user message to UI immediately
-        console.log("[MessageStore] Adding user message to UI");
-        await store.addUserMessage(event.sessionId, event.content, event.images);
-        console.log("[MessageStore] User message added to store");
-
-        // 2. Emit message.user event for other stores (like UIStore)
-        console.log("[MessageStore] Emitting message.user event for other stores");
-        eventBus.emit({
-          type: "message.user",
-          sessionId: event.sessionId,
-          content: event.content,
-          images: event.images,
-        });
-
-        // 3. Mark session as active
-        console.log("[MessageStore] Marking session as active");
-        const { useSessionStore } = await import("~/stores/sessionStore");
-        useSessionStore.getState().markSessionActive(event.sessionId);
-        console.log("[MessageStore] Session marked as active");
-
-        // 4. Send to backend via WebSocket (using pure API)
-        console.log("[MessageStore] Sending command to backend via WebSocket");
-        const { sendMessageToBackend } = await import("~/api/agent");
-        await sendMessageToBackend(event.sessionId, event.content, event.images);
-        console.log("[MessageStore] Command sent to backend successfully");
-      } catch (error) {
-        console.error("[MessageStore] Failed to send message:", error);
-        store.addErrorMessage(event.sessionId, (error as Error).message);
-      }
-      break;
-
-    case "message.loaded":
-      // Store update: messages loaded from API
-      console.log(
-        "[MessageStore] Messages loaded for session:",
-        event.sessionId,
-        event.messages.length
-      );
-      store.setMessages(event.sessionId, event.messages);
-      break;
-
-    case "message.user":
-      // This is now only for internal state updates (emitted by message.send handler)
-      // Don't add message again, it's already added by message.send
-      break;
-
-    case "message.agent":
-      store.addAgentMessage(event.sessionId, event.content);
-      break;
-
-    case "message.streaming":
-      store.addStreamingChunk(event.sessionId, event.chunk);
-      break;
-
-    case "message.complete":
-      store.completeStreaming(event.sessionId);
-      break;
-
-    case "message.tool":
-      store.addToolUse(event.sessionId, event.toolName, event.toolInput, event.toolId);
-      break;
-
-    case "message.toolResult":
-      store.updateToolResult(event.sessionId, event.toolId, event.result);
-      break;
-
-    case "message.error":
-      store.addErrorMessage(event.sessionId, event.error.message);
-      break;
-  }
-});
+// Helper function
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      resolve(base64.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

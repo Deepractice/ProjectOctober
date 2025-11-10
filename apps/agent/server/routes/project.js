@@ -8,14 +8,14 @@ import path from "path";
 import fs from "fs";
 import { promises as fsPromises } from "fs";
 import mime from "mime-types";
-import { getConfig } from "@deepractice-ai/agent-sdk";
+import { config } from "../index.js";
 
 /** @type {import('express').Router} */
 const router = express.Router();
 
-async function getProjectInfo() {
-  const config = await getConfig();
-  const projectPath = config.projectPath;
+function getProjectInfo() {
+  const appConfig = config();
+  const projectPath = appConfig.projectPath;
   if (!projectPath) {
     throw new Error("PROJECT_PATH not configured");
   }
@@ -28,9 +28,9 @@ async function getProjectInfo() {
 }
 
 // Get current project information
-router.get("/", async (req, res) => {
+router.get("/", (req, res) => {
   try {
-    const project = await getProjectInfo();
+    const project = getProjectInfo();
     res.json({
       name: project.name,
       path: project.path,
@@ -53,7 +53,7 @@ router.get("/file", async (req, res) => {
       return res.status(400).json({ error: "Invalid file path" });
     }
 
-    const project = await getProjectInfo();
+    const project = getProjectInfo();
     const projectRoot = project.fullPath;
 
     // Handle both absolute and relative paths
@@ -91,7 +91,7 @@ router.get("/files/content", async (req, res) => {
       return res.status(400).json({ error: "Invalid file path" });
     }
 
-    const project = await getProjectInfo();
+    const project = getProjectInfo();
     const projectRoot = project.fullPath;
 
     const resolved = path.resolve(filePath);
@@ -145,7 +145,7 @@ router.put("/file", async (req, res) => {
       return res.status(400).json({ error: "Content is required" });
     }
 
-    const project = await getProjectInfo();
+    const project = getProjectInfo();
     const projectRoot = project.fullPath;
 
     // Handle both absolute and relative paths
@@ -180,7 +180,7 @@ router.put("/file", async (req, res) => {
 // Get file tree for project
 router.get("/files", async (req, res) => {
   try {
-    const project = await getProjectInfo();
+    const project = getProjectInfo();
     const actualPath = project.fullPath;
 
     // Check if path exists
