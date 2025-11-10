@@ -46,7 +46,9 @@ export const useAgentStore = create<AgentState>()(
           // Build WebSocket URL
           const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
           const host = window.location.hostname;
-          const port = import.meta.env.VITE_WS_PORT || window.location.port || "5200";
+          // In development, always use 5200 (agent server port)
+          // In production, use the same port as the web server
+          const port = import.meta.env.DEV ? "5200" : window.location.port || "5200";
           const wsUrl = `${protocol}//${host}:${port}/ws`;
 
           console.log("[AgentStore] WebSocket URL:", wsUrl);
