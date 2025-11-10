@@ -21,6 +21,8 @@ ENV NODE_ENV=production \
 # Runtime variables (must be provided via docker run -e or docker-compose):
 # - ANTHROPIC_API_KEY (required)
 # - ANTHROPIC_BASE_URL (optional, default: https://api.anthropic.com)
+# - AUTO_RUN_PROMPT (optional, prompt to auto-execute on startup)
+# - AUTO_RUN_SESSION_ID (optional, session ID to resume)
 
 # Create project and logs directories and set ownership
 RUN mkdir -p /project /logs && chown node:node /project /logs

@@ -62,6 +62,62 @@ docker-compose down
 - `ANTHROPIC_BASE_URL`: API endpoint (default: `https://api.anthropic.com`)
 - `PROJECT_PATH`: Project directory to mount (default: current directory `.`)
 - `PORT`: Server port (default: `5200`)
+- `AUTO_RUN_PROMPT`: Prompt to execute automatically on startup
+- `AUTO_RUN_SESSION_ID`: Session ID to resume (optional, used with AUTO_RUN_PROMPT)
+
+## Auto-Run Feature
+
+You can configure the container to automatically execute a prompt on startup. This is useful for:
+
+- Automated code analysis
+- Scheduled tasks
+- CI/CD integration
+- Pre-configured development environments
+
+### Examples
+
+**Start with a new session:**
+
+```bash
+docker run -d \
+  --name agent \
+  -p 5200:5200 \
+  -e ANTHROPIC_API_KEY=your-key-here \
+  -e AUTO_RUN_PROMPT="Analyze the project architecture and identify potential improvements" \
+  -v $(pwd):/project \
+  deepracticexs/agent:latest
+```
+
+**Resume an existing session:**
+
+```bash
+docker run -d \
+  --name agent \
+  -p 5200:5200 \
+  -e ANTHROPIC_API_KEY=your-key-here \
+  -e AUTO_RUN_PROMPT="Continue the previous analysis" \
+  -e AUTO_RUN_SESSION_ID="a9c7d990-3551-4873-81a4-5c20a5cacfee" \
+  -v $(pwd):/project \
+  deepracticexs/agent:latest
+```
+
+**Using docker-compose:**
+
+Update your `.env` file:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+AUTO_RUN_PROMPT=Review the codebase and suggest refactoring opportunities
+AUTO_RUN_SESSION_ID=  # Optional: leave empty for new session
+```
+
+Then start:
+
+```bash
+docker-compose up -d
+```
+
+When you access http://localhost:5200, the application will automatically execute the configured prompt.
 
 ## Architecture
 

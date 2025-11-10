@@ -29,7 +29,7 @@ import "~/stores/uiStore";
 function AppContent() {
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const sessions = useSessionStore((state) => state.sessions);
   const selectedSession = useSessionStore((state) => state.selectedSession);
   const navigationTarget = useSessionStore((state) => state.navigationTarget);
@@ -41,7 +41,52 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Use ref to prevent double execution in React Strict Mode
-  const promptProcessedRef = useRef(false);
+  const autoRunProcessedRef = useRef(false);
+  const startUrlCheckedRef = useRef(false);
+
+  // Handle /auto route with prompt and/or session parameters
+  useEffect(() => {
+    if (window.location.pathname !== "/auto") return;
+    if (autoRunProcessedRef.current) return;
+
+    const promptParam = searchParams.get("prompt");
+    const sessionParam = searchParams.get("session");
+
+    if (!promptParam && !sessionParam) {
+      // No parameters, go to home
+      navigate("/", { replace: true });
+      return;
+    }
+
+    autoRunProcessedRef.current = true;
+    console.log("[App] Auto-run:", { prompt: promptParam, session: sessionParam });
+
+    // Case 1: Only session - navigate to it
+    if (sessionParam && !promptParam) {
+      navigate(`/session/${sessionParam}`, { replace: true });
+      return;
+    }
+
+    // Case 2 & 3: Has prompt - send message (with or without session)
+    if (promptParam) {
+      // Navigate first to clear /auto URL
+      if (sessionParam) {
+        // Has session - select it and navigate
+        selectSession(sessionParam);
+        navigate(`/session/${sessionParam}`, { replace: true });
+        // Wait longer for session to load
+        setTimeout(() => {
+          sendMessage(sessionParam, promptParam, []);
+        }, 800);
+      } else {
+        // No session - create new one
+        navigate("/", { replace: true });
+        setTimeout(() => {
+          sendMessage(undefined, promptParam, []);
+        }, 200);
+      }
+    }
+  }, [searchParams, navigate, sendMessage, selectSession]);
 
   // Detect mobile viewport (1200px breakpoint)
   useEffect(() => {
@@ -57,6 +102,32 @@ function AppContent() {
 
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Check for auto-run start URL (backend manages one-time logic)
+  useEffect(() => {
+    // Only check on root path
+    if (window.location.pathname !== "/") return;
+    if (startUrlCheckedRef.current) return;
+
+    startUrlCheckedRef.current = true;
+
+    const checkStartUrl = async () => {
+      try {
+        const response = await fetch("/api/start-url");
+        const data = await response.json();
+
+        if (data.startUrl && data.startUrl !== "/") {
+          console.log("[App] 🚀 Auto-run detected, redirecting to:", data.startUrl);
+          navigate(data.startUrl, { replace: true });
+        }
+      } catch (error) {
+        console.error("[App] Failed to fetch start URL:", error);
+      }
+    };
+
+    checkStartUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Initialize WebSocket and load sessions (only once on mount)
   useEffect(() => {
@@ -86,33 +157,6 @@ function AppContent() {
       disconnectWebSocket();
       window.removeEventListener("navigate-to-pending", handlePendingNav);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run once on mount
-
-  // Handle URL query parameter for auto-starting session with prompt
-  useEffect(() => {
-    const promptParam = searchParams.get("prompt");
-
-    console.log("[App] URL prompt parameter check:", {
-      promptParam,
-      timestamp: Date.now(),
-      alreadyProcessed: promptProcessedRef.current,
-    });
-
-    if (promptParam && !promptProcessedRef.current) {
-      console.log("[App] 🚀 Auto-start with prompt parameter:", promptParam);
-
-      // Mark as processed to prevent double execution
-      promptProcessedRef.current = true;
-
-      // Clear URL parameter immediately to prevent re-triggering on refresh
-      setSearchParams({}, { replace: true });
-
-      // Auto-send message (will create new session automatically)
-      console.log("[App] 📤 Calling sendMessage with:", { promptParam });
-      sendMessage(undefined, promptParam, []);
-      console.log("[App] ✅ sendMessage called");
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run once on mount
 
@@ -297,6 +341,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/session/:sessionId" element={<AppContent />} />
+        <Route path="/auto" element={<AppContent />} />
       </Routes>
     </Router>
   );

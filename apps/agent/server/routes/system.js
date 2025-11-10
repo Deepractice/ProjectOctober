@@ -29,6 +29,45 @@ router.get("/config", (req, res) => {
   });
 });
 
+// Track if start-url has been consumed (in-memory, resets on server restart)
+let startUrlConsumed = false;
+
+// Get start URL for application initialization
+router.get("/start-url", (req, res) => {
+  // If already consumed, return default
+  if (startUrlConsumed) {
+    res.json({ startUrl: "/" });
+    return;
+  }
+
+  const autoRunPrompt = process.env.AUTO_RUN_PROMPT;
+  const autoRunSessionId = process.env.AUTO_RUN_SESSION_ID;
+
+  // Default start URL
+  let startUrl = "/";
+
+  // If auto-run environment variables are set, construct /auto URL
+  if (autoRunPrompt || autoRunSessionId) {
+    const params = new URLSearchParams();
+
+    if (autoRunPrompt) {
+      params.append("prompt", autoRunPrompt);
+    }
+
+    if (autoRunSessionId) {
+      params.append("session", autoRunSessionId);
+    }
+
+    startUrl = `/auto?${params.toString()}`;
+    console.log("🚀 Auto-run mode enabled, start URL:", startUrl);
+
+    // Mark as consumed so subsequent requests get "/"
+    startUrlConsumed = true;
+  }
+
+  res.json({ startUrl });
+});
+
 // System update endpoint
 router.post("/update", async (req, res) => {
   try {

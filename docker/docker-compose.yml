@@ -14,6 +14,8 @@ services:
       - NODE_ENV=production
       - PORT=5200
       - PROJECT_PATH=/project
+      - AUTO_RUN_PROMPT=${AUTO_RUN_PROMPT:-}
+      - AUTO_RUN_SESSION_ID=${AUTO_RUN_SESSION_ID:-}
     volumes:
       # Project directory - mount your code here
       - ${PROJECT_PATH:-.}:/project
