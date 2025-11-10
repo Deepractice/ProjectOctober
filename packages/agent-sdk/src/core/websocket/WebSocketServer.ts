@@ -43,6 +43,7 @@ export function createWebSocketServer(
   const wss = new WebSocketServer({
     server: httpServer,
     path,
+    perMessageDeflate: false, // Disable compression to avoid frame errors
   });
 
   // Handle WebSocket connections

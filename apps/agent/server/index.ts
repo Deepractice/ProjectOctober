@@ -10,12 +10,12 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { WebSocketServer } from "ws";
 import { config as dotenvConfig } from "dotenv";
-import { createWebSocketServer } from "@deepractice-ai/agent-sdk/server";
 import { getAppConfig, type AppConfig } from "./core/config.js";
 import type { ServerOptions, ConnectedClients } from "./types.js";
 
 import { createApp } from "./app.js";
 import { getAgent } from "./agent.js";
+import { handleAgentConnection } from "./websocket/agent.js";
 import { handleShellConnection } from "./websocket/shell.js";
 import { setupSessionsWatcher } from "./websocket/sessions-broadcast.js";
 import { logger } from "./utils/logger.js";
@@ -104,13 +104,6 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
   // Attach Express app to HTTP server
   server.on("request", app);
 
-  // Create separate WebSocket server for shell (non-agent)
-  const shellWss = new WebSocketServer({ server, path: "/shell" });
-  shellWss.on("connection", (ws) => {
-    console.log("🔗 Shell WebSocket connected");
-    handleShellConnection(ws);
-  });
-
   // Start server logic
   try {
     // Validate PROJECT_PATH before starting
@@ -159,19 +152,40 @@ export async function startServer(options: ServerOptions = {}): Promise<void> {
       );
     }
 
+    // Initialize Agent BEFORE starting server
+    const agent = await getAgent();
+
+    // Create a single WebSocketServer without path (manual routing like main branch)
+    const wss = new WebSocketServer({
+      server,
+      perMessageDeflate: false, // Disable compression
+    });
+
+    // Manual routing based on request URL (like main branch)
+    wss.on("connection", (ws, request) => {
+      const url = request.url || "/";
+      console.log("🔗 Client connected to:", url);
+
+      // Parse URL to get pathname without query parameters
+      const urlObj = new URL(url, "http://localhost");
+      const pathname = urlObj.pathname;
+
+      if (pathname === "/shell") {
+        handleShellConnection(ws);
+      } else if (pathname === "/ws" || pathname === "/") {
+        // Handle agent WebSocket connection using SDK's WebSocketBridge
+        handleAgentConnection(ws, agent, connectedClients);
+      } else {
+        console.log("❌ Unknown WebSocket path:", pathname);
+        ws.close();
+      }
+    });
+
+    console.log("✅ WebSocket server ready at /ws and /shell");
+
+    // Now start listening
     server.listen(PORT, host, async () => {
       console.log(`✅ Agent UI server running on http://${host}:${PORT}`);
-
-      // Initialize Agent
-      const agent = await getAgent();
-
-      // Create SDK WebSocket server for agent (at /ws path)
-      createWebSocketServer(agent, {
-        server,
-        path: "/ws",
-      });
-
-      console.log("✅ Agent WebSocket server ready at /ws");
 
       // Start watching session events
       await setupSessionsWatcher(connectedClients);
