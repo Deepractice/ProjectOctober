@@ -7,6 +7,13 @@ export function handleChatConnection(ws, connectedClients) {
   console.log("💬 Chat WebSocket connected");
   connectedClients.add(ws);
 
+  // Setup heartbeat - ping every 30 seconds
+  const heartbeatInterval = setInterval(() => {
+    if (ws.readyState === ws.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+
   ws.on("message", async (message) => {
     try {
       const data = JSON.parse(message);
@@ -171,6 +178,11 @@ export function handleChatConnection(ws, connectedClients) {
 
   ws.on("close", () => {
     console.log("🔌 Chat client disconnected");
+    clearInterval(heartbeatInterval);
     connectedClients.delete(ws);
+  });
+
+  ws.on("error", (error) => {
+    console.error("❌ Chat WebSocket error:", error.message);
   });
 }

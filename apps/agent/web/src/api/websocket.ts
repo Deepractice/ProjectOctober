@@ -11,6 +11,7 @@ class WebSocketClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private connectionTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Connect to WebSocket server
@@ -23,8 +24,21 @@ class WebSocketClient {
       console.log("[WebSocket] Connecting to:", wsUrl);
       this.ws = new WebSocket(wsUrl);
 
+      // Connection timeout - 10 seconds
+      this.connectionTimeout = setTimeout(() => {
+        if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+          console.error("[WebSocket] ⏱️ Connection timeout");
+          this.ws.close();
+          reject(new Error("WebSocket connection timeout"));
+        }
+      }, 10000);
+
       this.ws.onopen = () => {
         console.log("[WebSocket] ✅ Connected");
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
         this.reconnectAttempts = 0;
         resolve();
       };
@@ -40,12 +54,24 @@ class WebSocketClient {
 
       this.ws.onerror = (error) => {
         console.error("[WebSocket] ❌ Error:", error);
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
         eventBus.emit({ type: "error.websocket", error: new Error("WebSocket error") });
         reject(error);
       };
 
-      this.ws.onclose = () => {
-        console.log("[WebSocket] 🔌 Closed");
+      this.ws.onclose = (event) => {
+        console.log("[WebSocket] 🔌 Closed", {
+          code: event.code,
+          reason: event.reason || "(no reason)",
+          wasClean: event.wasClean,
+        });
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
         this.reconnect();
       };
     });
@@ -83,8 +109,11 @@ class WebSocketClient {
   private reconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      console.log(`[WebSocket] 🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      // Start with 5s delay, then exponential backoff: 5s, 10s, 20s, 30s, 30s
+      const delay = Math.min(5000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+      console.log(
+        `[WebSocket] 🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+      );
 
       this.reconnectTimeout = setTimeout(() => {
         this.connect().catch((error) => {
@@ -92,7 +121,7 @@ class WebSocketClient {
         });
       }, delay);
     } else {
-      console.error("[WebSocket] Max reconnect attempts reached");
+      console.error("[WebSocket] ❌ Max reconnect attempts reached");
       eventBus.emit({
         type: "error.websocket",
         error: new Error("WebSocket connection failed after max retries"),
