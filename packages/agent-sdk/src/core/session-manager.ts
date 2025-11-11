@@ -96,10 +96,29 @@ export class SessionManager {
 
     // Send initial message immediately to get real SDK session_id
     this.logger.debug({ placeholderId }, "Sending initial message to capture SDK session_id");
+
+    // Subscribe to stream events BEFORE sending to catch all events
+    let currentSessionId = placeholderId;
+    session.streamEvents$().subscribe({
+      next: (streamEvent) => {
+        // Forward stream events for real-time UI updates
+        this.logger.info(
+          { sessionId: currentSessionId, eventType: streamEvent.event?.type },
+          "🌊 Forwarding stream event"
+        );
+        this.sessionEventsSubject.next({
+          type: "streaming",
+          sessionId: currentSessionId,
+          streamEvent,
+        });
+      },
+    });
+
     await session.send(options.initialMessage);
 
     // After send(), session must have realSessionId
     const realSessionId = (session as any).realSessionId;
+    currentSessionId = realSessionId; // Update session ID for future events
 
     if (!realSessionId) {
       this.logger.error({ placeholderId }, "Failed to capture SDK session_id after send()");
@@ -286,6 +305,21 @@ export class SessionManager {
 
           // For historical sessions, set realSessionId to enable resume
           (session as any).realSessionId = sessionId;
+
+          // Subscribe to stream events for this historical session
+          session.streamEvents$().subscribe({
+            next: (streamEvent) => {
+              this.logger.info(
+                { sessionId, eventType: streamEvent.event?.type },
+                "🌊 Forwarding stream event (historical session)"
+              );
+              this.sessionEventsSubject.next({
+                type: "streaming",
+                sessionId,
+                streamEvent,
+              });
+            },
+          });
 
           this.sessions.set(sessionId, session);
           loadedCount++;

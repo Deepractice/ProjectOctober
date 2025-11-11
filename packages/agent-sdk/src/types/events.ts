@@ -14,4 +14,5 @@ export interface AgentStatus {
 export type SessionEvent =
   | { type: "created"; sessionId: string }
   | { type: "updated"; sessionId: string }
-  | { type: "deleted"; sessionId: string };
+  | { type: "deleted"; sessionId: string }
+  | { type: "streaming"; sessionId: string; streamEvent: any };

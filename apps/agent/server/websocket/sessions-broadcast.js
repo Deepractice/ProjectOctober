@@ -37,7 +37,30 @@ export async function setupSessionsWatcher(connectedClients) {
 
 async function broadcastSessionEvent(connectedClients, event) {
   try {
-    // Fetch current sessions
+    // Handle streaming events separately for real-time updates
+    if (event.type === "streaming") {
+      const message = JSON.stringify({
+        type: "agent-response",
+        sessionId: event.sessionId,
+        data: {
+          message: event.streamEvent.event, // Raw SDK stream event
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      let broadcastCount = 0;
+      connectedClients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+          broadcastCount++;
+        }
+      });
+
+      logger.info(`   🌊 Broadcast streaming event to ${broadcastCount} clients`);
+      return; // Skip normal broadcasting for streaming events
+    }
+
+    // Fetch current sessions for non-streaming events
     const agent = await getAgent();
     const sessions = agent.getSessions(100, 0);
 

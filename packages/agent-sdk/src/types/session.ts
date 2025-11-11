@@ -1,5 +1,6 @@
 import type { Observable } from "rxjs";
 import type { AnyMessage } from "./message";
+import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 export type SessionState =
   | "created"
@@ -53,6 +54,7 @@ export interface Session {
 
   // Observables
   messages$(): Observable<AnyMessage>;
+  streamEvents$(): Observable<SDKMessage>;
 
   // Queries
   getMessages(limit?: number, offset?: number): AnyMessage[];

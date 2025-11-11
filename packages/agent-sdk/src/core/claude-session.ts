@@ -23,6 +23,7 @@ export class ClaudeSession implements Session {
   private _state: SessionState = "created";
   private messages: AnyMessage[] = [];
   private messageSubject = new Subject<AnyMessage>();
+  private streamEventSubject = new Subject<SDKMessage>();
   private tokenUsage: TokenUsage = {
     used: 0,
     total: 0,
@@ -201,6 +202,17 @@ export class ClaudeSession implements Session {
       },
       "Processing SDK message"
     );
+
+    // Handle stream_event for real-time streaming
+    if (sdkMessage.type === "stream_event") {
+      this.logger.debug(
+        { sessionId: this.id, eventType: sdkMessage.event.type },
+        "Forwarding stream event for real-time UI"
+      );
+      // Emit stream event for real-time UI updates
+      this.streamEventSubject.next(sdkMessage);
+      return; // Don't transform stream events to messages yet
+    }
 
     // Transform SDK message to our format (may return multiple messages)
     const messages = this.transformSDKMessage(sdkMessage);
@@ -456,6 +468,10 @@ export class ClaudeSession implements Session {
 
   messages$(): Observable<AnyMessage> {
     return this.messageSubject.asObservable();
+  }
+
+  streamEvents$(): Observable<SDKMessage> {
+    return this.streamEventSubject.asObservable();
   }
 
   getMessages(limit?: number, offset = 0): AnyMessage[] {

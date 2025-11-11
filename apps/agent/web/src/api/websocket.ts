@@ -17,6 +17,21 @@ class WebSocketClient {
    * Connect to WebSocket server
    */
   connect(): Promise<void> {
+    // If already connected or connecting, return existing connection
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      console.log("[WebSocket] Already connected/connecting, skipping");
+      return Promise.resolve();
+    }
+
+    // Disconnect any existing connection first
+    if (this.ws) {
+      console.log("[WebSocket] Closing existing connection before reconnect");
+      this.disconnect();
+    }
+
     return new Promise((resolve, reject) => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;

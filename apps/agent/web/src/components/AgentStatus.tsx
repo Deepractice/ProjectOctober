@@ -20,22 +20,18 @@ function AgentStatus({
 }: AgentStatusProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
-  const [fakeTokens, setFakeTokens] = useState(0);
 
   useEffect(() => {
     if (!isLoading) {
       setElapsedTime(0);
-      setFakeTokens(0);
       return;
     }
 
     const startTime = Date.now();
-    const tokenRate = 30 + Math.random() * 20;
 
     const timer = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setElapsedTime(elapsed);
-      setFakeTokens(Math.floor(elapsed * tokenRate));
     }, 1000);
 
     return () => clearInterval(timer);
@@ -55,7 +51,7 @@ function AgentStatus({
   const actionIndex = Math.floor(elapsedTime / 3) % actionWords.length;
 
   const statusText = status?.text || actionWords[actionIndex];
-  const tokens = status?.tokens || fakeTokens;
+  const tokens = status?.tokens; // Only show tokens if provided by backend
   const canInterrupt = status?.can_interrupt !== false;
 
   const spinners = ["✻", "✹", "✸", "✶"];

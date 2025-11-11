@@ -89,6 +89,8 @@ export class ClaudeAdapter {
       // Use process.execPath to get the actual node binary that's running this code
       // This works with nvm, volta, or any node version manager
       executable: process.execPath,
+      // Enable streaming for real-time text updates
+      includePartialMessages: true,
       // Capture stderr output from Claude SDK subprocess
       stderr: (data: string) => {
         this.logger.error({ stderr: data }, "Claude SDK stderr output");
