@@ -36,6 +36,7 @@ export interface SessionMetadata {
 export interface SessionCreateOptions {
   model?: string;
   initialMessage: string; // Required: lazy session creation
+  tempId?: string; // Optional: frontend temp ID for streaming events before real ID is available
 }
 
 /**

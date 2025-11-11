@@ -482,8 +482,15 @@ function renderToolInput(
         </svg>
         View input parameters
       </summary>
-      <pre className="mt-3 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-700/60 p-3 rounded-lg whitespace-pre-wrap break-words overflow-hidden text-gray-700 dark:text-gray-300 font-mono">
-        {message.toolInput}
+      <pre className="mt-3 text-xs bg-gray-50 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-700/60 p-3 rounded-lg whitespace-pre-wrap break-words overflow-x-auto text-gray-700 dark:text-gray-300 font-mono">
+        {(() => {
+          try {
+            const parsed = JSON.parse(message.toolInput);
+            return JSON.stringify(parsed, null, 2);
+          } catch {
+            return message.toolInput;
+          }
+        })()}
       </pre>
     </details>
   );
@@ -491,13 +498,13 @@ function renderToolInput(
 
 // Helper function to render tool result (to be continued in next file due to size)
 function renderToolResult(message, autoExpandTools, onFileOpen, selectedProject, createDiff) {
-  // Hide tool results for Edit/Write/Bash unless there's an error
+  // Hide tool results for Edit/Write only unless there's an error
+  // Keep Bash results visible since users want to see command output
   const shouldHideResult =
     !message.toolResult.isError &&
     (message.toolName === "Edit" ||
       message.toolName === "Write" ||
-      message.toolName === "ApplyPatch" ||
-      message.toolName === "Bash");
+      message.toolName === "ApplyPatch");
 
   if (shouldHideResult) {
     return null;
@@ -585,6 +592,111 @@ function renderToolResultContent(
   _createDiff
 ) {
   const content = String(message.toolResult.content || "");
+
+  // ===== JSON detection and formatting with error handling =====
+  const detectAndFormatContent = (text: string) => {
+    try {
+      // 1. Try to parse as pure JSON
+      const parsed = JSON.parse(text);
+      return {
+        type: "json",
+        content: JSON.stringify(parsed, null, 2),
+      };
+    } catch {
+      // 2. Try to detect JSON blocks in mixed content
+      try {
+        // Match JSON objects/arrays in text
+        const jsonBlockRegex = /(\{[\s\S]*?\}|\[[\s\S]*?\])/g;
+        const matches = text.match(jsonBlockRegex);
+
+        if (matches && matches.length > 0) {
+          let hasValidJSON = false;
+          const formatted = text.replace(jsonBlockRegex, (match) => {
+            try {
+              const parsed = JSON.parse(match);
+              hasValidJSON = true;
+              // Format JSON block and wrap in code markers
+              return "\n```json\n" + JSON.stringify(parsed, null, 2) + "\n```\n";
+            } catch {
+              return match; // Keep original if not valid JSON
+            }
+          });
+
+          if (hasValidJSON) {
+            return {
+              type: "mixed",
+              content: formatted,
+            };
+          }
+        }
+      } catch {
+        // Silently fallback
+      }
+
+      // 3. Fallback to plain text
+      return {
+        type: "text",
+        content: text,
+      };
+    }
+  };
+
+  // Detect content type with full error handling
+  let contentResult;
+  try {
+    contentResult = detectAndFormatContent(content);
+  } catch (error) {
+    // Ultimate fallback - never crash
+    console.warn("Content formatting failed:", error);
+    contentResult = {
+      type: "text",
+      content: content,
+    };
+  }
+
+  // Render pure JSON
+  if (contentResult.type === "json") {
+    return (
+      <details className="mt-2 group/json">
+        <summary className="text-sm text-green-700 dark:text-green-300 cursor-pointer hover:text-green-800 dark:hover:text-green-200 mb-2 flex items-center gap-2 font-medium">
+          <svg
+            className="w-4 h-4 transition-transform duration-200 group-open/json:rotate-180"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          View JSON output
+        </summary>
+        <pre className="text-xs bg-white/60 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-700/60 p-3 rounded-lg overflow-x-auto text-gray-800 dark:text-gray-200 font-mono whitespace-pre">
+          {contentResult.content}
+        </pre>
+      </details>
+    );
+  }
+
+  // Render mixed content with JSON blocks (Markdown will render ```json blocks)
+  if (contentResult.type === "mixed") {
+    return (
+      <details className="mt-2 group/mixed">
+        <summary className="text-sm text-green-700 dark:text-green-300 cursor-pointer hover:text-green-800 dark:hover:text-green-200 mb-2 flex items-center gap-2 font-medium">
+          <svg
+            className="w-4 h-4 transition-transform duration-200 group-open/mixed:rotate-180"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          View output
+        </summary>
+        <Markdown className="prose prose-sm max-w-none prose-green dark:prose-invert">
+          {contentResult.content}
+        </Markdown>
+      </details>
+    );
+  }
 
   // TodoWrite/TodoRead results
   if (
@@ -717,10 +829,10 @@ function renderToolResultContent(
   // Long content - collapse it
   if (content.length > 300) {
     return (
-      <details open={autoExpandTools}>
-        <summary className="text-sm text-green-700 dark:text-green-300 cursor-pointer hover:text-green-800 dark:hover:text-green-200 mb-2 flex items-center gap-2">
+      <details>
+        <summary className="text-sm text-green-700 dark:text-green-300 cursor-pointer hover:text-green-800 dark:hover:text-green-200 mb-2 flex items-center gap-2 font-medium">
           <svg
-            className="w-4 h-4 transition-transform details-chevron"
+            className="w-4 h-4 transition-transform duration-200 group-open:rotate-180"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -736,7 +848,7 @@ function renderToolResultContent(
     );
   }
 
-  // Default: render as markdown
+  // Default: render short content directly (no collapse needed)
   return (
     <Markdown className="prose prose-sm max-w-none prose-green dark:prose-invert">
       {content}

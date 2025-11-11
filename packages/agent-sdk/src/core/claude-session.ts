@@ -275,12 +275,54 @@ export class ClaudeSession implements Session {
         "Processing user message"
       );
 
-      // Check if this is a tool result message (should not be displayed as user message)
+      // Check if this is a tool result message
       if (Array.isArray(content)) {
         const hasToolResult = content.some((block) => block.type === "tool_result");
         if (hasToolResult) {
-          // Tool results are handled separately, don't show as user message
-          this.logger.debug({ sessionId: this.id }, "Skipping tool_result user message");
+          // Process tool results and update existing tool use messages
+          this.logger.debug(
+            { sessionId: this.id, blockCount: content.length },
+            "Processing tool_result blocks"
+          );
+
+          for (const block of content) {
+            if (block.type === "tool_result") {
+              // Find the corresponding tool use message by toolId
+              const toolUseMsg = this.messages.find(
+                (msg: any) => msg.isToolUse && msg.toolId === block.tool_use_id
+              );
+
+              if (toolUseMsg) {
+                this.logger.debug(
+                  {
+                    sessionId: this.id,
+                    toolId: block.tool_use_id,
+                    isError: block.is_error || false,
+                    contentLength: String(block.content).length,
+                  },
+                  "Updating tool result for existing tool use message"
+                );
+
+                // Update the tool result on the existing message
+                (toolUseMsg as any).toolResult = {
+                  content: block.content,
+                  isError: block.is_error || false,
+                  timestamp: new Date(),
+                  toolUseResult: block,
+                };
+
+                // Emit the updated message so UI can re-render
+                this.messageSubject.next(toolUseMsg);
+              } else {
+                this.logger.warn(
+                  { sessionId: this.id, toolId: block.tool_use_id },
+                  "Could not find matching tool use message for tool_result"
+                );
+              }
+            }
+          }
+
+          // Don't create a separate user message for tool results
           return [];
         }
       }

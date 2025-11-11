@@ -15,7 +15,7 @@ const router = express.Router();
  */
 router.post("/create", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, tempId } = req.body;
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "message is required" });
@@ -24,13 +24,16 @@ router.post("/create", async (req, res) => {
     console.log("🟢 [API] POST /sessions/create", {
       messageLength: message.length,
       messagePreview: message.substring(0, 50) + "...",
+      tempId: tempId || "none",
     });
 
     const agent = await getAgent();
 
     // Create session with initial message - will return real SDK session_id
+    // Pass tempId so streaming events can use it before real ID is available
     const session = await agent.createSession({
       initialMessage: message,
+      tempId,
     });
 
     console.log("🟢 [API] Session created with real SDK session_id:", {

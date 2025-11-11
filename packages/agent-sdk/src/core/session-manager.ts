@@ -70,11 +70,17 @@ export class SessionManager {
   async createSession(options: SessionCreateOptions): Promise<Session> {
     const startTime = Date.now();
 
-    // Use a placeholder ID temporarily - will be replaced with SDK session_id
-    const placeholderId = `placeholder-${Date.now()}`;
+    // Use frontend tempId if provided, otherwise generate placeholder ID
+    // This ensures streaming events can match the session before real SDK ID is available
+    const placeholderId = options.tempId || `placeholder-${Date.now()}`;
 
     this.logger.debug(
-      { placeholderId, model: options?.model, messageLength: options.initialMessage.length },
+      {
+        placeholderId,
+        isFrontendTempId: !!options.tempId,
+        model: options?.model,
+        messageLength: options.initialMessage.length,
+      },
       "Creating session with initial message"
     );
 

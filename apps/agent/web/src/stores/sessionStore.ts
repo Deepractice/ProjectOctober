@@ -199,7 +199,7 @@ eventBus.on(isSessionEvent).subscribe(async (event) => {
         const response = await fetch("/api/sessions/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: event.message }),
+          body: JSON.stringify({ message: event.message, tempId }),
         });
 
         if (!response.ok) {
