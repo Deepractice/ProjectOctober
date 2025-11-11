@@ -109,7 +109,7 @@ export class SessionManager {
       next: (streamEvent) => {
         // Forward stream events for real-time UI updates
         this.logger.info(
-          { sessionId: currentSessionId, eventType: streamEvent.event?.type },
+          { sessionId: currentSessionId, eventType: streamEvent.type },
           "🌊 Forwarding stream event"
         );
         this.sessionEventsSubject.next({
@@ -316,7 +316,7 @@ export class SessionManager {
           session.streamEvents$().subscribe({
             next: (streamEvent) => {
               this.logger.info(
-                { sessionId, eventType: streamEvent.event?.type },
+                { sessionId, eventType: streamEvent.type },
                 "🌊 Forwarding stream event (historical session)"
               );
               this.sessionEventsSubject.next({
