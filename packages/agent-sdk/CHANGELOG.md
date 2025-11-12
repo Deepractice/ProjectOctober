@@ -1,5 +1,11 @@
 # @deepractice-ai/agent-sdk
 
+## 0.9.0
+
+### Patch Changes
+
+- 296a721: Fix tool execution output duplication issue in WebSocket stream
+
 ## 0.8.2
 
 ### Patch Changes

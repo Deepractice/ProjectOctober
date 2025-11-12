@@ -1,5 +1,21 @@
 # @deepractice-ai/agent
 
+## 0.9.0
+
+### Minor Changes
+
+- b08aadc: Add built-in PromptX MCP server support and fix MCP tool result display
+  - Built-in PromptX MCP server configuration using `npx -y @promptx/mcp-server`
+  - Fix MCP tool result display showing `[object Object]` instead of actual content
+  - Properly serialize object results from MCP tools to JSON format
+
+### Patch Changes
+
+- 296a721: Fix tool execution output duplication issue in WebSocket stream
+- edf2b3d: Fix user message text overflow issue - add overflow handling for long text content
+- Updated dependencies [296a721]
+  - @deepractice-ai/agent-sdk@0.9.0
+
 ## 0.8.2
 
 ### Patch Changes
