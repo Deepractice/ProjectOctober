@@ -9,8 +9,10 @@ export function UserMessage({ content, timestamp, images, isGrouped }: UserMessa
   return (
     <div className="flex flex-col items-end w-full sm:w-auto sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl">
       <div className="flex items-end space-x-2">
-        <div className="bg-orange-500 text-white rounded-2xl rounded-br-md px-3 sm:px-4 py-2 shadow-sm">
-          <div className="text-sm whitespace-pre-wrap break-words">{content}</div>
+        <div className="bg-orange-500 text-white rounded-2xl rounded-br-md px-3 sm:px-4 py-2 shadow-sm max-w-full overflow-hidden">
+          <div className="text-sm whitespace-pre-wrap break-all max-w-full overflow-hidden">
+            {content}
+          </div>
           {images && images.length > 0 && (
             <div className="mt-2 grid grid-cols-2 gap-2">
               {images.map((img, idx) => (
