@@ -311,8 +311,9 @@ export class ClaudeSession implements Session {
                   toolUseResult: block,
                 };
 
-                // Emit the updated message so UI can re-render
-                this.messageSubject.next(toolUseMsg);
+                // ✅ FIX: Don't re-emit the message - frontend handles tool_result separately
+                // The WebSocketAdapter already emits message.toolResult event for UI updates
+                // Re-emitting causes duplicate messages in the WebSocket stream
               } else {
                 this.logger.warn(
                   { sessionId: this.id, toolId: block.tool_use_id },
