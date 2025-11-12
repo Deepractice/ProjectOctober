@@ -6,9 +6,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { eq, count, desc } from "drizzle-orm";
-import { mkdir } from "fs/promises";
 import { dirname, join } from "path";
-import { existsSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import type { Logger } from "@deepracticex/logger";
 import type { AgentPersister, SessionData } from "~/types/persister";
 import type { AnyMessage, ContentBlock } from "~/types/message";
@@ -54,14 +53,18 @@ export class SQLiteAgentPersister implements AgentPersister {
   // ========================================
 
   /**
-   * Ensure directory exists
+   * Ensure directory exists (synchronous)
    */
   private ensureDirectoryExists(dir: string): void {
     if (!existsSync(dir)) {
-      mkdir(dir, { recursive: true }).catch((error) => {
+      // Use sync version to ensure directory exists before database opens
+      try {
+        mkdirSync(dir, { recursive: true });
+        this.logger.debug({ dir }, "Directory created");
+      } catch (error) {
         this.logger.error({ error, dir }, "Failed to create directory");
         throw error;
-      });
+      }
     }
   }
 
