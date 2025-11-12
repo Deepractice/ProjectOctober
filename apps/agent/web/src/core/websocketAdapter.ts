@@ -62,12 +62,20 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
             chunk: messageData.delta.text,
           });
         }
-        // Handle streaming stop
+        // Handle streaming stop - mark that this session had streaming
         else if (messageData?.type === "content_block_stop") {
           eventBus.emit({
             type: "message.complete",
             sessionId: wsMessage.sessionId || "",
           });
+          // Mark that this session just finished streaming
+          // We'll skip the next complete assistant message for this session
+          if (wsMessage.sessionId) {
+            sessionStorage.setItem(
+              `streaming-completed-${wsMessage.sessionId}`,
+              Date.now().toString()
+            );
+          }
         }
         // NEW: Handle tool use message (from SDK transform)
         else if (messageData?.isToolUse && messageData.toolName) {
@@ -81,6 +89,24 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         }
         // Handle content array
         else if (Array.isArray(messageData?.content)) {
+          // FIX: Check if we just finished streaming to avoid duplicates
+          const streamingKey = `streaming-completed-${wsMessage.sessionId}`;
+          const streamingCompleted = sessionStorage.getItem(streamingKey);
+          let skipTextBlocks = false;
+
+          if (streamingCompleted) {
+            const timeSinceStreaming = Date.now() - parseInt(streamingCompleted);
+            if (timeSinceStreaming < 5000) {
+              skipTextBlocks = true;
+              console.log(
+                "[WebSocketAdapter] Skipping text blocks in content array (already streamed)"
+              );
+              sessionStorage.removeItem(streamingKey);
+            } else {
+              sessionStorage.removeItem(streamingKey);
+            }
+          }
+
           for (const part of messageData.content) {
             if (part.type === "tool_use") {
               eventBus.emit({
@@ -90,7 +116,7 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
                 toolInput: part.input ? JSON.stringify(part.input, null, 2) : "",
                 toolId: part.id,
               });
-            } else if (part.type === "text" && part.text?.trim()) {
+            } else if (part.type === "text" && part.text?.trim() && !skipTextBlocks) {
               eventBus.emit({
                 type: "message.assistant",
                 sessionId: wsMessage.sessionId || "",
@@ -109,6 +135,27 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
               content: messageData.content,
             });
           } else {
+            // FIX: Skip complete assistant messages if we just finished streaming
+            // This prevents duplicate display of streaming content
+            const streamingKey = `streaming-completed-${wsMessage.sessionId}`;
+            const streamingCompleted = sessionStorage.getItem(streamingKey);
+
+            if (streamingCompleted) {
+              // Check if streaming completed within last 5 seconds
+              const timeSinceStreaming = Date.now() - parseInt(streamingCompleted);
+              if (timeSinceStreaming < 5000) {
+                console.log(
+                  "[WebSocketAdapter] Skipping duplicate assistant message (already streamed):",
+                  messageData.content.substring(0, 50)
+                );
+                // Clean up the marker
+                sessionStorage.removeItem(streamingKey);
+                return;
+              }
+              // Clean up stale marker
+              sessionStorage.removeItem(streamingKey);
+            }
+
             // Default to assistant for backward compatibility
             eventBus.emit({
               type: "message.assistant",

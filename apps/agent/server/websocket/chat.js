@@ -66,6 +66,21 @@ export function handleChatConnection(ws, connectedClients) {
                 return;
               }
 
+              // FIX: Skip tool_result messages - they are handled separately by websocketAdapter
+              // Tool results update existing tool use messages in-place (ClaudeSession.transformSDKMessage)
+              // The frontend websocketAdapter emits message.toolResult events for UI updates
+              // Sending tool_result messages here causes duplicate output in the UI
+              if (msg.type === "user" && Array.isArray(msg.content)) {
+                const hasToolResult = msg.content.some((block) => block.type === "tool_result");
+                if (hasToolResult) {
+                  console.log(
+                    "🔵 [WebSocket] Skipping tool_result message (handled separately):",
+                    msg.id
+                  );
+                  return;
+                }
+              }
+
               console.log("🔵 [WebSocket] Received NEW message from stream:", {
                 sessionId: session.id,
                 messageType: msg.type,
