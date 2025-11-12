@@ -27,6 +27,11 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
 
   try {
     switch (wsMessage.type) {
+      case "sdk-event":
+        // ✅ NEW: Handle SDK raw events
+        handleSDKEvent(wsMessage);
+        break;
+
       case "session-created":
         eventBus.emit({
           type: "session.created",
@@ -287,5 +292,191 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
       type: "error.unknown",
       error: error as Error,
     });
+  }
+}
+
+/**
+ * Handle SDK raw events from Claude SDK
+ * Events: stream_event, assistant, user, result, system
+ */
+function handleSDKEvent(wsMessage: WebSocketMessage): void {
+  if (!("data" in wsMessage) || !wsMessage.data) {
+    console.warn("[WebSocketAdapter] SDK event missing data");
+    return;
+  }
+
+  const sdkMessage = wsMessage.data as any;
+  const sessionId = wsMessage.sessionId || "";
+
+  console.log("[WebSocketAdapter] Processing SDK event:", {
+    sessionId,
+    sdkType: sdkMessage.type,
+    eventType: sdkMessage.type === "stream_event" ? sdkMessage.event?.type : undefined,
+  });
+
+  switch (sdkMessage.type) {
+    case "stream_event":
+      handleStreamEvent(sessionId, sdkMessage.event);
+      break;
+
+    case "assistant":
+      handleAssistantMessage(sessionId, sdkMessage.message);
+      break;
+
+    case "user":
+      handleUserMessage(sessionId, sdkMessage.message);
+      break;
+
+    case "result":
+      // Token usage updates can be handled here if needed
+      console.log("[WebSocketAdapter] Received result message (token usage)");
+      break;
+
+    default:
+      console.log("[WebSocketAdapter] Unhandled SDK message type:", sdkMessage.type);
+  }
+}
+
+/**
+ * Handle stream events (real-time streaming)
+ * Event types: message_start, content_block_start, content_block_delta, content_block_stop, message_stop
+ */
+function handleStreamEvent(sessionId: string, event: any): void {
+  console.log("[WebSocketAdapter] Stream event:", event.type);
+
+  switch (event.type) {
+    case "message_start":
+      // Start of assistant response
+      eventBus.emit({
+        type: "agent.processing",
+        sessionId,
+        status: "Generating response",
+      });
+      break;
+
+    case "content_block_start":
+      // Start of a content block (text or tool_use)
+      if (event.content_block?.type === "text") {
+        // Start streaming text
+        eventBus.emit({
+          type: "agent.processing",
+          sessionId,
+          status: "Generating response",
+        });
+      } else if (event.content_block?.type === "tool_use") {
+        // Tool use started - just update status, don't create message yet
+        // The complete tool_use message will come in the assistant message
+        eventBus.emit({
+          type: "agent.processing",
+          sessionId,
+          status: `Using ${event.content_block.name} tool`,
+        });
+      }
+      break;
+
+    case "content_block_delta":
+      // Streaming text delta
+      if (event.delta?.type === "text_delta" && event.delta.text) {
+        eventBus.emit({
+          type: "message.streaming",
+          sessionId,
+          chunk: event.delta.text,
+        });
+      } else if (event.delta?.type === "input_json_delta") {
+        // Tool input is being streamed (we can ignore this or accumulate)
+        console.log("[WebSocketAdapter] Tool input delta (ignored)");
+      }
+      break;
+
+    case "content_block_stop":
+      // End of content block
+      eventBus.emit({
+        type: "message.complete",
+        sessionId,
+      });
+      break;
+
+    case "message_stop":
+      // End of entire message
+      console.log("[WebSocketAdapter] Message stop");
+      break;
+
+    default:
+      console.log("[WebSocketAdapter] Unhandled stream event:", event.type);
+  }
+}
+
+/**
+ * Handle complete assistant messages
+ * Contains full content blocks (text, tool_use)
+ */
+function handleAssistantMessage(sessionId: string, message: any): void {
+  if (!Array.isArray(message.content)) {
+    console.warn("[WebSocketAdapter] Assistant message has no content array");
+    return;
+  }
+
+  console.log("[WebSocketAdapter] Assistant message with", message.content.length, "blocks");
+
+  for (const block of message.content) {
+    if (block.type === "text" && block.text) {
+      // Complete text block (not from streaming)
+      // This might be duplicate if we already streamed it
+      // We can check if we just finished streaming and skip
+      console.log("[WebSocketAdapter] Assistant text block (may be duplicate from streaming)");
+      // Uncomment if needed:
+      // eventBus.emit({
+      //   type: "message.assistant",
+      //   sessionId,
+      //   content: block.text,
+      // });
+    } else if (block.type === "tool_use") {
+      // Tool use block - emit if not already emitted via stream_event
+      console.log("[WebSocketAdapter] Tool use block:", block.name);
+      eventBus.emit({
+        type: "message.tool",
+        sessionId,
+        toolName: block.name,
+        toolInput: block.input ? JSON.stringify(block.input, null, 2) : "",
+        toolId: block.id,
+      });
+    }
+  }
+}
+
+/**
+ * Handle user messages (contains tool_result blocks)
+ */
+function handleUserMessage(sessionId: string, message: any): void {
+  if (!Array.isArray(message.content)) {
+    console.warn("[WebSocketAdapter] User message has no content array");
+    return;
+  }
+
+  console.log("[WebSocketAdapter] User message with", message.content.length, "blocks");
+
+  for (const block of message.content) {
+    if (block.type === "tool_result") {
+      // ✅ FIX: This is where tool results are properly handled!
+      console.log("[WebSocketAdapter] Tool result for:", block.tool_use_id);
+      eventBus.emit({
+        type: "message.toolResult",
+        sessionId,
+        toolId: block.tool_use_id,
+        result: {
+          content: block.content,
+          isError: block.is_error || false,
+          timestamp: new Date(),
+        },
+      });
+    } else if (block.type === "text" && block.text) {
+      // Regular user text (shouldn't happen via SDK, but handle it)
+      console.log("[WebSocketAdapter] User text block");
+      eventBus.emit({
+        type: "message.user",
+        sessionId,
+        content: block.text,
+      });
+    }
   }
 }

@@ -40,11 +40,9 @@ async function broadcastSessionEvent(connectedClients, event) {
     // Handle streaming events separately for real-time updates
     if (event.type === "streaming") {
       const message = JSON.stringify({
-        type: "agent-response",
+        type: "sdk-event",
         sessionId: event.sessionId,
-        data: {
-          message: event.streamEvent.event, // Raw SDK stream event
-        },
+        data: event.streamEvent, // SDK original message (type: stream_event/assistant/user/result)
         timestamp: new Date().toISOString(),
       });
 

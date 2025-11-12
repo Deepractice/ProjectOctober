@@ -71,8 +71,7 @@ export class ClaudeAdapter {
           {
             messageCount,
             messageType: message.type,
-            // @ts-expect-error - subtype may not exist on all message types
-            messageSubtype: message.subtype,
+            messageSubtype: (message as any).subtype, // subtype may not exist on all message types
           },
           "Received message from Claude SDK"
         );

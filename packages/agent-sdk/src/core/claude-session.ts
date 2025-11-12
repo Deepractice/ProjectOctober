@@ -113,15 +113,25 @@ export class ClaudeSession implements Session {
         messageId: userMessage.id,
         contentPreview: content.substring(0, 50),
       },
-      "Adding user message manually"
+      "Adding user message to internal storage"
     );
 
     this.messages.push(userMessage);
-    this.messageSubject.next(userMessage);
+
+    // ✅ REFACTOR: Send to streamEventSubject instead of messageSubject
+    // Frontend will receive this via WebSocket streaming
+    this.streamEventSubject.next({
+      type: "user",
+      message: {
+        role: "user",
+        content: userMessage.content,
+      },
+      uuid: userMessage.id,
+    } as any);
 
     this.logger.debug(
       { sessionId: this.id, totalMessages: this.messages.length },
-      "User message added"
+      "User message stored and forwarded to stream"
     );
 
     const prevState = this._state;
@@ -203,24 +213,22 @@ export class ClaudeSession implements Session {
       "Processing SDK message"
     );
 
-    // Handle stream_event for real-time streaming
-    if (sdkMessage.type === "stream_event") {
-      this.logger.debug(
-        { sessionId: this.id, eventType: sdkMessage.event.type },
-        "Forwarding stream event for real-time UI"
-      );
-      // Emit stream event for real-time UI updates
-      this.streamEventSubject.next(sdkMessage);
-      return; // Don't transform stream events to messages yet
-    }
+    // ✅ REFACTOR: Forward ALL SDK messages to streamEventSubject for real-time WebSocket streaming
+    // This is the single source of truth for real-time communication
+    this.streamEventSubject.next(sdkMessage);
+    this.logger.debug(
+      { sessionId: this.id, sdkType: sdkMessage.type },
+      "Forwarded SDK message to streamEventSubject"
+    );
 
-    // Transform SDK message to our format (may return multiple messages)
+    // Transform and store messages internally for getMessages() API
+    // This maintains historical messages for REST API queries
     const messages = this.transformSDKMessage(sdkMessage);
 
     if (messages && messages.length > 0) {
       this.logger.debug(
         { sessionId: this.id, transformedCount: messages.length },
-        "Transformed messages"
+        "Transformed messages for internal storage"
       );
 
       for (const message of messages) {
@@ -234,16 +242,17 @@ export class ClaudeSession implements Session {
             toolName: msg.toolName,
             contentPreview: msg.content?.substring(0, 50),
           },
-          "Adding message to stream"
+          "Storing message internally"
         );
 
+        // Only store in messages[] array, DO NOT emit to messageSubject
+        // Frontend will receive this via streamEventSubject
         this.messages.push(message);
-        this.messageSubject.next(message);
       }
 
       this.logger.debug(
         { sessionId: this.id, totalMessages: this.messages.length },
-        "Messages added to session"
+        "Messages stored in internal array"
       );
     } else {
       this.logger.debug({ sessionId: this.id }, "No messages after transform");

@@ -47,83 +47,19 @@ export function handleChatConnection(ws, connectedClients) {
             session.getMessages().length
           );
 
-          const isNewSession = false;
-
-          // Track messages we've already sent to avoid duplicates
-          const messagesBefore = session.getMessages().length;
-
-          // Subscribe to NEW messages only (skip existing messages)
-          console.log("🔵 [WebSocket] Subscribing to session messages stream");
-          const subscription = session.messages$().subscribe({
-            next: (msg) => {
-              // For existing sessions, skip messages that were already there
-              const currentMessages = session.getMessages();
-              const msgIndex = currentMessages.findIndex((m) => m.id === msg.id);
-
-              if (!isNewSession && msgIndex < messagesBefore) {
-                // This is an old message, skip it
-                console.log("🔵 [WebSocket] Skipping old message:", msg.id);
-                return;
-              }
-
-              // FIX: Skip tool_result messages - they are handled separately by websocketAdapter
-              // Tool results update existing tool use messages in-place (ClaudeSession.transformSDKMessage)
-              // The frontend websocketAdapter emits message.toolResult events for UI updates
-              // Sending tool_result messages here causes duplicate output in the UI
-              if (msg.type === "user" && Array.isArray(msg.content)) {
-                const hasToolResult = msg.content.some((block) => block.type === "tool_result");
-                if (hasToolResult) {
-                  console.log(
-                    "🔵 [WebSocket] Skipping tool_result message (handled separately):",
-                    msg.id
-                  );
-                  return;
-                }
-              }
-
-              console.log("🔵 [WebSocket] Received NEW message from stream:", {
-                sessionId: session.id,
-                messageType: msg.type,
-                messageId: msg.id,
-                contentPreview: msg.content?.substring(0, 50) + "...",
-              });
-
-              ws.send(
-                JSON.stringify({
-                  type: "agent-response",
-                  sessionId: session.id,
-                  data: msg,
-                })
-              );
-            },
-            error: (err) => {
-              console.error("🔵 [WebSocket] Stream error:", err);
-              ws.send(
-                JSON.stringify({
-                  type: "claude-error",
-                  sessionId: session.id,
-                  error: err.message,
-                })
-              );
-              subscription.unsubscribe();
-            },
-          });
+          // ✅ REFACTOR: Remove subscription - messages are broadcast via sessions-broadcast
+          // All real-time messages will be sent by sessions-broadcast.js
+          // This prevents duplicate messages and simplifies the architecture
 
           // Send message
           console.log("🔵 [WebSocket] Calling session.send()...");
+          console.log("🔵 [WebSocket] Messages will be broadcast via sessions-broadcast");
           await session.send(data.command);
-          const messagesAfter = session.getMessages().length;
 
           console.log("🔵 [WebSocket] session.send() completed:", {
             sessionId: session.id,
-            messagesBefore,
-            messagesAfter,
-            messagesAdded: messagesAfter - messagesBefore,
+            totalMessages: session.getMessages().length,
           });
-
-          // Unsubscribe to prevent duplicate subscriptions
-          subscription.unsubscribe();
-          console.log("🔵 [WebSocket] Unsubscribed from message stream");
 
           // After send completes, notify frontend
           ws.send(

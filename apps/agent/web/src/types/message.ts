@@ -6,6 +6,7 @@ export type WebSocketMessageType =
   | "session-created"
   | "sessions_updated"
   | "token-budget"
+  | "sdk-event"
   | "agent-response"
   | "claude-output"
   | "claude-interactive-prompt"
