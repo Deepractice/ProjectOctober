@@ -13,6 +13,7 @@ import type { AgentConfig, SessionOptions } from "~/types";
  */
 export class ClaudeAdapter {
   private logger: Logger;
+  private currentQuery: any | null = null; // Store current query for interrupt
 
   constructor(
     private readonly config: AgentConfig,
@@ -23,6 +24,19 @@ export class ClaudeAdapter {
       { workspace: config.workspace, model: config.model },
       "ClaudeAdapter created"
     );
+  }
+
+  /**
+   * Interrupt the current query if one is running
+   */
+  async interrupt(): Promise<void> {
+    if (this.currentQuery && typeof this.currentQuery.interrupt === "function") {
+      this.logger.info("Interrupting Claude SDK query");
+      await this.currentQuery.interrupt();
+      this.currentQuery = null;
+    } else {
+      this.logger.warn("No active query to interrupt");
+    }
   }
 
   async *stream(prompt: string, options: SessionOptions = {}): AsyncGenerator<SDKMessage> {
@@ -43,14 +57,14 @@ export class ClaudeAdapter {
     );
 
     try {
-      const queryInstance = query({
+      this.currentQuery = query({
         prompt,
         options: sdkOptions,
       });
 
       let messageCount = 0;
 
-      for await (const message of queryInstance) {
+      for await (const message of this.currentQuery) {
         messageCount++;
 
         this.logger.info(
@@ -70,6 +84,9 @@ export class ClaudeAdapter {
     } catch (err) {
       this.logger.error({ err, promptLength: prompt.length }, "Claude SDK stream failed");
       throw err;
+    } finally {
+      // Clear current query after completion
+      this.currentQuery = null;
     }
   }
 

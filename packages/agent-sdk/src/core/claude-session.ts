@@ -483,11 +483,20 @@ export class ClaudeSession implements Session {
       throw new Error(`Cannot abort: session is ${this._state}`);
     }
 
-    this.logger.info({ sessionId: this.id }, "Aborting active request, session returns to idle");
-    // ✅ FIX: Set to idle instead of aborted
+    this.logger.info({ sessionId: this.id }, "Aborting active request via adapter interrupt");
+
+    // Interrupt the Claude SDK query
+    try {
+      await this.adapter.interrupt();
+      this.logger.info({ sessionId: this.id }, "Claude SDK query interrupted successfully");
+    } catch (error) {
+      this.logger.error({ sessionId: this.id, err: error }, "Failed to interrupt query");
+    }
+
+    // Set to idle instead of aborted
     // Abort only stops the current streaming request, session can continue
     this._state = "idle";
-    // ✅ FIX: Do NOT complete the messageSubject
+    // Do NOT complete the messageSubject
     // Complete would permanently close the Subject, preventing future messages
     // The Subject should only be completed when the session is truly done (delete/complete)
   }

@@ -81,6 +81,20 @@ export function ChatInterface() {
     }
   }, [chatMessages.length]);
 
+  // ESC key to interrupt/abort current session
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isLoading && selectedSession) {
+        e.preventDefault();
+        console.log("[ChatInterface] ESC pressed, aborting session:", selectedSession.id);
+        abortSessionById(selectedSession.id);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscKey);
+    return () => window.removeEventListener("keydown", handleEscKey);
+  }, [isLoading, selectedSession, abortSessionById]);
+
   // Note: Message loading is handled by sessionStore when session.selected event is emitted
   // No need for UI component to manage loading logic
 
