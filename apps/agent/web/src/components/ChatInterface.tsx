@@ -128,7 +128,8 @@ export function ChatInterface() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter to submit (unless Shift+Enter for new line)
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Skip if using IME (Input Method Editor) - e.g., typing Chinese, Japanese, Korean
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSubmit();
     }
