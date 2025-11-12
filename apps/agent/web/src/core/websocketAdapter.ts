@@ -6,6 +6,10 @@
 import { eventBus } from "./eventBus";
 import type { WebSocketMessage } from "~/types";
 
+// Track which sessions are currently streaming
+// Format: sessionId -> timestamp when streaming completed
+const streamingCompletedMap = new Map<string, number>();
+
 /**
  * Adapt WebSocket message to EventBus event
  */
@@ -71,10 +75,7 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
           // Mark that this session just finished streaming
           // We'll skip the next complete assistant message for this session
           if (wsMessage.sessionId) {
-            sessionStorage.setItem(
-              `streaming-completed-${wsMessage.sessionId}`,
-              Date.now().toString()
-            );
+            streamingCompletedMap.set(wsMessage.sessionId, Date.now());
           }
         }
         // NEW: Handle tool use message (from SDK transform)
@@ -90,20 +91,22 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         // Handle content array
         else if (Array.isArray(messageData?.content)) {
           // FIX: Check if we just finished streaming to avoid duplicates
-          const streamingKey = `streaming-completed-${wsMessage.sessionId}`;
-          const streamingCompleted = sessionStorage.getItem(streamingKey);
+          const sessionId = wsMessage.sessionId || "";
+          const streamingCompleted = streamingCompletedMap.get(sessionId);
           let skipTextBlocks = false;
 
           if (streamingCompleted) {
-            const timeSinceStreaming = Date.now() - parseInt(streamingCompleted);
+            const timeSinceStreaming = Date.now() - streamingCompleted;
             if (timeSinceStreaming < 5000) {
               skipTextBlocks = true;
               console.log(
                 "[WebSocketAdapter] Skipping text blocks in content array (already streamed)"
               );
-              sessionStorage.removeItem(streamingKey);
+              // Clean up on first use to avoid checking stale timestamps
+              streamingCompletedMap.delete(sessionId);
             } else {
-              sessionStorage.removeItem(streamingKey);
+              // Clean up stale marker
+              streamingCompletedMap.delete(sessionId);
             }
           }
 
@@ -137,23 +140,23 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
           } else {
             // FIX: Skip complete assistant messages if we just finished streaming
             // This prevents duplicate display of streaming content
-            const streamingKey = `streaming-completed-${wsMessage.sessionId}`;
-            const streamingCompleted = sessionStorage.getItem(streamingKey);
+            const sessionId = wsMessage.sessionId || "";
+            const streamingCompleted = streamingCompletedMap.get(sessionId);
 
             if (streamingCompleted) {
               // Check if streaming completed within last 5 seconds
-              const timeSinceStreaming = Date.now() - parseInt(streamingCompleted);
+              const timeSinceStreaming = Date.now() - streamingCompleted;
               if (timeSinceStreaming < 5000) {
                 console.log(
                   "[WebSocketAdapter] Skipping duplicate assistant message (already streamed):",
                   messageData.content.substring(0, 50)
                 );
                 // Clean up the marker
-                sessionStorage.removeItem(streamingKey);
+                streamingCompletedMap.delete(sessionId);
                 return;
               }
               // Clean up stale marker
-              sessionStorage.removeItem(streamingKey);
+              streamingCompletedMap.delete(sessionId);
             }
 
             // Default to assistant for backward compatibility
