@@ -1,5 +1,73 @@
 # @deepractice-ai/agent
 
+## 0.10.0
+
+### Minor Changes
+
+- 41c54f3: feat: implement ESC key interruption using Claude SDK's interrupt API
+
+  Added proper interruption support by leveraging Claude SDK's built-in interrupt functionality:
+  - Add global ESC key listener in ChatInterface to abort active sessions
+  - Implement interrupt() method in ClaudeAdapter that calls SDK's query.interrupt()
+  - Update ClaudeSession.abort() to properly interrupt the underlying SDK query
+  - Store current query instance in adapter for clean interruption
+
+  Users can now press ESC during agent processing to immediately stop the current operation.
+
+- 363911f: refactor: unify message streaming architecture using SDK events
+
+  Major refactor to eliminate duplicate message channels and establish single source of truth:
+
+  **Backend (agent-sdk):**
+  - Claude Session now uses only `streamEventSubject` for real-time messages
+  - `messageSubject` deprecated (kept for compatibility but not used)
+  - All SDK messages (stream_event, assistant, user, result) forwarded to stream
+  - User messages manually sent to stream in SDK format
+  - `messages[]` array maintained only for REST API historical queries
+
+  **Backend (WebSocket):**
+  - `sessions-broadcast.js`: Changed message format from `agent-response` to `sdk-event`
+  - `chat.js`: Removed stream subscription, only calls `send()` - messages broadcast via sessions-broadcast
+  - Unified single channel architecture prevents duplicate messages
+
+  **Frontend:**
+  - Added `sdk-event` handler in websocketAdapter
+  - Handles all SDK message types: stream_event, assistant, user, result
+  - Tool results now properly displayed from SDK user messages
+  - Maintains backward compatibility with `agent-response` messages
+
+  **Benefits:**
+  - ✅ Single source of truth for real-time messages
+  - ✅ No duplicate messages
+  - ✅ Tool results display correctly
+  - ✅ Consistent flow for first and subsequent conversations
+  - ✅ Simplified architecture with clear responsibilities
+
+### Patch Changes
+
+- e3a2035: fix: prevent duplicate message output in WebSocket stream
+
+  Fixed three duplicate message issues:
+  1. Tool result messages were sent twice (SDK transform + WebSocket forward)
+  2. Assistant messages appeared twice after streaming (streaming delta + complete message)
+  3. Text blocks in content arrays duplicated streaming content
+
+  Changes:
+  - Filter tool_result messages in WebSocket chat handler to prevent duplicate tool outputs
+  - Track streaming completion state to skip duplicate complete messages
+  - Apply streaming check to both string content and content array text blocks
+
+- bd56098: fix: prevent Enter key from sending message during IME composition
+
+  Fixed issue where pressing Enter to select IME (Input Method Editor) candidates would incorrectly trigger message send. This affected users typing in Chinese, Japanese, Korean, and other languages using input methods.
+
+  Changes:
+  - Add isComposing check to handleKeyDown to distinguish between IME confirmation and actual message send
+  - Enter key now only sends message when not in IME composition state
+
+- Updated dependencies [363911f]
+  - @deepractice-ai/agent-sdk@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes
