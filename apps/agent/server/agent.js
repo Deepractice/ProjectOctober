@@ -25,6 +25,16 @@ export async function getAgent() {
     agentInstance = createAgent({
       workspace: projectPath,
       model: "claude-sonnet-4",
+      mcpServers: {
+        promptx: {
+          command: "npx",
+          args: ["-y", "@promptx/mcp-server"],
+          env: {
+            // Inherit environment variables
+            ...process.env,
+          },
+        },
+      },
     });
 
     logger.info("🔥 Initializing Agent (loading historical sessions)...");

@@ -591,7 +591,18 @@ function renderToolResultContent(
   _selectedProject,
   _createDiff
 ) {
-  const content = String(message.toolResult.content || "");
+  // Handle both string and object content from tool results
+  let content: string;
+  const rawContent = message.toolResult.content;
+
+  if (typeof rawContent === "string") {
+    content = rawContent;
+  } else if (rawContent && typeof rawContent === "object") {
+    // MCP tools often return objects - stringify them properly
+    content = JSON.stringify(rawContent, null, 2);
+  } else {
+    content = String(rawContent || "");
+  }
 
   // ===== JSON detection and formatting with error handling =====
   const detectAndFormatContent = (text: string) => {
