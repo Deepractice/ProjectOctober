@@ -53,7 +53,7 @@ export interface UIState {
 }
 
 const defaultPreferences = {
-  autoExpandTools: true,
+  autoExpandTools: false,
   showRawParameters: false,
   showThinking: true,
   autoScrollToBottom: true,
@@ -98,6 +98,17 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: "agent-ui-preferences",
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        // Migration from version 0 to 1: reset autoExpandTools to false
+        if (version === 0) {
+          return {
+            ...persistedState,
+            autoExpandTools: false,
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
