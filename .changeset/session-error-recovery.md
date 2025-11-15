@@ -10,16 +10,19 @@ This change distinguishes between recoverable and fatal errors, allowing session
 **Changes:**
 
 SDK (`@deepractice-ai/agent-sdk`):
+
 - Added `isRecoverableError()` utility function to detect recoverable errors (402, 429, timeouts, 503)
 - Modified `ClaudeSession.send()` to return to `idle` state for recoverable errors instead of `error` state
 - Added `_lastError` tracking and `getLastError()` public method
 - Updated `Session` interface to include `getLastError()` method
 
 Server (`apps/agent/server`):
+
 - Added state guard in `chat.js` to prevent sending messages to completed sessions
 - Enhanced error responses with `recoverable` and `state` flags
 
 Frontend (`apps/agent/web`):
+
 - Updated event types to include `recoverable` and `state` fields for error events
 - Enhanced `WebSocketAdapter` to parse and forward error recovery information
 - Improved `messageStore` to display context-aware error messages:

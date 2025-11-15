@@ -245,7 +245,7 @@ export class ClaudeSession implements Session {
             err: error,
             sessionId: this.id,
             contentLength: content.length,
-            recoverable: true
+            recoverable: true,
           },
           "Recoverable error occurred, session remains usable"
         );
@@ -257,7 +257,7 @@ export class ClaudeSession implements Session {
             err: error,
             sessionId: this.id,
             contentLength: content.length,
-            recoverable: false
+            recoverable: false,
           },
           "Fatal error occurred, session terminated"
         );

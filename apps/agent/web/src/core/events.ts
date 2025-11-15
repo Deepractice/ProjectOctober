@@ -29,7 +29,13 @@ export type MessageEvent =
   | { type: "message.complete"; sessionId: string }
   | { type: "message.tool"; sessionId: string; toolName: string; toolInput: string; toolId: string }
   | { type: "message.toolResult"; sessionId: string; toolId: string; result: any }
-  | { type: "message.error"; sessionId: string; error: Error; recoverable?: boolean; state?: string };
+  | {
+      type: "message.error";
+      sessionId: string;
+      error: Error;
+      recoverable?: boolean;
+      state?: string;
+    };
 
 // Agent Events
 export type AgentEvent =
