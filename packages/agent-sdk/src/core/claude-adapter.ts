@@ -2,6 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { Logger } from "@deepracticex/logger";
 import type { AgentConfig, SessionOptions } from "~/types";
+import { DEFAULT_SYSTEM_PROMPT } from "./default-system-prompt";
 
 /**
  * ClaudeAdapter - wraps @anthropic-ai/claude-agent-sdk
@@ -91,10 +92,14 @@ export class ClaudeAdapter {
 
   private mapOptions(options: SessionOptions): any {
     const model = options.model || this.config.model || "claude-sonnet-4";
+    // Use systemPrompt priority: session option > agent config > default
+    const systemPrompt = options.systemPrompt || this.config.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+
     return {
       cwd: this.config.workspace,
       model: this.normalizeModelName(model),
       resume: options.resume,
+      systemPrompt,
       mcpServers: this.config.mcpServers,
       // Load MCP configurations from Claude settings files
       // This enables compatibility with Claude CLI and Claude Desktop configurations

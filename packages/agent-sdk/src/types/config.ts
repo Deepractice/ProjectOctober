@@ -1,6 +1,7 @@
 export interface AgentConfig {
   workspace: string;
   model?: string;
+  systemPrompt?: string;
   mcpServers?: Record<string, McpServerConfig>;
   logger?: LoggerConfig;
 }
