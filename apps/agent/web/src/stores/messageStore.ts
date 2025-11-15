@@ -432,8 +432,30 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
       store.updateToolResult(event.sessionId, event.toolId, event.result);
       break;
 
-    case "message.error":
-      store.addErrorMessage(event.sessionId, event.error.message);
+    case "message.error": {
+      // Format error message based on recoverability
+      let errorMessage = event.error.message;
+
+      if (event.recoverable) {
+        // Recoverable error: friendly message with recovery hint
+        errorMessage = `⚠️ ${event.error.message}\n\n✅ Your session is still active. You can continue sending messages after resolving this issue.`;
+        console.log("[MessageStore] Recoverable error:", {
+          sessionId: event.sessionId,
+          error: event.error.message,
+          state: event.state,
+        });
+      } else {
+        // Fatal error: clear indication session is terminated
+        errorMessage = `❌ ${event.error.message}\n\n⛔ This session has failed and cannot continue. Please create a new session.`;
+        console.error("[MessageStore] Fatal error:", {
+          sessionId: event.sessionId,
+          error: event.error.message,
+          state: event.state,
+        });
+      }
+
+      store.addErrorMessage(event.sessionId, errorMessage);
       break;
+    }
   }
 });

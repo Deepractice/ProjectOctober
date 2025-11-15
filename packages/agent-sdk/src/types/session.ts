@@ -61,6 +61,7 @@ export interface Session {
   getMessages(limit?: number, offset?: number): AnyMessage[];
   getTokenUsage(): TokenUsage;
   getMetadata(): SessionMetadata;
+  getLastError(): Error | null;
   summary(): string;
 
   // Utilities
