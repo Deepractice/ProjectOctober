@@ -4,9 +4,145 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-Alwayse response user in Chinese。
+Always response user in Chinese。
 
-Alwayse do work in English。
+Always do work in English。
+
+## Collaboration Modes
+
+Claude Code operates in three flexible modes, automatically switching based on task complexity:
+
+### 1. Discussion Mode (讨论模式)
+
+**When**: Understanding requirements, exploring solutions, making decisions
+
+**Style**:
+
+- Concise, visual communication
+- NO code shown - focus on concepts
+- Use diagrams when logic is complex
+- Fast-paced interaction
+
+**Output**:
+
+- Solution options with trade-offs
+- Decision points
+- Visual representations (text structure > ASCII diagrams > Mermaid)
+
+**Example**:
+
+```
+Two approaches for state management:
+
+A. EventBus → Store → Component
+   ├─ Pros: Decoupled, testable
+   └─ Cons: More boilerplate
+
+B. Direct Store → Component
+   ├─ Pros: Simple, less code
+   └─ Cons: Tight coupling
+
+Which direction?
+```
+
+### 2. Planning Mode (规划模式)
+
+**When**: User confirms direction, need execution plan
+
+**Style**:
+
+- Structured lists, NO code
+- File-level planning
+- Impact analysis
+
+**Output**:
+
+- Files to create/modify/delete
+- Type definitions (signatures only)
+- Dependency changes
+- Risk assessment
+
+**Example**:
+
+```
+Implementation plan:
+
+New files:
+- packages/agent-sdk/src/core/StateManager.ts (EventBus logic)
+- packages/agent-sdk/src/types/StateTypes.ts (type definitions)
+
+Modified files:
+- apps/agent/web/src/stores/sessionStore.ts (integrate StateManager)
+- apps/agent/web/src/App.tsx (initialize StateManager)
+
+Dependencies:
+- No new dependencies needed
+
+Impact:
+- Breaking change: Store API changes (need migration guide)
+- Testing: Add 15 BDD scenarios, 8 unit tests
+
+Ready to proceed?
+```
+
+### 3. Execution Mode (执行模式)
+
+**When**: User confirms plan
+
+**Style**:
+
+- Write code, run tests
+- Show implementation details
+- Validate results
+
+**Output**:
+
+- Working code
+- Test results
+- Build verification
+
+**Mode Switching Rules**:
+
+- **Auto-detect complexity**:
+  - Simple bug fix → Direct execution
+  - Feature with <3 files → Planning → Execution
+  - Complex feature → Discussion → Planning → Execution
+
+- **User can force mode**:
+  - "讨论一下方案" → Discussion
+  - "给我个计划" → Planning
+  - "直接执行" → Execution
+
+- **Flexible transitions**:
+  - Can jump back to Discussion if plan has issues
+  - Can skip Planning for trivial changes
+  - Always confirm before major execution
+
+**Visual Communication Priority**:
+
+1. **Text structure** (preferred):
+
+   ```
+   ├─ Clear hierarchy
+   └─ Easy to read
+   ```
+
+2. **ASCII diagrams** (when flow matters):
+
+   ```
+   User → Store → EventBus
+     ↓      ↓        ↓
+   View   State   Listeners
+   ```
+
+3. **Mermaid** (only for complex relationships):
+   ```mermaid
+   graph TD
+     A[User] --> B[Store]
+     B --> C[EventBus]
+   ```
+
+**Key Principle**: Keep discussions fast and focused. Code comes last.
 
 ## Project Overview
 
@@ -275,33 +411,104 @@ See `env/.env.example` for full list.
 
 **General Principles**:
 
-- One file, one type (OOP style)
+- One file, one type (OOP style, Java-like)
 - Interface-first naming: `ConfigLoader` not `EnvConfigLoader`
 - No Hungarian notation
 - Use descriptive names for clarity
+- OOP-first with functional for stateless APIs/services
 
 **File Naming Convention**:
 
-- **PascalCase** - Single type files (classes, interfaces)
-  - Example: `Agent.ts`, `BaseSession.ts`, `WebSocketBridge.ts`
-  - Use when file exports ONE main type/class
-- **camelCase** - Multiple types or pure function files
-  - Example: `agent.ts`, `websocket.ts`, `helpers.ts`
-  - Use when file exports multiple utilities, functions, or types
-  - Use for facade layer entry files (e.g., `facade/agent.ts`)
+```
+PascalCase (One file, one primary type - Java style)
+├─ Agent.ts              → export class Agent
+├─ BaseSession.ts        → export class BaseSession
+├─ WebSocketBridge.ts    → export class WebSocketBridge
+├─ AgentConfig.ts        → export interface AgentConfig
+└─ SessionState.ts       → export type SessionState
+
+camelCase (Multiple types/functions/utilities)
+├─ agent.ts              → facade/agent.ts (factory functions)
+├─ websocket.ts          → Multiple WebSocket utilities
+├─ helpers.ts            → Pure function collections
+├─ validators.ts         → Multiple validation functions
+└─ types.ts              → Multiple related type definitions
+```
+
+**Rules**:
+
+- **Single main export** → PascalCase filename matching export name
+- **Multiple exports** → camelCase filename with semantic meaning
+- **Facade layer entries** → camelCase (e.g., `facade/agent.ts`)
+- **Utility/helper files** → camelCase (e.g., `utils/helpers.ts`)
+
+**Exception - Type Family Files**:
+When a file exports multiple related types where one is the primary/aggregating type:
+
+```
+McpConfig.ts (acceptable)
+├─ export interface McpStdioTransport
+├─ export interface McpSseTransport
+├─ export interface McpTransportConfig (union)
+└─ export interface McpConfig (primary aggregating type)
+```
+
+Use PascalCase filename matching the **primary type** if:
+
+- One type is clearly the main/aggregating interface
+- Other types are supporting/component types
+- All types share the same prefix (type family)
+
+Otherwise, prefer camelCase or split into separate files.
 
 **Type Naming Convention**:
 
-- **Classes**: PascalCase with clear intent
-  - Example: `AgentCore`, `SQLiteAgentPersister`, `WebSocketBridge`
-- **Interfaces**: PascalCase without `I` prefix
-  - Example: `Agent`, `Session`, `AgentConfig` (not `IAgent`)
-- **Types**: PascalCase
-  - Example: `SessionState`, `MessageType`, `ContentBlock`
-- **Functions**: camelCase with verb prefix
-  - Example: `createAgent()`, `getSession()`, `parseConfig()`
-- **Constants**: UPPER_SNAKE_CASE
-  - Example: `DEFAULT_PORT`, `MAX_RETRIES`
+```typescript
+// Classes - PascalCase + clear intent
+class AgentCore { ... }
+class SQLiteAgentPersister { ... }
+class WebSocketBridge { ... }
+
+// Interfaces - PascalCase (NO 'I' prefix)
+interface Agent { ... }
+interface Session { ... }
+interface AgentConfig { ... }
+
+// Type aliases - PascalCase
+type SessionState = "active" | "paused" | "ended"
+type MessageType = "user" | "assistant"
+type ContentBlock = TextBlock | ImageBlock
+
+// Functions - camelCase + verb prefix
+function createAgent() { ... }
+function getSession() { ... }
+function parseConfig() { ... }
+
+// Constants - UPPER_SNAKE_CASE
+const DEFAULT_PORT = 5200
+const MAX_RETRIES = 3
+const API_BASE_URL = "https://api.anthropic.com"
+```
+
+**Special Cases**:
+
+```
+Facade layer (orchestration/composition)
+├─ facade/agent.ts       → camelCase (exports: createAgent, destroyAgent)
+├─ facade/session.ts     → camelCase (exports: startSession, endSession)
+
+Core implementation (single classes)
+├─ core/AgentCore.ts     → PascalCase (exports: AgentCore class)
+├─ core/BaseSession.ts   → PascalCase (exports: BaseSession class)
+
+Adapters (single implementations)
+├─ adapters/ClaudeAdapter.ts → PascalCase (exports: ClaudeAdapter)
+├─ adapters/OpenAIAdapter.ts → PascalCase (exports: OpenAIAdapter)
+
+Utilities (multiple functions)
+├─ utils/helpers.ts      → camelCase (exports: formatDate, parseJSON, ...)
+├─ utils/validators.ts   → camelCase (exports: isValidEmail, isValidURL, ...)
+```
 
 ### Import Aliases
 

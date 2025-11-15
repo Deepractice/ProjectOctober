@@ -1,0 +1,88 @@
+{
+  "name": "@deepractice-ai/agentx-core",
+  "version": "0.1.0",
+  "description": "Core implementation for AgentX ecosystem - Platform-agnostic business logic",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "core",
+    "agentx",
+    "claude",
+    "deepractice"
+  ],
+  "author": "Deepractice AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deepractice/Agent/issues"
+  },
+  "homepage": "https://github.com/Deepractice/Agent#readme",
+  "dependencies": {
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "@deepractice-ai/agentx-events": "workspace:*",
+    "@deepractice-ai/agentx-api": "workspace:*",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@deepracticex/logger": "^1.1.1",
+    "drizzle-orm": "^0.44.7",
+    "eventemitter3": "^5.0.1",
+    "neverthrow": "^8.2.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "tsyringe": "^4.10.0",
+    "xstate": "^5.24.0",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "better-sqlite3": "^12.4.1"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.9.2",
+    "@vitest/coverage-v8": "^3.0.0",
+    "@vitest/ui": "^3.0.0",
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^16.6.1",
+    "drizzle-kit": "^0.31.6",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
