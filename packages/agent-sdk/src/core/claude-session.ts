@@ -15,37 +15,38 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 /**
  * Check if an error is recoverable (session can continue after this error)
- * Recoverable errors include:
- * - 402 Payment Required (insufficient quota/credits)
- * - 429 Rate Limit Exceeded
- * - Network timeouts
- * - Temporary service unavailability
+ *
+ * Strategy Change: Default to ALL errors being recoverable
+ * - This allows users to retry after fixing issues (e.g., recharging credits)
+ * - Fatal errors will be added to the blacklist based on real-world data
+ *
+ * Rationale:
+ * - Better user experience (sessions don't die permanently)
+ * - Data-driven approach (collect fatal errors first, then classify)
+ * - Graceful degradation (even if truly fatal, user can still try)
  */
 function isRecoverableError(error: Error): boolean {
   const message = error.message.toLowerCase();
 
-  // 402 Payment Required - insufficient quota/credits
-  if (message.includes("402") || message.includes("insufficient_quota")) {
-    return true;
+  // Known absolutely fatal errors (to be collected based on real usage)
+  // Currently empty - will be populated as we identify truly unrecoverable errors
+  const fatalErrorPatterns: string[] = [
+    // Examples that might be added later:
+    // 'invalid_api_key',     // Maybe recoverable if user updates config
+    // 'model_not_found',     // Maybe recoverable if admin deploys model
+    // 'authentication_error', // Maybe recoverable if credentials are refreshed
+  ];
+
+  // Check if this is a known fatal error
+  for (const pattern of fatalErrorPatterns) {
+    if (message.includes(pattern)) {
+      return false;
+    }
   }
 
-  // 429 Rate Limit - too many requests
-  if (message.includes("429") || message.includes("rate_limit")) {
-    return true;
-  }
-
-  // Network timeouts
-  if (message.includes("timeout") || message.includes("etimedout")) {
-    return true;
-  }
-
-  // Service temporarily unavailable
-  if (message.includes("503") || message.includes("service unavailable")) {
-    return true;
-  }
-
-  // Default: treat as fatal error
-  return false;
+  // Default: treat ALL errors as recoverable
+  // This allows users to continue sessions after fixing issues
+  return true;
 }
 
 /**
@@ -234,7 +235,7 @@ export class ClaudeSession implements Session {
       const err = error as Error;
       this._lastError = err;
 
-      // Distinguish recoverable vs fatal errors
+      // Check if error is recoverable (now defaults to true for all errors)
       const recoverable = isRecoverableError(err);
 
       if (recoverable) {
@@ -246,11 +247,13 @@ export class ClaudeSession implements Session {
             sessionId: this.id,
             contentLength: content.length,
             recoverable: true,
+            errorMessage: err.message,
           },
           "Recoverable error occurred, session remains usable"
         );
       } else {
         // Fatal error: mark session as error state (terminal)
+        // Note: This path is now rarely taken since most errors are recoverable
         this._state = "error";
         this.logger.error(
           {
@@ -258,6 +261,7 @@ export class ClaudeSession implements Session {
             sessionId: this.id,
             contentLength: content.length,
             recoverable: false,
+            errorMessage: err.message,
           },
           "Fatal error occurred, session terminated"
         );
