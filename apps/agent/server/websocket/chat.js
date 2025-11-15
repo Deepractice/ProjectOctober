@@ -42,6 +42,25 @@ export function handleChatConnection(ws, connectedClients) {
           if (!session) {
             throw new Error(`Session ${sessionId} not found`);
           }
+
+          // ✅ GUARD: Check session state before sending
+          if (session.isCompleted()) {
+            console.warn("⚠️ [WebSocket] Session is already completed/error:", {
+              sessionId: session.id,
+              state: session.state,
+            });
+            ws.send(
+              JSON.stringify({
+                type: "claude-error",
+                sessionId: session.id,
+                error: `Session is no longer active (state: ${session.state})`,
+                recoverable: false,
+                state: session.state,
+              })
+            );
+            return;
+          }
+
           console.log(
             "🔵 [WebSocket] Session found, current messages:",
             session.getMessages().length
@@ -70,10 +89,25 @@ export function handleChatConnection(ws, connectedClients) {
             })
           );
         } catch (error) {
+          // Check session state to determine if error is recoverable
+          const session = agent.getSession(sessionId);
+          const sessionState = session ? session.state : "unknown";
+          const isRecoverable = sessionState === "idle"; // If still idle, error was recoverable
+
+          console.error("❌ [WebSocket] Error sending message:", {
+            sessionId,
+            error: error.message,
+            state: sessionState,
+            recoverable: isRecoverable,
+          });
+
           ws.send(
             JSON.stringify({
               type: "claude-error",
+              sessionId,
               error: error.message,
+              recoverable: isRecoverable,
+              state: sessionState,
             })
           );
         }

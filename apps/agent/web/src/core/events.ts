@@ -29,14 +29,14 @@ export type MessageEvent =
   | { type: "message.complete"; sessionId: string }
   | { type: "message.tool"; sessionId: string; toolName: string; toolInput: string; toolId: string }
   | { type: "message.toolResult"; sessionId: string; toolId: string; result: any }
-  | { type: "message.error"; sessionId: string; error: Error };
+  | { type: "message.error"; sessionId: string; error: Error; recoverable?: boolean; state?: string };
 
 // Agent Events
 export type AgentEvent =
   | { type: "agent.thinking"; sessionId: string }
   | { type: "agent.processing"; sessionId: string; status?: string; tokens?: number }
   | { type: "agent.complete"; sessionId: string }
-  | { type: "agent.error"; sessionId: string; error: Error }
+  | { type: "agent.error"; sessionId: string; error: Error; recoverable?: boolean; state?: string }
   | { type: "agent.abort"; sessionId: string; timestamp: number };
 
 // UI Events

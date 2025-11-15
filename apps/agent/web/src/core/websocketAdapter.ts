@@ -203,19 +203,38 @@ export function adaptWebSocketToEventBus(wsMessage: WebSocketMessage): void {
         }
         break;
 
-      case "claude-error":
-        // Emit agent error event
+      case "claude-error": {
+        // Extract error details including recoverable flag
+        const errorMessage = ("error" in wsMessage && wsMessage.error) || "Unknown error";
+        const recoverable = "recoverable" in wsMessage ? wsMessage.recoverable : false;
+        const sessionState = "state" in wsMessage ? wsMessage.state : "unknown";
+
+        console.log("[WebSocketAdapter] Claude error:", {
+          sessionId: wsMessage.sessionId,
+          error: errorMessage,
+          recoverable,
+          state: sessionState,
+        });
+
+        // Emit agent error event with recovery information
         eventBus.emit({
           type: "agent.error",
           sessionId: wsMessage.sessionId || "",
-          error: new Error(("error" in wsMessage && wsMessage.error) || "Unknown error"),
-        });
+          error: new Error(errorMessage),
+          recoverable,
+          state: sessionState,
+        } as any);
+
+        // Emit message error event with recovery information
         eventBus.emit({
           type: "message.error",
           sessionId: wsMessage.sessionId || "",
-          error: new Error(("error" in wsMessage && wsMessage.error) || "Unknown error"),
-        });
+          error: new Error(errorMessage),
+          recoverable,
+          state: sessionState,
+        } as any);
         break;
+      }
 
       case "agent-complete":
         // Emit agent complete event

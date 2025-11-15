@@ -14,6 +14,41 @@ import type { ClaudeAdapter } from "./claude-adapter";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 /**
+ * Check if an error is recoverable (session can continue after this error)
+ * Recoverable errors include:
+ * - 402 Payment Required (insufficient quota/credits)
+ * - 429 Rate Limit Exceeded
+ * - Network timeouts
+ * - Temporary service unavailability
+ */
+function isRecoverableError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+
+  // 402 Payment Required - insufficient quota/credits
+  if (message.includes("402") || message.includes("insufficient_quota")) {
+    return true;
+  }
+
+  // 429 Rate Limit - too many requests
+  if (message.includes("429") || message.includes("rate_limit")) {
+    return true;
+  }
+
+  // Network timeouts
+  if (message.includes("timeout") || message.includes("etimedout")) {
+    return true;
+  }
+
+  // Service temporarily unavailable
+  if (message.includes("503") || message.includes("service unavailable")) {
+    return true;
+  }
+
+  // Default: treat as fatal error
+  return false;
+}
+
+/**
  * ClaudeSession - Session implementation for Claude SDK
  */
 export class ClaudeSession implements Session {
@@ -21,6 +56,7 @@ export class ClaudeSession implements Session {
   public readonly createdAt: Date;
 
   private _state: SessionState = "created";
+  private _lastError: Error | null = null; // Track last error for recovery info
   private messages: AnyMessage[] = [];
   private messageSubject = new Subject<AnyMessage>();
   private streamEventSubject = new Subject<SDKMessage>();
@@ -137,6 +173,9 @@ export class ClaudeSession implements Session {
     const prevState = this._state;
     this._state = "active";
 
+    // Clear previous error when starting new request
+    this._lastError = null;
+
     try {
       // Stream messages from Claude SDK
       const streamOptions = {
@@ -192,12 +231,39 @@ export class ClaudeSession implements Session {
         "Message sent successfully"
       );
     } catch (error) {
-      this._state = "error";
-      this.logger.error(
-        { err: error, sessionId: this.id, contentLength: content.length },
-        "Failed to send message"
-      );
-      this.messageSubject.error(error);
+      const err = error as Error;
+      this._lastError = err;
+
+      // Distinguish recoverable vs fatal errors
+      const recoverable = isRecoverableError(err);
+
+      if (recoverable) {
+        // Recoverable error: return to idle state, session can continue
+        this._state = "idle";
+        this.logger.warn(
+          {
+            err: error,
+            sessionId: this.id,
+            contentLength: content.length,
+            recoverable: true
+          },
+          "Recoverable error occurred, session remains usable"
+        );
+      } else {
+        // Fatal error: mark session as error state (terminal)
+        this._state = "error";
+        this.logger.error(
+          {
+            err: error,
+            sessionId: this.id,
+            contentLength: content.length,
+            recoverable: false
+          },
+          "Fatal error occurred, session terminated"
+        );
+        this.messageSubject.error(error);
+      }
+
       throw error;
     }
   }
@@ -546,6 +612,14 @@ export class ClaudeSession implements Session {
 
   getMetadata(): SessionMetadata {
     return { ...this.metadata };
+  }
+
+  /**
+   * Get the last error that occurred (if any)
+   * Useful for displaying error details to users
+   */
+  getLastError(): Error | null {
+    return this._lastError;
   }
 
   /**
