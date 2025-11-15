@@ -438,7 +438,7 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
 
       if (event.recoverable) {
         // Recoverable error: friendly message with recovery hint
-        errorMessage = `⚠️ ${event.error.message}\n\n✅ Your session is still active. You can continue sending messages after resolving this issue.`;
+        errorMessage = `⚠️ ${event.error.message}\n\n✅ Your session is still active. You can continue sending messages.\n\nCommon solutions:\n• If credits insufficient: Recharge and try again\n• If network issue: Check connection and retry\n• If rate limited: Wait a moment and resend`;
         console.log("[MessageStore] Recoverable error:", {
           sessionId: event.sessionId,
           error: event.error.message,
@@ -446,6 +446,7 @@ eventBus.on(isMessageEvent).subscribe(async (event) => {
         });
       } else {
         // Fatal error: clear indication session is terminated
+        // Note: This is now rare since most errors are recoverable
         errorMessage = `❌ ${event.error.message}\n\n⛔ This session has failed and cannot continue. Please create a new session.`;
         console.error("[MessageStore] Fatal error:", {
           sessionId: event.sessionId,
